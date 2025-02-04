@@ -77,8 +77,8 @@ const handlePreMergePhase = (players, updateResults) => {
       state = "tribal";
     } else if (state === "tribal") {
       const out = voting(tribes[loser], false);
+      updateResults(`${tribes[loser][out].name} voted out at tribal council!`);
       tribes[loser].splice(out, 1);
-      updateResults(`${out.name} voted out at tribal council!`);
       state = "immunity";
     }
   }

@@ -42,7 +42,7 @@ export const voting = (tribe, merged) => {
   
     // Select a random player index from the choices
     const voteIndex = choices[getRandomInt(choices.length)];
-    return tribe[voteIndex]; // Return the actual player object
+    return voteIndex; // Return the actual player object
   };
 
 /**

@@ -10,9 +10,11 @@ console.log("Tribe Data:", tribeData);
   const [playerData, setPlayerData] = useState(players[gender]);
 
   const updatePlayerProperty = (playerIndex, prop, value) => {
-    const updatedPlayers = [...playerData];
-    updatedPlayers[playerIndex][prop] = value;
-    setPlayerData(updatedPlayers);
+    setPlayerData((prevPlayerData) =>
+      prevPlayerData.map((player, index) =>
+        index === playerIndex ? { ...player, [prop]: value } : player
+      )
+    );
   };
 
   const renderSlider = (player, playerIndex, label, num) => {
