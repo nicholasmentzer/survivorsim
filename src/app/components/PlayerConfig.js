@@ -35,7 +35,7 @@ console.log("Tribe Data:", tribeData);
           min="1"
           max="10"
           value={player[label]}
-          onChange={(e) => updatePlayerProperty(playerIndex, label, e.target.value)}
+          onChange={(e) => updatePlayerProperty(playerIndex, label, Number(e.target.value))}
           className="flex-1"
         />
         <span className="text-xs text-gray-600 w-8 text-center">{player[label]}</span>

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import PlayerConfig from "./components/PlayerConfig";
 import { populateTribes, simulate } from "./utils/simulation";
@@ -8,11 +8,24 @@ import careersData from "./data/careers.json";
 import regionsData from "./data/regions.json";
 import tribesData from "./data/tribes.json";
 
+const getRandomPlayers = (players, num) => {
+  const shuffled = [...players].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, num);
+};
+
 export default function Home() {
   const [status, setStatus] = useState("Configure your cast.");
   const [mode, setMode] = useState("configure");
   const [tribes, setTribes] = useState([]);
-  const [playerConfig, setPlayerConfig] = useState(playersData);
+  const [playerConfig, setPlayerConfig] = useState(null);
+
+  useEffect(() => {
+    setPlayerConfig({
+      men: getRandomPlayers(playersData.men, 10),
+      women: getRandomPlayers(playersData.women, 10),
+    });
+  }, []);
+
   const [results, setResults] = useState([]);
 
   const updateResults = (message) => {
@@ -46,6 +59,10 @@ export default function Home() {
       [gender]: updatedPlayers,
     }));
   };
+
+  if (!playerConfig) {
+    return <p className="text-center text-white">Loading players...</p>;
+  }
 
   return (
     <>
