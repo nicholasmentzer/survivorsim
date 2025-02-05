@@ -59,12 +59,24 @@ const handlePreMergePhase = (updateResults) => {
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
-      updateResults(`Tribe ${winner + 1} wins immunity!`);
+      updateResults({ type: "event", message: `Tribe ${winner + 1} wins immunity!` });
       state = "tribal";
-      const out = voting(tribes[loser], false);
-      updateResults(`${tribes[loser][out].name} voted out at tribal council!`);
-      tribes[loser].splice(out, 1);
-      state = "immunity";
+      const out = voting(tribes[loser], true);
+      if (out !== undefined) {
+          const votedout = tribes[loser].splice(out, 1)[0];
+          updateResults({
+            type: "event",
+            message: `${votedout.name} voted out at tribal council.`,
+            image: votedout.image
+          });
+        state = "immunity";
+      } else {
+        updateResults({
+          type: "event",
+          message: "Error: No valid player to vote out."
+        });
+        state = "gameover";
+      }
   }
 };
 
@@ -86,7 +98,11 @@ const handlePostMergePhase = (updateResults) => {
         winner = individualImmunity(tribe);
         const immune = tribe[winner];
         immune.immunities++;
-        updateResults(`${immune.name} wins individual immunity!`);
+        updateResults({
+          type: "event",
+          message: `${immune.name} wins individual immunity!`,
+          image: immune.image
+        });
         state = "tribal";
         const tribecopy = [...tribe];
         tribecopy.splice(winner, 1); // Remove the immune player temporarily
@@ -96,19 +112,30 @@ const handlePostMergePhase = (updateResults) => {
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
             tribes[0] = tribecopy.concat(immune);
-          updateResults(`${votedout.name} voted out at tribal council.`);
+            updateResults({
+              type: "event",
+              message: `${votedout.name} voted out at tribal council.`,
+              image: votedout.image
+            });
           tribes[1].push(votedout); // Move the voted-out player to the jury
           state = "immunity";
         } else {
-          updateResults("Error: No valid player to vote out.");
+          updateResults({
+            type: "event",
+            message: "Error: No valid player to vote out."
+          });
           state = "gameover";
         }
     } else {
         state = "final";
-        updateResults("Final tribal votes are being tallied.");
+        updateResults({ type: "event", message: "Final tribal votes are being tallied." });
         const soleSurvivor = votingWinner(tribes[0], tribes[1]);
         soleSurvivor.totalWins++;
-        updateResults(`The sole survivor is ${soleSurvivor.name}!`);
+        updateResults({
+          type: "event",
+          message: `The sole survivor is ${soleSurvivor.name}!`,
+          image: soleSurvivor.image
+        });
         state = "gameover";
     }
   };
@@ -121,6 +148,6 @@ const mergeTribes = (updateResults) => {
   merged = true;
   tribes[1].forEach((player) => tribes[0].push(player));
   tribes[1] = [];
-  updateResults("Tribes are merged.");
+  updateResults({ type: "event", message: "Tribes are merged!"});
   state = "immunity";
 };

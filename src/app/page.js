@@ -96,18 +96,23 @@ export default function Home() {
                   BACK TO CONFIGURE
                 </button>
                 <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
-                <div className="mt-4 space-y-2">
+                <div className="mt-8 space-y-8">
                   {episodes[currentEpisode]?.map((event, index) => {
                     if (event.type === "tribe") {
                       return (
                         <div key={index} className="mt-4 pb-6">
                           <h3 className="text-xl font-bold text-white">{event.title}</h3>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
                             {event.members?.map((player) => (
                               <div
                                 key={player.name}
-                                className="border border-gray-500 p-2 text-center rounded bg-gray-800 text-white"
+                                className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white"
                               >
+                                <img
+                                  src={player.image}
+                                  alt={player.name}
+                                  className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                />
                                 {player.name}
                               </div>
                             ))}
@@ -117,8 +122,20 @@ export default function Home() {
                     } else {
                       return (
                         <div key={index} className="flex flex-col items-center space-y-2">
-                          <div className="bg-gray-800 text-white px-6 py-3 rounded-lg text-center">
-                            {event}
+                          {event.image ? (
+                            <img
+                              src={event.image}
+                              alt={event.message}
+                              className="w-24 h-24 object-cover rounded-full mb-2"
+                            />
+                          ) : null}
+                
+                          <div
+                            className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center font-semibold ${
+                              event.image ? "" : "py-4 px-8"
+                            }`}
+                          >
+                            {event.message}
                           </div>
                         </div>
                       );
@@ -142,18 +159,6 @@ export default function Home() {
               </div>
             )}
           </div>
-          {mode === "simulate" && (
-            <div className="mt-8">
-              <h2 className="text-lg font-bold">Simulation Results</h2>
-              <div className="mt-4 space-y-2">
-                {results.map((result, index) => (
-                  <p key={index} className="text-sm text-white">
-                    {result}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
         </article>
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
@@ -175,7 +180,8 @@ export default function Home() {
                 regions={regionsData}
                 tribes={tribesData}
               />
-              <h2 className="text-xl font-bold mt-8">Configure your season.</h2>
+              <div className="h-5" />
+              {/*<h2 className="text-xl font-bold mt-8">Configure your season.</h2>
               <p>
                 Total cast:
                 <select className="ml-2 border border-gray-300 rounded-md">
@@ -187,7 +193,7 @@ export default function Home() {
                 <select className="ml-2 border border-gray-300 rounded-md">
                   <option value="2">2</option>
                 </select>
-              </p>
+              </p>*/}
             </div>
           )}
       </div>
