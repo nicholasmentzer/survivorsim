@@ -43,6 +43,18 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
     }
   };
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImageUrl(reader.result);
+        setImageValid(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const renderSlider = (player, playerIndex, label, num) => {
     const labels = [
       "challenge skill (pre-merge)",
@@ -118,6 +130,17 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
               }}
               placeholder="Enter Image URL"
               className="w-full p-2 rounded border border-gray-700 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+            />
+
+            <div className="text-center my-3">
+              <span className="text-gray-400 text-sm">OR</span>
+            </div>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="w-full text-sm text-gray-400 border border-gray-700 rounded p-1 bg-gray-800 cursor-pointer"
             />
 
             <div className="flex justify-center my-4">
