@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-const PlayerConfig = ({ gender, players, careers, regions, tribeData }) => {
+const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData }) => {
     console.log("Gender:", gender);
 console.log("Players:", players);
 console.log("Careers:", careers);
@@ -10,11 +10,12 @@ console.log("Tribe Data:", tribeData);
   const [playerData, setPlayerData] = useState(players[gender]);
 
   const updatePlayerProperty = (playerIndex, prop, value) => {
-    setPlayerData((prevPlayerData) =>
-      prevPlayerData.map((player, index) =>
-        index === playerIndex ? { ...player, [prop]: value } : player
-      )
+    const updatedPlayers = playerData.map((player, index) =>
+      index === playerIndex ? { ...player, [prop]: value } : player
     );
+
+    setPlayerData(updatedPlayers);
+    updatePlayers(gender, updatedPlayers);
   };
 
   const renderSlider = (player, playerIndex, label, num) => {
@@ -52,7 +53,12 @@ console.log("Tribe Data:", tribeData);
           key={player.id}
           className="player border border-gray-300 rounded p-4 space-y-3 w-[330px] mx-auto bg-slate-900 shadow-md"
         >
-          <h4 className="text-lg font-semibold">{player.name}</h4>
+          <input
+            type="text"
+            value={player.name}
+            onChange={(e) => updatePlayerProperty(index, "name", e.target.value)}
+            className="w-full text-lg font-semibold text-center bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400 text-white"
+          />
           {renderSlider(player, index, "premerge", 0)}
           {renderSlider(player, index, "postmerge", 1)}
           {renderSlider(player, index, "likeability", 2)}

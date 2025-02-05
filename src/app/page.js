@@ -40,6 +40,13 @@ export default function Home() {
     }
   };
 
+  const updatePlayers = (gender, updatedPlayers) => {
+    setPlayerConfig((prevConfig) => ({
+      ...prevConfig,
+      [gender]: updatedPlayers,
+    }));
+  };
+
   return (
     <>
       <Head>
@@ -49,7 +56,11 @@ export default function Home() {
         <script src="https://code.jquery.com/jquery-2.1.4.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js" defer></script>
       </Head>
-      <div className="relative">
+      <div
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
+        style={{ backgroundImage: "url('/background.jpg')" }}
+      />
+      <div className="relative min-h-screen flex items-center justify-center">
         <article className="prose mx-auto max-w-5xl pt-8">
           <h1 className="text-2xl font-bold">Survivor Simulator</h1>
           <div id="interface" className="text-center mt-8">
@@ -75,6 +86,7 @@ export default function Home() {
               <PlayerConfig
                 gender="men"
                 players={playerConfig}
+                updatePlayers={updatePlayers}
                 careers={careersData}
                 regions={regionsData}
                 tribes={tribesData}
@@ -83,6 +95,7 @@ export default function Home() {
               <PlayerConfig
                 gender="women"
                 players={playerConfig}
+                updatePlayers={updatePlayers}
                 careers={careersData}
                 regions={regionsData}
                 tribes={tribesData}
@@ -107,7 +120,7 @@ export default function Home() {
               <h2 className="text-lg font-bold">Simulation Results</h2>
               <div className="mt-4 space-y-2">
                 {results.map((result, index) => (
-                  <p key={index} className="text-sm text-gray-800">
+                  <p key={index} className="text-sm text-white">
                     {result}
                   </p>
                 ))}

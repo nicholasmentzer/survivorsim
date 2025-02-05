@@ -101,9 +101,14 @@ const handlePostMergePhase = (updateResults) => {
         const immune = tribe[winner];
         const tribecopy = [...tribe];
         tribecopy.splice(winner, 1); // Remove the immune player temporarily
+
+        console.log("🔍 Voting Phase:");
+        console.log("Remaining players:", tribecopy.map(p => p.name));
+        console.log("Immune player:", immune.name);
+
         const out = voting(tribecopy, true);
   
-        if (out) {
+        if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
             tribes[0] = tribecopy.concat(immune);
           updateResults(`${votedout.name} voted out at tribal council.`);

@@ -39,9 +39,9 @@ export const voting = (tribe, merged) => {
         for (let n = 0; n < 10 - player.strategicness; n++) choices.push(i);
       });
     }
-  
     // Select a random player index from the choices
     const voteIndex = choices[getRandomInt(choices.length)];
+    console.log(voteIndex);
     return voteIndex; // Return the actual player object
   };
 

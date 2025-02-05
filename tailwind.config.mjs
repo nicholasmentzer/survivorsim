@@ -11,6 +11,9 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      backgroundImage: {
+        'survivor-bg': "url('/background.jpg')",
+      },
     },
   },
   plugins: [],
