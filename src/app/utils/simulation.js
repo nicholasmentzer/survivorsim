@@ -1,36 +1,23 @@
 import { voting, votingWinner, individualImmunity, tribalImmunity } from "./simulator";
 
-let totalSims = 0;
 let tribes = [];
 let merged = false;
 let winner = -1;
 let loser = -1;
 let state = "configure";
 let week = 1;
-let looping = false;
 
 const populateTribes = (players, updateResults) => {
-    const tribe1 = [];
-    const tribe2 = [];
-  
-    players.forEach((player) => {
-      if (player.tribe === 0) {
-        tribe1.push(player);
-      } else {
-        tribe2.push(player);
-      }
-    });
-  
-    tribes = [tribe1, tribe2];
-    merged = false;
-    winner = -1;
-    loser = -1;
-    state = "immunity";
-    week = 1;
+  const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
+  const tribe1 = shuffledPlayers.slice(0, 10);
+  const tribe2 = shuffledPlayers.slice(10, 20);
 
-    updateResults("Starting Tribes:");
-    updateResults(`Tribe 1: ${tribe1.map((p) => p.name).join(", ")}`);
-    updateResults(`Tribe 2: ${tribe2.map((p) => p.name).join(", ")}`);
+  tribes = [tribe1, tribe2];
+  merged = false;
+  winner = -1;
+  loser = -1;
+  state = "immunity";
+  week = 1;
 };
 
 
@@ -51,7 +38,6 @@ const populateTribes = (players, updateResults) => {
       episodes.push(episode);
     }
   
-    console.log(episodes);
     updateResults(episodes);
   };
 
@@ -60,10 +46,16 @@ const populateTribes = (players, updateResults) => {
  * @param {Function} updateResults - Callback to update the game status.
  */
 const handlePreMergePhase = (updateResults) => {
-  const statusDiv = [];
   if (tribes[0].length + tribes[1].length === 12) {
     mergeTribes(updateResults);
+    handlePostMergePhase(updateResults);
   } else {
+      updateResults(
+        { type: "tribe", title: "Tribe 1", members: [...tribes[0]] }
+      );
+      updateResults(
+        { type: "tribe", title: "Tribe 2", members: [...tribes[1]] }
+      );
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
@@ -82,6 +74,14 @@ const handlePreMergePhase = (updateResults) => {
  */
 const handlePostMergePhase = (updateResults) => {
     const tribe = tribes[0];
+    updateResults(
+      { type: "tribe", title: "Current Tribe", members: [...tribes[0]] },
+    );
+    if (tribes[1].length > 0) {
+      updateResults(
+        { type: "tribe", title: "Jury", members: [...tribes[1]] }
+      );
+    }
     if (tribe.length > 3) {
         winner = individualImmunity(tribe);
         const immune = tribe[winner];
@@ -104,15 +104,12 @@ const handlePostMergePhase = (updateResults) => {
           state = "gameover";
         }
     } else {
-      if (state === "final") {
+        state = "final";
+        updateResults("Final tribal votes are being tallied.");
         const soleSurvivor = votingWinner(tribes[0], tribes[1]);
         soleSurvivor.totalWins++;
         updateResults(`The sole survivor is ${soleSurvivor.name}!`);
         state = "gameover";
-      } else {
-        state = "final";
-        updateResults("Final tribal votes are being tallied.");
-      }
     }
   };
 

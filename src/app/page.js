@@ -97,9 +97,33 @@ export default function Home() {
                 </button>
                 <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
                 <div className="mt-4 space-y-2">
-                  {episodes[currentEpisode]?.map((event, index) => (
-                    <p key={index}>{event}</p>
-                  ))}
+                  {episodes[currentEpisode]?.map((event, index) => {
+                    if (event.type === "tribe") {
+                      return (
+                        <div key={index} className="mt-4 pb-6">
+                          <h3 className="text-xl font-bold text-white">{event.title}</h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-2">
+                            {event.members?.map((player) => (
+                              <div
+                                key={player.name}
+                                className="border border-gray-500 p-2 text-center rounded bg-gray-800 text-white"
+                              >
+                                {player.name}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={index} className="flex flex-col items-center space-y-2">
+                          <div className="bg-gray-800 text-white px-6 py-3 rounded-lg text-center">
+                            {event}
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
                 </div>
                 <div className="flex justify-between mt-6">
                   <button
