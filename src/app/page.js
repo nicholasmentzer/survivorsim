@@ -89,12 +89,28 @@ export default function Home() {
               </button>
             ) : (
               <div className="text-center p-4 text-white min-h-screen">
-                <button
-                  className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
-                  onClick={() => setMode("configure")}
-                >
-                  BACK TO CONFIGURE
-                </button>
+                <div className="flex justify-center items-center space-x-4 mb-6">
+                  <button
+                    onClick={prevEpisode}
+                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-gray-600" : "bg-blue-500"}`}
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
+                    onClick={() => setMode("configure")}
+                  >
+                    BACK TO CONFIGURE
+                  </button>
+
+                  <button
+                    onClick={nextEpisode}
+                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-gray-600" : "bg-green-500"}`}
+                  >
+                    Next
+                  </button>
+                </div>
                 <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
                 <div className="mt-8 space-y-8">
                   {episodes[currentEpisode]?.map((event, index) => {
@@ -142,27 +158,13 @@ export default function Home() {
                     }
                   })}
                 </div>
-                <div className="flex justify-between mt-6">
-                  <button
-                    onClick={prevEpisode}
-                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-gray-600" : "bg-blue-500"}`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={nextEpisode}
-                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-gray-600" : "bg-green-500"}`}
-                  >
-                    Next
-                  </button>
-                </div>
               </div>
             )}
           </div>
         </article>
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
-              <h2 className="text-xl font-bold mb-5">Configure your cast.</h2>
+              <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
               <PlayerConfig
                 gender="men"
                 players={playerConfig}
