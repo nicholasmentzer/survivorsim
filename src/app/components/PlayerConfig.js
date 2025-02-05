@@ -2,11 +2,6 @@
 import React, { useState } from "react";
 
 const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData }) => {
-    console.log("Gender:", gender);
-console.log("Players:", players);
-console.log("Careers:", careers);
-console.log("Regions:", regions);
-console.log("Tribe Data:", tribeData);
   const [playerData, setPlayerData] = useState(players[gender]);
 
   const updatePlayerProperty = (playerIndex, prop, value) => {

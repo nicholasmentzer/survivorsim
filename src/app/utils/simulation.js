@@ -33,54 +33,46 @@ const populateTribes = (players, updateResults) => {
     updateResults(`Tribe 2: ${tribe2.map((p) => p.name).join(", ")}`);
 };
 
-  export const simulate = (players, updateResults, simSpeed) => {
-    totalSims++;
-    populateTribes(players, updateResults);
-    go(players, updateResults, simSpeed);
-  };
-  
-const go = (players, updateResults, simSpeed) => {
-    if (!merged) {
-        handlePreMergePhase(players, updateResults);
-    } else {
-        handlePostMergePhase(updateResults);
-    }
 
-    const waitTime = mapSpeedToWaitTime(simSpeed);
-    if (state === "gameover") {
-        if (looping) {
-            populateTribes(players);
-            simulate(players, updateResults, simSpeed);
-        } else {
-            updateResults("Simulation complete.");
-        }
-    } else {
-        setTimeout(() => go(players, updateResults, simSpeed), waitTime);
+  export const simulate = (players, updateResults, simSpeed) => {
+    let episodes = [];
+
+    populateTribes(players, updateResults);
+  
+    while (state != "gameover") {
+      let episode = [];
+  
+      if (!merged) {
+        handlePreMergePhase((message) => episode.push(message));
+      } else {
+        handlePostMergePhase((message) => episode.push(message));
+      }
+  
+      episodes.push(episode);
     }
-};
+  
+    console.log(episodes);
+    updateResults(episodes);
+  };
 
 /**
  * Handles the pre-merge phase of the game.
- * @param {Array} players - Array of all players.
  * @param {Function} updateResults - Callback to update the game status.
  */
-const handlePreMergePhase = (players, updateResults) => {
+const handlePreMergePhase = (updateResults) => {
   const statusDiv = [];
   if (tribes[0].length + tribes[1].length === 12) {
     mergeTribes(updateResults);
   } else {
-    if (state === "immunity") {
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
       updateResults(`Tribe ${winner + 1} wins immunity!`);
       state = "tribal";
-    } else if (state === "tribal") {
       const out = voting(tribes[loser], false);
       updateResults(`${tribes[loser][out].name} voted out at tribal council!`);
       tribes[loser].splice(out, 1);
       state = "immunity";
-    }
   }
 };
 
@@ -91,20 +83,13 @@ const handlePreMergePhase = (players, updateResults) => {
 const handlePostMergePhase = (updateResults) => {
     const tribe = tribes[0];
     if (tribe.length > 3) {
-      if (state === "immunity") {
         winner = individualImmunity(tribe);
         const immune = tribe[winner];
         immune.immunities++;
         updateResults(`${immune.name} wins individual immunity!`);
         state = "tribal";
-      } else if (state === "tribal") {
-        const immune = tribe[winner];
         const tribecopy = [...tribe];
         tribecopy.splice(winner, 1); // Remove the immune player temporarily
-
-        console.log("🔍 Voting Phase:");
-        console.log("Remaining players:", tribecopy.map(p => p.name));
-        console.log("Immune player:", immune.name);
 
         const out = voting(tribecopy, true);
   
@@ -118,7 +103,6 @@ const handlePostMergePhase = (updateResults) => {
           updateResults("Error: No valid player to vote out.");
           state = "gameover";
         }
-      }
     } else {
       if (state === "final") {
         const soleSurvivor = votingWinner(tribes[0], tribes[1]);
@@ -142,13 +126,4 @@ const mergeTribes = (updateResults) => {
   tribes[1] = [];
   updateResults("Tribes are merged.");
   state = "immunity";
-};
-
-/**
- * Maps simulation speed to wait time in milliseconds.
- * @param {number} simSpeed - Simulation speed (1-100).
- * @returns {number} Wait time in milliseconds.
- */
-const mapSpeedToWaitTime = (simSpeed) => {
-  return Math.max(1000 - simSpeed * 10, 0);
 };

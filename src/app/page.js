@@ -27,29 +27,28 @@ export default function Home() {
   }, []);
 
   const [results, setResults] = useState([]);
-
-  const updateResults = (message) => {
-    setResults((prev) => [...prev, message]);
-  };
+  const [episodes, setEpisodes] = useState([]);
+  const [currentEpisode, setCurrentEpisode] = useState(0);
 
   const startSimulation = () => {
-    setResults([]);
-    setStatus("Simulation running...");
-    simulate(
-      [...playerConfig.men, ...playerConfig.women],
-      updateResults,
-      50 // Simulation speed
-    );
+    setEpisodes([]);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, 50);
     setMode("simulate");
+    setCurrentEpisode(0);
   };
 
-  const toggleMode = () => {
-    if (mode === "configure") {
-      startSimulation();
-      setMode("simulate");
-    } else {
+  const nextEpisode = () => {
+    if (currentEpisode === episodes.length - 1) {
       setMode("configure");
-      setStatus("Configure your cast.");
+    } else {
+      setCurrentEpisode((prev) => Math.min(prev + 1, episodes.length - 1));
+    }
+  };
+  const prevEpisode = () => {
+    if (currentEpisode === 0) {
+      setMode("configure");
+    } else {
+      setCurrentEpisode((prev) => Math.max(prev - 1, 0));
     }
   };
 
@@ -77,9 +76,9 @@ export default function Home() {
         className="fixed inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{ backgroundImage: "url('/background.jpg')" }}
       />
-      <div className="relative min-h-screen flex items-center justify-center">
-        <article className="prose mx-auto max-w-5xl pt-8">
-          <h1 className="text-2xl font-bold">Survivor Simulator</h1>
+      <div className="relative min-h-screen flex-col items-center justify-center">
+        <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-8 p-6 rounded-lg">
+          <h1 className="text-2xl font-bold text-white text-center">Survivor Simulator</h1>
           <div id="interface" className="text-center mt-8">
             {mode === "configure" ? (
               <button
@@ -89,16 +88,51 @@ export default function Home() {
                 SIMULATE
               </button>
             ) : (
-              <button
-                className="bg-red-500 text-white px-6 py-3 rounded-lg font-bold"
-                onClick={() => setMode("configure")}
-              >
-                BACK TO CONFIGURE
-              </button>
+              <div className="text-center p-4 text-white min-h-screen">
+                <button
+                  className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
+                  onClick={() => setMode("configure")}
+                >
+                  BACK TO CONFIGURE
+                </button>
+                <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
+                <div className="mt-4 space-y-2">
+                  {episodes[currentEpisode]?.map((event, index) => (
+                    <p key={index}>{event}</p>
+                  ))}
+                </div>
+                <div className="flex justify-between mt-6">
+                  <button
+                    onClick={prevEpisode}
+                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-gray-600" : "bg-blue-500"}`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={nextEpisode}
+                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-gray-600" : "bg-green-500"}`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-          {mode === "configure" && (
-            <div id="configureDiv" className="mt-12">
+          {mode === "simulate" && (
+            <div className="mt-8">
+              <h2 className="text-lg font-bold">Simulation Results</h2>
+              <div className="mt-4 space-y-2">
+                {results.map((result, index) => (
+                  <p key={index} className="text-sm text-white">
+                    {result}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+        </article>
+        {mode === "configure" && (
+            <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <h2 className="text-xl font-bold mb-5">Configure your cast.</h2>
               <PlayerConfig
                 gender="men"
@@ -132,19 +166,6 @@ export default function Home() {
               </p>
             </div>
           )}
-          {mode === "simulate" && (
-            <div className="mt-8">
-              <h2 className="text-lg font-bold">Simulation Results</h2>
-              <div className="mt-4 space-y-2">
-                {results.map((result, index) => (
-                  <p key={index} className="text-sm text-white">
-                    {result}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-        </article>
       </div>
     </>
   );

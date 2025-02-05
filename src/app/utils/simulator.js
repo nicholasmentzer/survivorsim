@@ -41,7 +41,6 @@ export const voting = (tribe, merged) => {
     }
     // Select a random player index from the choices
     const voteIndex = choices[getRandomInt(choices.length)];
-    console.log(voteIndex);
     return voteIndex; // Return the actual player object
   };
 
@@ -51,7 +50,7 @@ export const voting = (tribe, merged) => {
  * @param {Array} jury - Array of jury members.
  * @returns {Object} The sole survivor (winner).
  */
-export const votingWinner = (finalThree, jury, totalSims) => {
+export const votingWinner = (finalThree, jury) => {
   const choices = [];
   finalThree.forEach((player, i) => {
     player.voteCount = 0;
@@ -70,11 +69,6 @@ export const votingWinner = (finalThree, jury, totalSims) => {
   soleSurvivor.placement = 1;
   finalThree[1].placement = 2;
   finalThree[2].placement = 3;
-
-  finalThree.forEach((player) => {
-    player.sumplace += player.placement;
-    player.avgplace = player.sumplace / totalSims;
-  });
 
   return soleSurvivor;
 };
