@@ -66,7 +66,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Survivor Simulator</title>
+        <title>Survivor Chains - A Survivor Simulator</title>
         <meta name="description" content="This is a simulator for the game of Survivor." />
         <link rel="icon" href="/favicon.ico" />
         <script src="https://code.jquery.com/jquery-2.1.4.min.js" defer></script>
@@ -78,7 +78,7 @@ export default function Home() {
       />
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-8 p-6 rounded-lg">
-          <h1 className="text-2xl font-bold text-white text-center">Survivor Simulator</h1>
+          <h1 className="text-2xl font-bold text-white text-center">Survivor Chains - A Survivor Simulator</h1>
           <div id="interface" className="text-center mt-8">
             {mode === "configure" ? (
               <button
