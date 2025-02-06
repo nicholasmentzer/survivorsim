@@ -18,6 +18,31 @@ export default function Home() {
   const [mode, setMode] = useState("configure");
   const [tribes, setTribes] = useState([]);
   const [playerConfig, setPlayerConfig] = useState(null);
+  const [customEvents, setCustomEvents] = useState([]);
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventType, setEventType] = useState("positive");
+  const [eventSeverity, setEventSeverity] = useState(1);
+
+  const addCustomEvent = (e) => {
+    e.preventDefault();
+
+    const player1Exists = eventDescription.includes("{Player1}");
+    const player2Exists = eventDescription.includes("{Player2}");
+    const numPlayers = (player1Exists ? 1 : 0) + (player2Exists ? 1 : 0);
+
+    const newEvent = {
+      description: eventDescription,
+      type: numPlayers === 2 ? eventType : "neutral",
+      severity: numPlayers === 2 ? eventType === "neutral" ? 0 : parseInt(eventSeverity) : 0,
+      numPlayers: numPlayers
+    };
+    setCustomEvents([...customEvents, newEvent]);
+    setEventDescription("");
+  };
+
+  const removeCustomEvent = (index) => {
+    setCustomEvents((prevEvents) => prevEvents.filter((_, i) => i !== index));
+  };  
 
   useEffect(() => {
     setPlayerConfig({
@@ -32,7 +57,7 @@ export default function Home() {
 
   const startSimulation = () => {
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, 50);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -138,17 +163,17 @@ export default function Home() {
                     } else {
                       return (
                         <div key={index} className="flex flex-col items-center space-y-2">
-                          {event.image ? (
-                            <img
-                              src={event.image}
-                              alt={event.message}
-                              className="w-24 h-24 object-cover rounded-full mb-2"
-                            />
+                          {event.images ? (
+                            <div className="flex space-x-4">
+                              {event.images.map((image, i) => (
+                                <img key={i} src={image} alt="Event image" className="w-24 h-24 object-cover rounded-full mb-2" />
+                              ))}
+                            </div>
                           ) : null}
                 
                           <div
                             className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center ${event.type === "voting" ? "text-sm" : "text-base font-semibold"} ${
-                              event.image ? "" : "py-4 px-8"
+                              event.images ? "" : "py-4 px-8"
                             }`}
                           >
                             {
@@ -158,6 +183,13 @@ export default function Home() {
                                     {element}
                                     <div className="h-2"/>
                                   </div>
+                                )))
+                              : event.type === "event" && event.numPlayers === 2 ?
+                                (event.message.map((element, index) => (
+                                  <>
+                                    <div dangerouslySetInnerHTML={{ __html: element }} />
+                                    <div className="h-2"/>
+                                  </>
                                 )))
                               : (event.message)
                             }
@@ -205,6 +237,72 @@ export default function Home() {
                   <option value="2">2</option>
                 </select>
               </p>*/}
+
+              <h2 className="text-xl font-bold mt-8">Add Custom Events</h2>
+              <form onSubmit={addCustomEvent} className="bg-gray-800 p-4 rounded-lg">
+                <label className="text-gray-300 text-sm">Description</label>
+                <input
+                  type="text"
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
+                  placeholder="Example: {Player1} and {Player2} got into a huge argument. (max 2 players)"
+                  className="w-full p-2 rounded border border-gray-600 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+                />
+                
+                <div className="h-2"/>
+                <label className="text-gray-300 text-sm">Relationship Impact (only used if event has 2 players)</label>
+                <select
+                  value={eventType}
+                  onChange={(e) => setEventType(e.target.value)}
+                  className="w-full p-2 rounded border border-gray-700 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+                >
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="neutral">Neutral</option>
+                </select>
+                {eventType !== "neutral" && (
+                  <>
+                    <div className="h-2"/>
+                    <label className="text-gray-300 text-sm">Impact Severity (only used if event has 2 players)</label>
+                    <input
+                      type="number"
+                      value={eventSeverity}
+                      onChange={(e) => setEventSeverity(Number(e.target.value))}
+                      min="1"
+                      max="5"
+                      className="w-full p-2 rounded border border-gray-700 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+                    />
+                  </>
+                )}
+                <div className="h-2"/>
+                <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg">Add Event</button>
+              </form>
+
+              <h3 className="text-lg font-bold mt-4">Custom Events</h3>
+              {customEvents.length === 0 ? (
+                <p className="text-gray-400">No custom events added yet.</p>
+              ) : (
+                <ul className="text-white space-y-1">
+                  <div className="mt-4 space-y-2">
+                    {customEvents.map((event, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md">
+                        <span>
+                          {event.description} - <span className={event.type === "positive" ? "text-green-400" : "text-red-400"}>
+                            {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+                          </span> ({event.severity})
+                        </span>
+                        <button
+                          className="ml-4 bg-white px-2 py-1 rounded-full text-sm hover:bg-red-300"
+                          onClick={() => removeCustomEvent(index)}
+                        >
+                          ❌
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </ul>
+              )}
+              <div className="h-10" />
             </div>
           )}
       </div>
