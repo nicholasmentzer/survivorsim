@@ -1,4 +1,4 @@
-import { voting, votingWinner, individualImmunity, tribalImmunity } from "./simulator";
+import { voting, votingWinner, individualImmunity, tribalImmunity, getVoteResults, determineVotedOut } from "./simulator";
 
 let tribes = [];
 let merged = false;
@@ -18,6 +18,29 @@ const populateTribes = (players, updateResults) => {
   loser = -1;
   state = "immunity";
   week = 1;
+  initializeRelationships(players);
+};
+
+const initializeRelationships = (players) => {
+  players.forEach((player) => {
+    player.relationships = {};
+    players.forEach((other) => {
+      if (player !== other) {
+        player.relationships[other.name] = Math.floor(Math.random() * 11) - 5;
+      }
+    });
+  });
+};
+
+const updateRelationships = (tribe) => {
+  tribe.forEach((player) => {
+    tribe.forEach((other) => {
+      if (player !== other) {
+        const change = Math.random() > 0.5 ? 1 : -1; // 50% chance to increase or decrease
+        player.relationships[other.name] = (player.relationships[other.name] || 0) + change;
+      }
+    });
+  });
 };
 
 
@@ -56,14 +79,21 @@ const handlePreMergePhase = (updateResults) => {
       updateResults(
         { type: "tribe", title: "Tribe 2", members: [...tribes[1]] }
       );
+      updateRelationships(tribes[0]);
+      updateRelationships(tribes[1]);
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
       updateResults({ type: "event", message: `Tribe ${winner + 1} wins immunity!` });
       state = "tribal";
-      const out = voting(tribes[loser], true);
+
+      const { voteIndex: out, voteDetails } = voting(tribes[loser], false);
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
+          updateResults({
+            type: "voting",
+            message: voteDetails,
+          });
           updateResults({
             type: "event",
             message: `${votedout.name} voted out at tribal council.`,
@@ -94,6 +124,7 @@ const handlePostMergePhase = (updateResults) => {
         { type: "tribe", title: "Jury", members: [...tribes[1]] }
       );
     }
+    updateRelationships(tribes[0]);
     if (tribe.length > 3) {
         winner = individualImmunity(tribe);
         const immune = tribe[winner];
@@ -105,13 +136,16 @@ const handlePostMergePhase = (updateResults) => {
         });
         state = "tribal";
         const tribecopy = [...tribe];
-        tribecopy.splice(winner, 1); // Remove the immune player temporarily
 
-        const out = voting(tribecopy, true);
+        const { voteIndex: out, voteDetails } = voting(tribecopy, false, winner);
   
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
-            tribes[0] = tribecopy.concat(immune);
+            tribes[0] = tribecopy;
+            updateResults({
+              type: "voting",
+              message: voteDetails,
+            });
             updateResults({
               type: "event",
               message: `${votedout.name} voted out at tribal council.`,

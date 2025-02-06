@@ -147,11 +147,20 @@ export default function Home() {
                           ) : null}
                 
                           <div
-                            className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center font-semibold ${
+                            className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center ${event.type === "voting" ? "text-sm" : "text-base font-semibold"} ${
                               event.image ? "" : "py-4 px-8"
                             }`}
                           >
-                            {event.message}
+                            {
+                              event.type === "voting" ?
+                                (event.message.map((element, index) => (
+                                  <div key={index}>
+                                    {element}
+                                    <div className="h-2"/>
+                                  </div>
+                                )))
+                              : (event.message)
+                            }
                           </div>
                         </div>
                       );

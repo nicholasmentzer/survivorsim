@@ -5,44 +5,91 @@
  */
 const getRandomInt = (max) => Math.floor(Math.random() * max);
 
+export const getVoteResults = (tribe, merged) => {
+  let votes = [];
+  let voteCounts = {};
+
+  tribe.forEach((player) => {
+    const targetIndex = voting(tribe, merged);
+    const targetPlayer = tribe[targetIndex];
+
+    votes.push({ voter: player.name, target: targetPlayer.name });
+
+    voteCounts[targetIndex] = (voteCounts[targetIndex] || 0) + 1;
+  });
+
+  return votes;
+};
+
+export const determineVotedOut = (votes, tribes) => {
+  let voteCounts = {};
+
+  votes.forEach(({ target }) => {
+    voteCounts[target] = (voteCounts[target] || 0) + 1;
+  });
+
+  let maxVotes = 0;
+  let votedOut = null;
+
+  Object.entries(voteCounts).forEach(([name, count]) => {
+    if (count > maxVotes) {
+      maxVotes = count;
+      votedOut = name;
+    }
+  });
+
+  return tribes[0].findIndex(player => player.name === votedOut) ?? tribes[1].findIndex(player => player.name === votedOut);
+};
+
 /**
  * Voting logic for a tribe during the simulation.
  * @param {Array} tribe - Array of players in the tribe.
  * @param {boolean} merged - Whether the tribe is in a merged state.
  * @returns {number} The index of the voted-out player.
  */
-export const voting = (tribe, merged) => {
+export const voting = (tribe, merged, winner) => {
+  const votes = {};
+  const voteDetails = [];
+
+  tribe.forEach((player, voterIndex) => {
+    if (!player) return;
+
     const choices = [];
-    if (!merged) {
-      tribe.forEach((player, i) => {
-        if (!player) return; // Skip undefined players
-        for (let n = 0; n < 10 - player.premerge; n++) choices.push(i);
-        for (let n = 0; n < 10 - player.likeability; n++) choices.push(i);
-        for (let n = 0; n < player.threat; n++) choices.push(i);
-        for (let n = 0; n < 10 - player.strategicness; n++) choices.push(i);
-      });
-    } else {
-      tribe.forEach((player, i) => {
-        if (!player) return; // Skip undefined players
-        const premergeExp = Math.pow(player.postmerge, 2);
-        for (let n = 0; n < premergeExp; n++) choices.push(i);
-  
-        const threatExp = Math.pow(player.threat, 2);
-        for (let n = 0; n < threatExp; n++) choices.push(i);
-  
-        if (tribe.length > 6) {
-          for (let n = 0; n < 10 - player.likeability; n++) choices.push(i);
-        } else {
-          for (let n = 0; n < player.likeability; n++) choices.push(i);
-        }
-  
-        for (let n = 0; n < 10 - player.strategicness; n++) choices.push(i);
-      });
-    }
-    // Select a random player index from the choices
+    tribe.forEach((other, i) => {
+      if (i === voterIndex || i === winner) return;
+
+      let weight = 0;
+
+      if (!merged) {
+        weight += 10 - other.premerge;
+        weight += 10 - other.likeability;
+        weight += other.threat;
+        weight += 10 - other.strategicness;
+      } else {
+        weight += Math.pow(other.postmerge, 2);
+        weight += Math.pow(other.threat, 2);
+        weight += tribe.length > 6 ? 10 - other.likeability : other.likeability;
+        weight += 10 - other.strategicness;
+      }
+
+      const relationshipScore = player.relationships?.[other.name] || 0;
+      weight -= relationshipScore;
+
+      for (let n = 0; n < weight; n++) {
+        choices.push(i);
+      }
+    });
+
     const voteIndex = choices[getRandomInt(choices.length)];
-    return voteIndex; // Return the actual player object
-  };
+    votes[voteIndex] = (votes[voteIndex] || 0) + 1;
+    voteDetails.push(`${player.name} voted for ${tribe[voteIndex].name}`);
+  });
+
+  const [loser] = Object.entries(votes).reduce((acc, curr) =>
+    curr[1] > acc[1] ? curr : acc
+  );
+  return { voteIndex: parseInt(loser), voteDetails };
+};
 
 /**
  * Determines the winner of the final vote.
