@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData }) => {
+const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData, hideSliders }) => {
   const [playerData, setPlayerData] = useState(players[gender]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -107,11 +107,16 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
                 className="w-full text-lg font-semibold text-center bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400 text-white"
               />
 
-              {renderSlider(player, index, "premerge", 0)}
-              {renderSlider(player, index, "postmerge", 1)}
-              {renderSlider(player, index, "likeability", 2)}
-              {renderSlider(player, index, "threat", 3)}
-              {renderSlider(player, index, "strategicness", 4)}
+              {!hideSliders && (
+                <>
+                  {renderSlider(player, index, "premerge", 0)}
+                  {renderSlider(player, index, "postmerge", 1)}
+                  {renderSlider(player, index, "likeability", 2)}
+                  {renderSlider(player, index, "threat", 3)}
+                  {renderSlider(player, index, "strategicness", 4)}
+                </>
+              )}
+
             </div>
         ))}
       </div>

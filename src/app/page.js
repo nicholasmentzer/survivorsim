@@ -22,6 +22,7 @@ export default function Home() {
   const [eventDescription, setEventDescription] = useState("");
   const [eventType, setEventType] = useState("positive");
   const [eventSeverity, setEventSeverity] = useState(1);
+  const [hideSliders, setHideSliders] = useState(true);
 
   const addCustomEvent = (e) => {
     e.preventDefault();
@@ -104,7 +105,22 @@ export default function Home() {
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-8 p-6 rounded-lg">
           <h1 className="text-2xl font-bold text-white text-center">Survivor Chains - A Survivor Simulator</h1>
+
+          {/* Hide Sliders Toggle Checkbox */}
+          <div className="absolute top-4 left-4 flex items-center">
+            <input
+              type="checkbox"
+              id="hideSliders"
+              checked={hideSliders}
+              onChange={() => setHideSliders((prev) => !prev)}
+              className="mr-2 w-4 h-4"
+            />
+            <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
+          </div>
+
           <div id="interface" className="text-center mt-8">
+
+            {/*TOP BUTTON SETS*/}
             {mode === "configure" ? (
               <button
                 className="bg-blue-500 text-white px-6 py-3 rounded-lg font-bold"
@@ -136,6 +152,8 @@ export default function Home() {
                     Next
                   </button>
                 </div>
+
+
                 <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
                 <div className="mt-8 space-y-8">
                   {episodes[currentEpisode]?.map((event, index) => {
@@ -186,10 +204,10 @@ export default function Home() {
                                 )))
                               : event.type === "event" && event.numPlayers === 2 ?
                                 (event.message.map((element, index) => (
-                                  <>
+                                  <div key={index}>
                                     <div dangerouslySetInnerHTML={{ __html: element }} />
                                     <div className="h-2"/>
-                                  </>
+                                  </div>
                                 )))
                               : (event.message)
                             }
@@ -213,6 +231,7 @@ export default function Home() {
                 careers={careersData}
                 regions={regionsData}
                 tribes={tribesData}
+                hideSliders={hideSliders}
               />
               <div className="h-5" />
               <PlayerConfig
@@ -222,21 +241,9 @@ export default function Home() {
                 careers={careersData}
                 regions={regionsData}
                 tribes={tribesData}
+                hideSliders={hideSliders}
               />
               <div className="h-5" />
-              {/*<h2 className="text-xl font-bold mt-8">Configure your season.</h2>
-              <p>
-                Total cast:
-                <select className="ml-2 border border-gray-300 rounded-md">
-                  <option value="20">20</option>
-                </select>
-              </p>
-              <p>
-                Starting # of tribes:
-                <select className="ml-2 border border-gray-300 rounded-md">
-                  <option value="2">2</option>
-                </select>
-              </p>*/}
 
               <h2 className="text-xl font-bold mt-8">Add Custom Events</h2>
               <form onSubmit={addCustomEvent} className="bg-gray-800 p-4 rounded-lg">
@@ -305,6 +312,43 @@ export default function Home() {
               <div className="h-10" />
             </div>
           )}
+
+          {/*BOTTOM BUTTON SETS*/}
+          <div id="interface" className="text-center mt-8 mb-20">
+            {mode === "configure" ? (
+              <button
+                className="bg-blue-500 text-white px-6 py-3 rounded-lg font-bold"
+                onClick={startSimulation}
+              >
+                SIMULATE
+              </button>
+            ) : (
+              <div className="text-center p-4 text-white">
+                <div className="flex justify-center items-center space-x-4">
+                  <button
+                    onClick={prevEpisode}
+                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-gray-600" : "bg-blue-500"}`}
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
+                    onClick={() => setMode("configure")}
+                  >
+                    BACK TO CONFIGURE
+                  </button>
+
+                  <button
+                    onClick={nextEpisode}
+                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-gray-600" : "bg-green-500"}`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
       </div>
     </>
   );
