@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import PlayerConfig from "./components/PlayerConfig";
-import { populateTribes, simulate } from "./utils/simulation";
+import { populateTribes, simulate, resetSimulation } from "./utils/simulation";
 import playersData from "./data/players.json";
 import careersData from "./data/careers.json";
 import regionsData from "./data/regions.json";
@@ -22,7 +22,10 @@ export default function Home() {
   const [eventDescription, setEventDescription] = useState("");
   const [eventType, setEventType] = useState("positive");
   const [eventSeverity, setEventSeverity] = useState(1);
-  const [hideSliders, setHideSliders] = useState(true);
+  const [hideSliders, setHideSliders] = useState(false);
+  const [showCurrentAlliances, setShowCurrentAlliances] = useState(false);
+  const [showDetailedVotes, setShowDetailedVotes] = useState(false);
+  const [tribeNames, setTribeNames] = useState({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
 
   const addCustomEvent = (e) => {
     e.preventDefault();
@@ -58,24 +61,34 @@ export default function Home() {
 
   const startSimulation = () => {
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, tribeNames);
     setMode("simulate");
     setCurrentEpisode(0);
   };
 
   const nextEpisode = () => {
+    setShowCurrentAlliances(false);
+    setShowDetailedVotes(false);
     if (currentEpisode === episodes.length - 1) {
+      resetSimulation();
       setMode("configure");
     } else {
       setCurrentEpisode((prev) => Math.min(prev + 1, episodes.length - 1));
     }
+    window.scrollTo({ top: 0 });
+
   };
   const prevEpisode = () => {
+    setShowCurrentAlliances(false);
+    setShowDetailedVotes(false);
     if (currentEpisode === 0) {
+      resetSimulation();
       setMode("configure");
     } else {
       setCurrentEpisode((prev) => Math.max(prev - 1, 0));
     }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
   };
 
   const updatePlayers = (gender, updatedPlayers) => {
@@ -102,21 +115,28 @@ export default function Home() {
         className="fixed inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
         style={{ backgroundImage: "url('/background.jpg')" }}
       />
+      <div className="flex min-h-screen">
+      <aside className="w-[5%] bg-gray-900 text-white fixed left-0 top-0 h-full flex flex-col items-center p-4">
+      </aside>
+
+      <main className="w-[90%] mx-auto flex flex-col items-center">
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-8 p-6 rounded-lg">
           <h1 className="text-2xl font-bold text-white text-center">Survivor Chains - A Survivor Simulator</h1>
 
           {/* Hide Sliders Toggle Checkbox */}
-          <div className="absolute top-4 left-4 flex items-center">
-            <input
-              type="checkbox"
-              id="hideSliders"
-              checked={hideSliders}
-              onChange={() => setHideSliders((prev) => !prev)}
-              className="mr-2 w-4 h-4"
-            />
-            <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
-          </div>
+          {mode === "configure" ? (
+            <div className="absolute top-4 left-4 flex items-center">
+              <input
+                type="checkbox"
+                id="hideSliders"
+                checked={hideSliders}
+                onChange={() => setHideSliders((prev) => !prev)}
+                className="mr-2 w-4 h-4"
+              />
+              <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
+            </div>) : <></>
+          }
 
           <div id="interface" className="text-center mt-8">
 
@@ -140,7 +160,7 @@ export default function Home() {
 
                   <button
                     className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => setMode("configure")}
+                    onClick={() => {resetSimulation();setMode("configure");}}
                   >
                     BACK TO CONFIGURE
                   </button>
@@ -178,6 +198,71 @@ export default function Home() {
                           </div>
                         </div>
                       );
+                    } else if(event.type === "alliance"){
+                      return (
+                        <div key={index} className="mt-4 pb-6">
+                          <div className="flex items-center justify-center">
+                            <h3 className="text-xl font-bold text-blue-400">{event.title}</h3>
+
+                            {/* Dropdown Icon Toggle (Only for Current Alliances) */}
+                            {event.title === "Current Alliances" && (
+                              <button
+                                onClick={() => setShowCurrentAlliances((prev) => !prev)}
+                                className="p-2 rounded-lg hover:bg-gray-700 transition"
+                              >
+                                {showCurrentAlliances ? (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                  </svg>
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                  </svg>
+                                )}
+                              </button>
+                            )}
+                          </div>
+
+                          {event.title === "Current Alliances" ? 
+                            <div className={`${showCurrentAlliances ? "block" : "hidden"}`}>
+                              {event.alliances.map((alliance, i) => (
+                                <div key={i} className="mt-3 p-4 bg-gray-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
+                                  <h4 className="text-lg font-bold text-white">{alliance.name}</h4>
+                                  <div className="text-white">{`Strength: ${Math.round(alliance.strength * 10 - 10)}`}</div>
+                                  <div className="flex flex-wrap justify-center gap-3 mt-2">
+                                    {alliance.members.map((member) => (
+                                      <div key={member.name} className="text-center">
+                                        <img 
+                                          src={member.image} 
+                                          className="w-20 h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                        />
+                                        <p className="text-white text-sm mt-1">{member.name}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            : event.alliances.map((alliance, i) => (
+                              <div key={i} className="mt-3 p-4 bg-gray-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
+                                <h4 className="text-lg font-bold text-white">{alliance.name}</h4>
+                                <div className="text-white">{`Strength: ${Math.round(alliance.strength * 10 - 10)}`}</div>
+                                <div className="flex flex-wrap justify-center gap-3 mt-2">
+                                  {alliance.members.map((member) => (
+                                    <div key={member.name} className="text-center">
+                                      <img 
+                                        src={member.image} 
+                                        className="w-20 h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                      />
+                                      <p className="text-white text-sm mt-1">{member.name}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          }
+                        </div>
+                      );
                     } else {
                       return (
                         <div key={index} className="flex flex-col items-center space-y-2">
@@ -188,30 +273,40 @@ export default function Home() {
                               ))}
                             </div>
                           ) : null}
-                
-                          <div
-                            className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center ${event.type === "voting" ? "text-sm" : "text-base font-semibold"} ${
-                              event.images ? "" : "py-4 px-8"
-                            }`}
-                          >
-                            {
-                              event.type === "voting" ?
-                                (event.message.map((element, index) => (
-                                  <div key={index}>
-                                    {element}
-                                    <div className="h-2"/>
-                                  </div>
-                                )))
-                              : event.type === "event" && event.numPlayers === 2 ?
-                                (event.message.map((element, index) => (
-                                  <div key={index}>
-                                    <div dangerouslySetInnerHTML={{ __html: element }} />
-                                    <div className="h-2"/>
-                                  </div>
-                                )))
-                              : (event.message)
-                            }
-                          </div>
+
+                          {event.type === "voting-summary" ?
+                            <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                              {event.message.map((vote, i) => (
+                                <div key={i} className="text-sm font-semibold py-2" dangerouslySetInnerHTML={{ __html: vote }}></div>
+                              ))}
+                            </div>
+                          : event.type === "voting" ?
+                            <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                              {event.message.map((vote, i) => (
+                                <div key={i} className="text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
+                              ))}
+                            </div>
+                          : event.type === "event" && event.numPlayers === 2 ?
+                            <div
+                              className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                event.images ? "" : "py-4 px-8"
+                              }`}
+                            > 
+                              {(event.message.map((element, index) => (
+                                <div key={index}>
+                                  <div dangerouslySetInnerHTML={{ __html: element }} />
+                                  <div className="h-2"/>
+                                </div>
+                              )))}
+                            </div>
+                            : <div
+                                className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                  event.images ? "" : "py-4 px-8"
+                                }`}
+                              > <div dangerouslySetInnerHTML={{ __html: event.message }} />
+                              </div>
+                          }
+
                         </div>
                       );
                     }
@@ -224,25 +319,57 @@ export default function Home() {
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
-              <PlayerConfig
-                gender="men"
-                players={playerConfig}
-                updatePlayers={updatePlayers}
-                careers={careersData}
-                regions={regionsData}
-                tribes={tribesData}
-                hideSliders={hideSliders}
-              />
-              <div className="h-5" />
-              <PlayerConfig
-                gender="women"
-                players={playerConfig}
-                updatePlayers={updatePlayers}
-                careers={careersData}
-                regions={regionsData}
-                tribes={tribesData}
-                hideSliders={hideSliders}
-              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+
+                <div className="flex flex-col items-center justify-center">
+                  <input
+                    type="text"
+                    value={tribeNames.tribe1}
+                    onChange={(e) => setTribeNames({ ...tribeNames, tribe1: e.target.value })}
+                    className="w-auto bg-transparent text-xl font-bold text-blue-400 text-center border-b-2 border-blue-400 focus:outline-none"
+                  />
+                  <div className="h-5" />
+                  <PlayerConfig
+                    gender="men"
+                    players={playerConfig}
+                    updatePlayers={updatePlayers}
+                    careers={careersData}
+                    regions={regionsData}
+                    tribes={tribesData}
+                    hideSliders={hideSliders}
+                  />
+                </div>
+
+                <div className="flex flex-col items-center justify-start">
+                  <input
+                    type="text"
+                    placeholder={"Merge Tribe Name"}
+                    onChange={(e) => setTribeNames({ ...tribeNames, merge: e.target.value })}
+                    className="w-auto bg-transparent text-xl font-bold text-purple-400 text-center border-b-2 border-purple-400 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-col items-center justify-center">
+                  <input
+                    type="text"
+                    value={tribeNames.tribe2}
+                    onChange={(e) => setTribeNames({ ...tribeNames, tribe2: e.target.value })}
+                    className="w-auto bg-transparent text-xl font-bold text-red-400 text-center border-b-2 border-red-400 focus:outline-none"
+                  />
+                  <div className="h-5" />
+                  <PlayerConfig
+                    gender="women"
+                    players={playerConfig}
+                    updatePlayers={updatePlayers}
+                    careers={careersData}
+                    regions={regionsData}
+                    tribes={tribesData}
+                    hideSliders={hideSliders}
+                  />
+                </div>
+
+              </div>
               <div className="h-5" />
 
               <h2 className="text-xl font-bold mt-8">Add Custom Events</h2>
@@ -349,6 +476,10 @@ export default function Home() {
               </div>
             )}
           </div>
+      </div>
+      </main>
+      <aside className="w-[5%] bg-gray-900 text-white fixed right-0 top-0 h-full flex flex-col items-center p-4">
+      </aside>
       </div>
     </>
   );

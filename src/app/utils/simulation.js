@@ -6,11 +6,29 @@ let winner = -1;
 let loser = -1;
 let state = "configure";
 let week = 1;
+let alliances = [];
+let tribeNames = { tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" };
+
+export const resetSimulation = () => {
+  tribes = [];
+  merged = false;
+  winner = -1;
+  loser = -1;
+  state = "configure";
+  week = 1;
+  alliances = [];
+  tribeNames = ["Tribe 1", "Tribe 2", "Merge Tribe"];
+};
+export const removeFromAlliance = (loser) => {
+  alliances = alliances.map(alliance => ({
+    ...alliance,
+    members: alliance.members.filter(member => member !== loser),
+  })).filter(alliance => alliance.members.length > 1);
+}
 
 const populateTribes = (players, updateResults) => {
-  const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
-  const tribe1 = shuffledPlayers.slice(0, 10);
-  const tribe2 = shuffledPlayers.slice(10, 20);
+  const tribe1 = players.slice(0, 10);
+  const tribe2 = players.slice(10, 20);
 
   tribes = [tribe1, tribe2];
   merged = false;
@@ -26,22 +44,37 @@ const initializeRelationships = (players) => {
     player.relationships = {};
     players.forEach((other) => {
       if (player !== other) {
-        player.relationships[other.name] = Math.floor(Math.random() * 11) - 5;
+        player.relationships[other.name] = Math.floor(Math.random() * 5) - 2;
       }
     });
   });
 };
 
-/*const updateRelationships = (tribe) => {
-  tribe.forEach((player) => {
-    tribe.forEach((other) => {
-      if (player !== other) {
-        const change = Math.random() > 0.5 ? 1 : -1; // 50% chance to increase or decrease
-        player.relationships[other.name] = (player.relationships[other.name] || 0) + change;
+const detectDrasticRelationships = (tribe, updateResults) => {
+  let drasticEvents = [];
+  let seenPairs = new Set();
+
+  tribe.forEach(player1 => {
+    tribe.forEach(player2 => {
+      if (player1 !== player2 && player1.relationships[player2.name] <= -3) {
+        let pairKey = [player1.name, player2.name].sort().join("_");
+
+        if (!seenPairs.has(pairKey)) {
+          seenPairs.add(pairKey);
+
+          drasticEvents.push({
+            type: "event",
+            message: `<span class="text-red-400">${player1.name} and ${player2.name} really dislike each other (-${Math.abs(player1.relationships[player2.name])} relationship)!</span>`,
+            images: [player1.image, player2.image],
+          });
+        }
       }
     });
   });
-};*/
+
+  drasticEvents.forEach(event => updateResults(event));
+};
+
 
 const generateRelationshipEvent = (tribe, customEvents) => {
   if (tribe.length < 2) return null;
@@ -69,8 +102,8 @@ const generateRelationshipEvent = (tribe, customEvents) => {
 
   if (numPlayers === 2 && eventType !== "neutral") {
     const effect = eventType === "positive" ? severity : -severity;
-    player1.relationships[player2.name] += effect;
-    player2.relationships[player1.name] += effect;
+    player1.relationships[player2.name] = Math.max(-5, Math.min(5, player1.relationships[player2.name] + effect));
+    player2.relationships[player1.name] = Math.max(-5, Math.min(5, player2.relationships[player1.name] + effect));
   }
 
   if (numPlayers === 2 && eventType !== "neutral") {
@@ -108,25 +141,91 @@ const generateRelationshipEvent = (tribe, customEvents) => {
   };
 };
 
-  export const simulate = (players, updateResults, customEvents) => {
-    let episodes = [];
+const manageAlliances = (tribe) => {
+  let newAlliances = [];
+  let dissolvedAlliances = [];
+  let existingAlliances2 = [...alliances];
 
-    populateTribes(players, updateResults);
-  
-    while (state != "gameover") {
-      let episode = [];
-  
-      if (!merged) {
-        handlePreMergePhase((message) => episode.push(message), customEvents);
-      } else {
-        handlePostMergePhase((message) => episode.push(message), customEvents);
+  const allianceThreshold = Math.min(0.9999, 0.93 + (alliances.length / (tribe.length * 1.5) * 0.0999));
+
+  tribe.forEach(player => {
+
+    let potentialMembers = tribe.filter(
+      other => player !== other && player.relationships[other.name] >= 1
+    );
+
+    if (potentialMembers.length >= 1 && Math.random() > allianceThreshold) {
+      const members = [player, ...potentialMembers];
+
+      const isDuplicate = existingAlliances2.some(existingAlliance =>
+        existingAlliance.members.length === members.length &&
+        existingAlliance.members.every(member => members.includes(member))
+      );
+
+      if (!isDuplicate) {
+        let allianceName = members.map(m => m.name.slice(0, 2)).join("").toUpperCase();
+        newAlliances.push({
+          name: allianceName,
+          members: [player, ...potentialMembers],
+          strength: potentialMembers.reduce((sum, p) => sum + player.relationships[p.name], 0) / potentialMembers.length,
+        });
       }
-  
-      episodes.push(episode);
     }
+  });
+
+  alliances = alliances.concat(newAlliances);
+
+  let existingAlliances = [];
+  alliances.forEach(alliance => {
+    let totalRelationship = 0;
+    let numPairs = 0;
   
-    updateResults(episodes);
-  };
+    alliance.members.forEach(player => {
+      alliance.members.forEach(other => {
+        if (player !== other) {
+          totalRelationship += player.relationships[other.name];
+          numPairs++;
+        }
+      });
+    });
+  
+    const averageRelationship = totalRelationship / numPairs;
+    if (averageRelationship < 0) {
+      if (newAlliances.includes(alliance)){
+        existingAlliances.push(alliance);
+      } else {
+        dissolvedAlliances.push(alliance);
+      }
+    } else {
+      existingAlliances.push(alliance);
+    }
+  });
+
+  alliances = existingAlliances;
+
+  return { newAlliances, dissolvedAlliances, allAlliances: alliances };
+};
+
+export const simulate = (players, updateResults, customEvents, tribes) => {
+  let episodes = [];
+  tribeNames = tribes;
+
+  populateTribes(players, updateResults);
+
+  while (state != "gameover") {
+    let episode = [];
+
+    if (!merged) {
+      handlePreMergePhase((message) => episode.push(message), customEvents);
+    } else {
+      handlePostMergePhase((message) => episode.push(message), customEvents);
+    }
+
+    episodes.push(episode);
+  }
+
+  updateResults(episodes);
+};
 
 /**
  * Handles the pre-merge phase of the game.
@@ -138,21 +237,77 @@ const handlePreMergePhase = (updateResults, customEvents) => {
     handlePostMergePhase(updateResults, customEvents);
   } else {
       updateResults(
-        { type: "tribe", title: "Tribe 1", members: [...tribes[0]] }
-      );
-      updateResults(
-        { type: "tribe", title: "Tribe 2", members: [...tribes[1]] }
+        { type: "tribe", title: tribeNames.tribe1, members: [...tribes[0]] }
       );
 
       for(let i = 0; i < 5; i++){
         let willEventOccur = Math.random();
-        if(willEventOccur > 0.9){
+        if(willEventOccur > 0.7){
           const relationshipEvent1 = generateRelationshipEvent(tribes[0], customEvents);
           if (relationshipEvent1) updateResults(relationshipEvent1);
         }
-        else if(willEventOccur < 0.1){
+      }
+      const alliances1 = manageAlliances(tribes[0]);
+
+      if (alliances1.newAlliances != null) {
+        if (alliances1.newAlliances.length > 0) {
+          updateResults({
+            type: "alliance",
+            title: `New Alliances Formed (${tribeNames.tribe1})`,
+            alliances: alliances1.newAlliances,
+          });
+        }
+      }
+
+      if (alliances1.dissolvedAlliances != null) {
+        if (alliances1.dissolvedAlliances.length > 0) {
+          updateResults({
+            type: "alliance",
+            title: `Alliances Dissolved (${tribeNames.tribe1})`,
+            alliances: alliances1.dissolvedAlliances,
+          });
+        }
+      }
+
+      updateResults(
+        { type: "tribe", title: tribeNames.tribe2, members: [...tribes[1]] }
+      );
+      for(let i = 0; i < 5; i++){
+        let willEventOccur = Math.random();
+        if(willEventOccur < 0.3){
           const relationshipEvent2 = generateRelationshipEvent(tribes[1], customEvents);
           if (relationshipEvent2) updateResults(relationshipEvent2);
+        }
+      }
+      const alliances2 = manageAlliances(tribes[1]);
+
+      if (alliances2.newAlliances != null) {
+        if (alliances2.newAlliances.length > 0) {
+          updateResults({
+            type: "alliance",
+            title: `New Alliances Formed (${tribeNames.tribe2})`,
+            alliances: alliances2.newAlliances,
+          });
+        }
+      }
+
+      if (alliances2.dissolvedAlliances != null) {
+        if (alliances2.dissolvedAlliances.length > 0) {
+          updateResults({
+            type: "alliance",
+            title: `Alliances Dissolved (${tribeNames.tribe2})`,
+            alliances: alliances2.dissolvedAlliances,
+          });
+        }
+      }
+
+      if (alliances2.allAlliances != null) {
+        if (alliances2.allAlliances.length > 0) {
+          updateResults({
+            type: "alliance",
+            title: "Current Alliances",
+            alliances: alliances2.allAlliances,
+          });
         }
       }
 
@@ -160,19 +315,25 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
       updateResults({ type: "event", message: `Tribe ${winner + 1} wins immunity!` });
-      state = "tribal";
 
-      const { voteIndex: out, voteDetails } = voting(tribes[loser], false);
+      detectDrasticRelationships(tribes[loser], updateResults);
+
+      state = "tribal";
+      const { voteIndex: out, voteDetails, voteSummary } = voting(tribes[loser], alliances, false);
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
           updateResults({
-            type: "voting",
-            message: voteDetails,
+            type: "voting-summary",
+            message: voteSummary,
           });
           updateResults({
             type: "event",
             message: `${votedout.name} voted out at tribal council.`,
             images: [votedout.image]
+          });
+          updateResults({
+            type: "voting",
+            message: voteDetails,
           });
         state = "immunity";
       } else {
@@ -192,9 +353,9 @@ const handlePreMergePhase = (updateResults, customEvents) => {
 const handlePostMergePhase = (updateResults, customEvents) => {
     const tribe = tribes[0];
     updateResults(
-      { type: "tribe", title: "Current Tribe", members: [...tribes[0]] },
+      { type: "tribe", title: tribeNames.merge, members: [...tribes[0]] },
     );
-    if (tribes[1].length > 0) {
+    if (tribes[0].length === 3) {
       updateResults(
         { type: "tribe", title: "Jury", members: [...tribes[1]] }
       );
@@ -203,9 +364,40 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     if (tribe.length > 3) {
         for(let i = 0; i < 5; i++){
           let willEventOccur = Math.random();
-          if(willEventOccur > 0.7){
+          if(willEventOccur > 0.5){
             const relationshipEvent1 = generateRelationshipEvent(tribes[0], customEvents);
             if (relationshipEvent1) updateResults(relationshipEvent1);
+          }
+        }
+        const alliances1 = manageAlliances(tribes[0]);
+
+        if (alliances1.newAlliances != null) {
+          if (alliances1.newAlliances.length > 0) {
+            updateResults({
+              type: "alliance",
+              title: "New Alliances Formed",
+              alliances: alliances1.newAlliances,
+            });
+          }
+        }
+    
+        if (alliances1.dissolvedAlliances != null) {
+          if (alliances1.dissolvedAlliances.length > 0) {
+            updateResults({
+              type: "alliance",
+              title: "Alliances Dissolved",
+              alliances: alliances1.dissolvedAlliances,
+            });
+          }
+        }
+    
+        if (alliances1.allAlliances != null) {
+          if (alliances1.allAlliances.length > 0) {
+            updateResults({
+              type: "alliance",
+              title: "Current Alliances",
+              alliances: alliances1.allAlliances,
+            });
           }
         }
 
@@ -217,24 +409,30 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           message: `${immune.name} wins individual immunity!`,
           images: [immune.image]
         });
+
+        detectDrasticRelationships(tribes[0], updateResults);
+
         state = "tribal";
         const tribecopy = [...tribe];
-
-        const { voteIndex: out, voteDetails } = voting(tribecopy, false, winner);
+        const { voteIndex: out, voteDetails, voteSummary } = voting(tribecopy, alliances, true, winner);
   
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
             tribes[0] = tribecopy;
             updateResults({
-              type: "voting",
-              message: voteDetails,
+              type: "voting-summary",
+              message: voteSummary,
             });
             updateResults({
               type: "event",
               message: `${votedout.name} voted out at tribal council.`,
               images: [votedout.image]
             });
-          tribes[1].push(votedout); // Move the voted-out player to the jury
+            updateResults({
+              type: "voting",
+              message: voteDetails,
+            });
+          tribes[1].push(votedout);
           state = "immunity";
         } else {
           updateResults({

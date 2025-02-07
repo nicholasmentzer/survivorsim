@@ -86,7 +86,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
     <>
       <div
         id="players"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 gap-6"
       >
         {playerData.map((player, index) => (
           <div
