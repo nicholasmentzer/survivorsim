@@ -65,6 +65,7 @@ export default function Home() {
   const [currentEpisode, setCurrentEpisode] = useState(0);
 
   const startSimulation = () => {
+    window.scrollTo({ top: 0 });
     setEpisodes([]);
     simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, tribeNames, advantages);
     setMode("simulate");
@@ -165,7 +166,7 @@ export default function Home() {
 
                   <button
                     className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();setMode("configure");}}
+                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");}}
                   >
                     BACK TO CONFIGURE
                   </button>
@@ -237,7 +238,7 @@ export default function Home() {
                               {event.alliances.map((alliance, i) => (
                                 <div key={i} className="mt-3 p-4 bg-gray-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
                                   <h4 className="text-lg font-bold text-white">{alliance.name}</h4>
-                                  <div className="text-white">{`Strength: ${Math.round(alliance.strength * 10 - 10)}`}</div>
+                                  <div className="text-white">{`Strength: ${alliance.strength}`}</div>
                                   <div className="flex flex-wrap justify-center gap-3 mt-2">
                                     {alliance.members.map((member) => (
                                       <div key={member.name} className="text-center">
@@ -255,7 +256,7 @@ export default function Home() {
                             : event.alliances.map((alliance, i) => (
                               <div key={i} className="mt-3 p-4 bg-gray-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
                                 <h4 className="text-lg font-bold text-white">{alliance.name}</h4>
-                                <div className="text-white">{`Strength: ${Math.round(alliance.strength * 10 - 10)}`}</div>
+                                <div className="text-white">{`Strength: ${alliance.strength}`}</div>
                                 <div className="flex flex-wrap justify-center gap-3 mt-2">
                                   {alliance.members.map((member) => (
                                     <div key={member.name} className="text-center">

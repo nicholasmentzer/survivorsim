@@ -319,7 +319,7 @@ const manageAlliances = (tribe) => {
   let dissolvedAlliances = [];
   let existingAlliances2 = [...alliances];
 
-  const allianceThreshold = Math.min(0.9999, 0.93 + (alliances.length / (tribe.length * 1.5) * 0.0999));
+  const allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length * 2))));
 
   tribe.forEach(player => {
 
@@ -335,6 +335,12 @@ const manageAlliances = (tribe) => {
         existingAlliance.members.every(member => members.includes(member))
       );
 
+      let baseStrength = potentialMembers.reduce((sum, p) => sum + player.relationships[p.name], 0) / potentialMembers.length;
+
+      let scaledStrength = Math.round(((baseStrength + 5) / 10) * 9 + 1);
+
+      scaledStrength = Math.max(1, Math.min(10, scaledStrength));
+
       if (!isDuplicate) {
         const randomIndex = Math.floor(Math.random() * randomAllianceNames.length);
         let allianceName = randomAllianceNames[randomIndex];
@@ -342,7 +348,7 @@ const manageAlliances = (tribe) => {
         newAlliances.push({
           name: allianceName,
           members: [player, ...potentialMembers],
-          strength: potentialMembers.reduce((sum, p) => sum + player.relationships[p.name], 0) / potentialMembers.length,
+          strength: scaledStrength,
         });
       }
     }
@@ -364,8 +370,7 @@ const manageAlliances = (tribe) => {
       });
     });
   
-    const averageRelationship = totalRelationship / numPairs;
-    if (averageRelationship < 0) {
+    if (alliance.strength <= 4 && Math.random() < .5) {
       if (newAlliances.includes(alliance)){
         existingAlliances.push(alliance);
       } else {
