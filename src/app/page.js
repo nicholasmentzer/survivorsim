@@ -26,6 +26,11 @@ export default function Home() {
   const [showCurrentAlliances, setShowCurrentAlliances] = useState(false);
   const [showDetailedVotes, setShowDetailedVotes] = useState(false);
   const [tribeNames, setTribeNames] = useState({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
+  const [advantages, setAdvantages] = useState({
+    immunityIdol: false,
+  });
+  const [showAdvantages, setShowAdvantages] = useState(false);
+  
 
   const addCustomEvent = (e) => {
     e.preventDefault();
@@ -61,7 +66,7 @@ export default function Home() {
 
   const startSimulation = () => {
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, tribeNames);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, tribeNames, advantages);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -87,7 +92,7 @@ export default function Home() {
     } else {
       setCurrentEpisode((prev) => Math.max(prev - 1, 0));
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0 });
 
   };
 
@@ -179,28 +184,32 @@ export default function Home() {
                   {episodes[currentEpisode]?.map((event, index) => {
                     if (event.type === "tribe") {
                       return (
-                        <div key={index} className="mt-4 pb-6">
-                          <h3 className="text-xl font-bold text-white">{event.title}</h3>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
-                            {event.members?.map((player) => (
-                              <div
-                                key={player.name}
-                                className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white"
-                              >
-                                <img
-                                  src={player.image}
-                                  alt={player.name}
-                                  className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
-                                />
-                                {player.name}
-                              </div>
-                            ))}
+                        <div key={index}>
+                          <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
+                          <div className="mb-2 border-t-4 border-gray-400"></div>
+                          <div className="mt-4 pb-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
+                              {event.members?.map((player) => (
+                                <div
+                                  key={player.name}
+                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white"
+                                >
+                                  <img
+                                    src={player.image}
+                                    alt={player.name}
+                                    className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                  />
+                                  {player.name}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       );
                     } else if(event.type === "alliance"){
                       return (
                         <div key={index} className="mt-4 pb-6">
+                          {event.title === "Current Alliances" && (<div className="mb-6 border-t-4 border-gray-400"></div>)}
                           <div className="flex items-center justify-center">
                             <h3 className="text-xl font-bold text-blue-400">{event.title}</h3>
 
@@ -263,50 +272,142 @@ export default function Home() {
                           }
                         </div>
                       );
-                    } else {
+                    } else if (event.type === "idols") {
                       return (
-                        <div key={index} className="flex flex-col items-center space-y-2">
-                          {event.images ? (
-                            <div className="flex space-x-4">
-                              {event.images.map((image, i) => (
-                                <img key={i} src={image} alt="Event image" className="w-24 h-24 object-cover rounded-full mb-2" />
-                              ))}
-                            </div>
-                          ) : null}
+                        <div key={index} className="pb-6">
+                          <div className="flex items-center justify-center">
+                            <h3 className="text-xl font-bold text-blue-400">Current Advantages</h3>
 
-                          {event.type === "voting-summary" ?
-                            <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
-                              {event.message.map((vote, i) => (
-                                <div key={i} className="text-sm font-semibold py-2" dangerouslySetInnerHTML={{ __html: vote }}></div>
-                              ))}
+                            {/* Dropdown Icon Toggle (Idols) */}
+                            {event.type === "idols" && (
+                              <button
+                                onClick={() => setShowAdvantages((prev) => !prev)}
+                                className="p-2 rounded-lg hover:bg-gray-700 transition"
+                              >
+                                {showAdvantages ? (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="18 15 12 9 6 15"></polyline>
+                                  </svg>
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                  </svg>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          
+                          {showAdvantages && event.idols && (
+                            <div className="bg-gray-800 bg-opacity-40 rounded-lg shadow-lg p-4 mt-3">
+                              <div className="space-y-2">
+                                {Object.entries(event.idols).map(([tribe, player]) => (
+                                  player ? (
+                                    <div key={tribe} className="text-white p-2">
+                                      <span className="font-bold">{player.name}</span> has an idol!
+                                    </div>
+                                  ) : (
+                                    <div key={tribe} className="text-gray-400 p-2">
+                                    </div>
+                                  )
+                                ))}
+                              </div>
                             </div>
-                          : event.type === "voting" ?
-                            <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
-                              {event.message.map((vote, i) => (
-                                <div key={i} className="text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
-                              ))}
-                            </div>
-                          : event.type === "event" && event.numPlayers === 2 ?
+                          )}
+                            
+                        </div>
+                      );
+                    } else if (event.type === "immunity") {
+                      return (
+                        <div key={index}>
+                          <span className="text-xl font-bold uppercase tracking-wide">Immunity Challenge</span>
+                          <div className="mb-2 border-t-4 border-gray-400"></div>
+                          <div className="mt-4 pb-6">
                             <div
-                              className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
-                                event.images ? "" : "py-4 px-8"
-                              }`}
-                            > 
-                              {(event.message.map((element, index) => (
-                                <div key={index}>
-                                  <div dangerouslySetInnerHTML={{ __html: element }} />
-                                  <div className="h-2"/>
-                                </div>
-                              )))}
-                            </div>
-                            : <div
                                 className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
                                   event.images ? "" : "py-4 px-8"
                                 }`}
                               > <div dangerouslySetInnerHTML={{ __html: event.message }} />
                               </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
+                              {event.members?.map((player) => (
+                                <div
+                                  key={player.name}
+                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white"
+                                >
+                                  <img
+                                    src={player.image}
+                                    alt={player.name}
+                                    className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                  />
+                                  {player.name}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={index}>
+                          {event.type === "voting-summary" ? 
+                            <div className="mt-10">
+                              <span className="text-xl font-bold uppercase tracking-wide">Tribal Council</span>
+                              <div className="mb-6 border-t-4 border-gray-400"></div>
+                            </div>
+                            : <></>
                           }
+                          {event.type === "relationship" ? 
+                            <div className="mt-10">
+                              <span className="text-xl font-bold uppercase tracking-wide">Relationship Highlights/Targets</span>
+                              <div className="mb-6 border-t-4 border-gray-400"></div>
+                            </div>
+                            : <></>
+                          }
+                          { event.type !== "relationship" ?
+                          <div className="flex flex-col items-center space-y-2">
+                            {event.images ? (
+                              <div className="flex space-x-4">
+                                {event.images.map((image, i) => (
+                                  <img key={i} src={image} alt="Event image" className="w-24 h-24 object-cover rounded-full mb-2" />
+                                ))}
+                              </div>
+                            ) : null}
 
+                            {event.type === "voting-summary" ?
+                              <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                                {event.message.map((vote, i) => (
+                                  <div key={i} className="text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
+                                ))}
+                              </div>
+                            : event.type === "voting" ?
+                              <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                                {event.message.map((vote, i) => (
+                                  <div key={i} className="text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
+                                ))}
+                              </div>
+                            : event.type === "event" && event.numPlayers === 2 ?
+                              <div
+                                className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                  event.images ? "" : "py-4 px-8"
+                                }`}
+                              > 
+                                {(event.message.map((element, index) => (
+                                  <div key={index}>
+                                    <div dangerouslySetInnerHTML={{ __html: element }} />
+                                    <div className="h-2"/>
+                                  </div>
+                                )))}
+                              </div>
+                              : <div
+                                  className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                    event.images ? "" : "py-4 px-8"
+                                  }`}
+                                > <div dangerouslySetInnerHTML={{ __html: event.message }} />
+                                </div>
+                            }
+
+                          </div> : <></>
+                          }
                         </div>
                       );
                     }
@@ -320,8 +421,10 @@ export default function Home() {
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
 
+              {/*3 Columns*/}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
 
+                {/*Left Column*/}
                 <div className="flex flex-col items-center justify-center">
                   <input
                     type="text"
@@ -341,6 +444,7 @@ export default function Home() {
                   />
                 </div>
 
+                {/*Middle Column*/}
                 <div className="flex flex-col items-center justify-start">
                   <input
                     type="text"
@@ -348,8 +452,27 @@ export default function Home() {
                     onChange={(e) => setTribeNames({ ...tribeNames, merge: e.target.value })}
                     className="w-auto bg-transparent text-xl font-bold text-purple-400 text-center border-b-2 border-purple-400 focus:outline-none"
                   />
+
+                  <div className="h-4" />
+                  <h3 className="text-white font-bold mb-2">Select Advantages</h3>
+                  <div className="flex flex-col space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={advantages.immunityIdol}
+                        onChange={() => setAdvantages(prev => ({
+                          ...prev,
+                          immunityIdol: !prev.immunityIdol
+                        }))}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-white">Immunity Idol (one per tribe)</span>
+                    </label>
+                    {/* Future checkboxes can be added here */}
+                  </div>
                 </div>
 
+                {/*Left Column*/}
                 <div className="flex flex-col items-center justify-center">
                   <input
                     type="text"
@@ -372,6 +495,7 @@ export default function Home() {
               </div>
               <div className="h-5" />
 
+              {/*Below the 3 columns*/}
               <h2 className="text-xl font-bold mt-8">Add Custom Events</h2>
               <form onSubmit={addCustomEvent} className="bg-gray-800 p-4 rounded-lg">
                 <label className="text-gray-300 text-sm">Description</label>

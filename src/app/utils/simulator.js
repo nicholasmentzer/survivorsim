@@ -50,6 +50,10 @@ const getOrdinalSuffix = (num) => {
   return "th";
 };
 
+const generateFormattedVotes = (votes) => {
+  return votes.map(([name, count]) => `${count}`).join("-");
+}
+
 const generateVotingSummary = (votes) => {
   let voteCounts = {};
   let voteOrder = [];
@@ -80,13 +84,57 @@ const generateVotingSummary = (votes) => {
   });
 };
 
+const generateVotingSummaryWithIdol = (votes, immunePlayer) => {
+  let voteCounts = {};
+  let voteOrder = [];
+  let immuneVotes = [];
+  let validVotes = [];
+
+  votes.forEach(({ target }) => {
+    if (target === immunePlayer) {
+      immuneVotes.push(target);
+    } else {
+      voteCounts[target] = (voteCounts[target] || 0) + 1;
+      validVotes.push(target);
+    }
+  });
+
+  let sortedCandidates = Object.entries(voteCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name]) => name);
+
+  immuneVotes.forEach(target => {
+    voteOrder.push({ target, immune: true });
+  });
+
+  while (validVotes.length > 0) {
+    for (let i = 0; i < sortedCandidates.length; i++) {
+      let candidate = sortedCandidates[i];
+      let voteIndex = validVotes.findIndex(vote => vote === candidate);
+      
+      if (voteIndex !== -1) {
+        voteOrder.push({ target: validVotes.splice(voteIndex, 1)[0], immune: false });
+      }
+
+      if (validVotes.length === 0) break;
+    }
+  }
+
+  return voteOrder.map((vote, index) => {
+    return vote.immune
+      ? `${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target} <span class="text-red-500">DOES NOT COUNT</span>`
+      : `${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target}`;
+  });
+};
+
+
 /**
  * Voting logic for a tribe during the simulation.
  * @param {Array} tribe - Array of players in the tribe.
  * @param {boolean} merged - Whether the tribe is in a merged state.
  * @returns {number} The index of the voted-out player.
  */
-export const voting = (tribe, alliances2, merged, immuneIndex) => {
+export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages, idols) => {
   const votes = {};
   const exportVotes = [];
   const voteDetails = [];
@@ -152,15 +200,15 @@ export const voting = (tribe, alliances2, merged, immuneIndex) => {
           }
         });
       });
-      if (target) {
-        let targetIndex = tribe.indexOf(target);
-        votes[targetIndex] = (votes[targetIndex] || 0) + 1;
-        voteDetails.push(`${voter.name} voted for ${target.name}${
-          bestAlliance ? ` with alliance ${bestAlliance.name}` : ""
-        }`);
-        exportVotes.push({target: target.name});
-        //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${target.name}`);
-      }
+    }
+    if (target && target !== voter) {
+      let targetIndex = tribe.indexOf(target);
+      votes[targetIndex] = (votes[targetIndex] || 0) + 1;
+      voteDetails.push(`${voter.name} voted for ${target.name}${
+        bestAlliance ? ` with ${bestAlliance.name}` : ""
+      }`);
+      exportVotes.push({target: target.name, voter: voter.name});
+      //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${target.name}`);
     } else {
       let perceivedVotes = {};
       Object.keys(votes).forEach(vote => {
@@ -172,7 +220,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex) => {
       let targetIndex;
       
       if (sortedVotes.length > 0) {
-        if (Math.random() < 0.5 && tribe[targetIndex] !== voter) {
+        if (Math.random() < 0.5 && tribe[parseInt(sortedVotes[0][0])] !== voter) {
           targetIndex = parseInt(sortedVotes[0][0]);
         } else {
           const potentialFlips = tribe.filter(p => !alliances2.some(a => a.members.includes(p)) && p !== immuneIndex);
@@ -216,16 +264,95 @@ export const voting = (tribe, alliances2, merged, immuneIndex) => {
 
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
       voteDetails.push(`${voter.name} voted for ${tribe[targetIndex].name}`);
-      exportVotes.push({target: tribe[targetIndex].name});
+      exportVotes.push({target: tribe[targetIndex].name, voter: voter.name});
       //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${tribe[targetIndex].name}`);
     }
   });
 
   let sortedVotes = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+
+  let idolUsed = false;
+  let immunePlayer = null;
+  let immuneIdolIndex = null;
+
   let highestVoteCount = sortedVotes[0][1];
   let tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
 
-  voteSummary.push(...generateVotingSummary(exportVotes));
+  {/*Idol Check*/}
+  if (usableAdvantages.includes("immunityIdol") && idols != null) {
+
+    let potentialIdolPlayers = tribe.filter(player => 
+      Object.values(idols)
+        .filter(idol => idol !== null)
+        .some(idol => idol.name === player.name)
+    );
+
+    let primaryTargetIndex = parseInt(sortedVotes[0][0]);
+    let primaryTarget = tribe[primaryTargetIndex];
+
+    if (potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7) {
+      immunePlayer = primaryTarget.name;
+      immuneIdolIndex = tribe.indexOf(primaryTarget);
+      idolUsed = true;
+      voteSummary.push(`<span class="font-bold text-lg">${primaryTarget.name} plays the Hidden Immunity Idol!</span>`);
+    }
+
+    if (!idolUsed) {
+      let idolHolderAlly = potentialIdolPlayers.find(player =>
+        player.name !== primaryTarget.name &&
+        primaryTarget.relationships[player.name] > 1 && // Positive relationship
+        Math.random() < (0.2 + (primaryTarget.relationships[player.name] * 0.1)) // Higher chance if strong bond
+      );
+  
+      if (idolHolderAlly) {
+        immunePlayer = primaryTarget.name;
+        immuneIdolIndex = tribe.indexOf(primaryTarget);
+        idolUsed = true;
+        voteSummary.push(`<span class="font-bold text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
+      }
+    }
+
+    highestVoteCount = sortedVotes[0][1];
+    tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
+
+    voteSummary.push(...generateVotingSummaryWithIdol([...exportVotes], immunePlayer));
+    
+    let newSortedVotes;
+
+    if (idolUsed) {
+      Object.keys(idols).forEach(key => {
+        if (idols[key] === immunePlayer) {
+          idols[key] = null;
+        }
+      });
+      let validVotes = exportVotes.filter(vote => vote.target !== immunePlayer);
+      let newVotesCount = {};
+
+      validVotes.forEach(vote => {
+        let targetIndex = tribe.findIndex(p => p.name === vote.target);
+        if (targetIndex !== -1) {
+            newVotesCount[targetIndex] = (newVotesCount[targetIndex] || 0) + 1;
+        }
+      });
+
+      newSortedVotes = Object.entries(newVotesCount).map(([key, value]) => [parseInt(key), value])
+            .sort((a, b) => b[1] - a[1]); 
+      highestVoteCount = newSortedVotes[0][1];
+
+      if (newSortedVotes.length > 1 && newSortedVotes[0][1] === newSortedVotes[1][1]) {
+        tiedPlayers = newSortedVotes.filter(([_, count]) => count === highestVoteCount);
+      } else if (newSortedVotes.length > 0) {
+        const [loserIndex] = newSortedVotes[0];
+        removeFromAlliance(tribe[loserIndex]);
+        return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary };
+      } else {
+        voteSummary.push(`<span class="font-bold text-lg">All votes were nullified. Revote required!</span>`);
+        return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary };
+      }
+    }
+  } else {
+    voteSummary.push(...generateVotingSummary([...exportVotes]));
+  }
 
   if (tiedPlayers.length > 1) {
     voteDetails.push( `<span class="font-bold text-lg">Revote</span>`);
@@ -239,26 +366,28 @@ export const voting = (tribe, alliances2, merged, immuneIndex) => {
     tribe.forEach((voter, index) => {
       const originalVote = exportVotes.find(v => v.voter === voter.name)?.target;
       if (!tiedIndexes.includes(tribe.indexOf(voter))) {
-        let revoteTarget;
-          if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote))) {
-            revoteTarget = tribe.findIndex(p => p.name === originalVote);
+        let revoteTargetIndex;
+        console.log(tiedIndexes);
+        console.log(exportVotes);
+        if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote))) {
+          revoteTargetIndex = tribe.findIndex(p => p.name === originalVote);
         } else {
-            revoteTarget = tiedIndexes[Math.floor(Math.random() * tiedIndexes.length)];
+          revoteTargetIndex = tiedIndexes[Math.floor(Math.random() * tiedIndexes.length)];
         }
 
-        revoteVotes[revoteTarget] = (revoteVotes[revoteTarget] || 0) + 1;
-        revoteDetails.push(`${voter.name} revoted for ${tribe[revoteTarget].name}`);
-        revoteExportVotes.push({target: tribe[revoteTarget].name});
+        revoteVotes[revoteTargetIndex] = (revoteVotes[revoteTargetIndex] || 0) + 1;
+        revoteDetails.push(`${voter.name} revoted for ${tribe[revoteTargetIndex].name}`);
+        revoteExportVotes.push({ target: tribe[revoteTargetIndex].name, voter: voter.name });
       }
     });
     voteDetails.push(...revoteDetails);
     voteSummary.push(...revoteSummary);
-    voteSummary.push(...generateVotingSummary(revoteExportVotes));
+    voteSummary.push(...generateVotingSummary([...revoteExportVotes]));
 
     let revoteSorted = Object.entries(revoteVotes).sort((a, b) => b[1] - a[1]);
 
     if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
-      let safePlayers = tribe.filter((p, i) => !tiedIndexes.includes(i) && i !== immuneIndex);
+      let safePlayers = tribe.filter((p, i) => !tiedIndexes.includes(p.name) && i !== immuneIndex && i !== immuneIdolIndex);
       if (safePlayers.length > 0) {
         let eliminatedByRock = safePlayers[Math.floor(Math.random() * safePlayers.length)];
         let eliminatedIndex = tribe.indexOf(eliminatedByRock);
@@ -269,23 +398,25 @@ export const voting = (tribe, alliances2, merged, immuneIndex) => {
 
         voteDetails.push(`${eliminatedByRock.name} eliminated by rocks.`);
         voteSummary.push(`${eliminatedByRock.name} eliminated by rocks.`);
-        return { voteIndex: eliminatedIndex, voteDetails, voteSummary };
+        removeFromAlliance(tribe[eliminatedIndex]);
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
       }
     }
 
     if (revoteSorted.length === 0) {
       voteDetails.push(`<span class="font-bold text-lg">Error: No valid revote occurred.</span>`);
       voteSummary.push(`<span class="font-bold text-lg">Error: No valid revote occurred.</span>`);
-      return { voteIndex: null, voteDetails, voteSummary };
+      return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary };
     }
 
     let revoteLoser = parseInt(revoteSorted[0][0]);
-    return { voteIndex: revoteLoser, voteDetails, voteSummary };
+    removeFromAlliance(tribe[revoteLoser]);
+    return { voteIndex: revoteLoser, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
   }
 
   const [loser] = sortedVotes[0];
   removeFromAlliance(tribe[loser]);
-  return { voteIndex: parseInt(loser), voteDetails, voteSummary };
+  return { voteIndex: parseInt(loser), sortedVotes: generateFormattedVotes(sortedVotes), voteDetails, voteSummary };
 };
 
 /**

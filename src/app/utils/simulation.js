@@ -8,6 +8,61 @@ let state = "configure";
 let week = 1;
 let alliances = [];
 let tribeNames = { tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" };
+let tribeIdols = {tribe1: null, tribe2: null, merge: null};
+let usableAdvantages = [];
+let randomAllianceNames = [
+  "The Titans",
+  "The Thunderbolts",
+  "The Ironclads",
+  "The Unbreakables",
+  "The Dominators",
+  "The Avalanche",
+  "The Colossals",
+  "The Echoes",
+  "The Shadows",
+  "The Mirage",
+  "The Visionaries",
+  "The Astrals",
+  "The Omens",
+  "The Luminaries",
+  "The Dreamers",
+  "The Illusions",
+  "The Gladiators",
+  "The Marauders",
+  "The Outlaws",
+  "The Spartans",
+  "The Conquerors",
+  "The Predators",
+  "The Warlords",
+  "The Sentinels",
+  "The Phantoms",
+  "The Nomads",
+  "The Guardians",
+  "The Shamans",
+  "The Sphinxes",
+  "The Valkyries",
+  "The Wraiths",
+  "The Banshees",
+  "The Nomads",
+  "The Mystics",
+  "The Revenants",
+  "The Warlocks",
+  "The Arbiters",
+  "The Seers",
+  "The Elders",
+  "The Cryptids",
+  "The Ronin",
+  "The Vanguard",
+  "The Warhounds",
+  "The Legionnaires",
+  "The Bloodhounds",
+  "The Dreadnoughts",
+  "The Strikers",
+  "The Juggernauts",
+  "The Outriders",
+  "The Harbingers",
+];
+
 
 export const resetSimulation = () => {
   tribes = [];
@@ -17,8 +72,63 @@ export const resetSimulation = () => {
   state = "configure";
   week = 1;
   alliances = [];
-  tribeNames = ["Tribe 1", "Tribe 2", "Merge Tribe"];
+  tribeNames = { tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" };
+  tribeIdols = {tribe1: null, tribe2: null, merge: null};
+  usableAdvantages = [];
+  randomAllianceNames = [
+    "The Titans",
+    "The Thunderbolts",
+    "The Ironclads",
+    "The Unbreakables",
+    "The Dominators",
+    "The Avalanche",
+    "The Colossals",
+    "The Echoes",
+    "The Shadows",
+    "The Mirage",
+    "The Visionaries",
+    "The Astrals",
+    "The Omens",
+    "The Luminaries",
+    "The Dreamers",
+    "The Illusions",
+    "The Gladiators",
+    "The Marauders",
+    "The Outlaws",
+    "The Spartans",
+    "The Conquerors",
+    "The Predators",
+    "The Warlords",
+    "The Sentinels",
+    "The Phantoms",
+    "The Nomads",
+    "The Guardians",
+    "The Shamans",
+    "The Sphinxes",
+    "The Valkyries",
+    "The Wraiths",
+    "The Banshees",
+    "The Nomads",
+    "The Mystics",
+    "The Revenants",
+    "The Warlocks",
+    "The Arbiters",
+    "The Seers",
+    "The Elders",
+    "The Cryptids",
+    "The Ronin",
+    "The Vanguard",
+    "The Warhounds",
+    "The Legionnaires",
+    "The Bloodhounds",
+    "The Dreadnoughts",
+    "The Strikers",
+    "The Juggernauts",
+    "The Outriders",
+    "The Harbingers",
+  ];
 };
+
 export const removeFromAlliance = (loser) => {
   alliances = alliances.map(alliance => ({
     ...alliance,
@@ -27,6 +137,7 @@ export const removeFromAlliance = (loser) => {
 }
 
 const populateTribes = (players, updateResults) => {
+  const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
   const tribe1 = players.slice(0, 10);
   const tribe2 = players.slice(10, 20);
 
@@ -54,8 +165,20 @@ const detectDrasticRelationships = (tribe, updateResults) => {
   let drasticEvents = [];
   let seenPairs = new Set();
 
+  drasticEvents.push({
+    type: "relationship"
+  });
+
   tribe.forEach(player1 => {
     tribe.forEach(player2 => {
+      let types = [
+        `${player1.name} and ${player2.name} really dislike each other!`,
+        `${player1.name} thinks ${player2.name} is a big threat`,
+        `${player1.name} wants to target ${player2.name} sooner rather than later`,
+        `${player2.name} and ${player1.name} really dislike each other!`,
+        `${player2.name} thinks ${player1.name} is a big threat`,
+        `${player2.name} wants to target ${player1.name} sooner rather than later`,
+      ];
       if (player1 !== player2 && player1.relationships[player2.name] <= -3) {
         let pairKey = [player1.name, player2.name].sort().join("_");
 
@@ -64,7 +187,7 @@ const detectDrasticRelationships = (tribe, updateResults) => {
 
           drasticEvents.push({
             type: "event",
-            message: `<span class="text-red-400">${player1.name} and ${player2.name} really dislike each other (-${Math.abs(player1.relationships[player2.name])} relationship)!</span>`,
+            message: `<span class="text-red-400">${types[Math.floor(Math.random() * types.length)]}</span>`,
             images: [player1.image, player2.image],
           });
         }
@@ -72,9 +195,59 @@ const detectDrasticRelationships = (tribe, updateResults) => {
     });
   });
 
+  if(drasticEvents.length < 2){
+    tribe.forEach(player1 => {
+      tribe.forEach(player2 => {
+        let types = [
+          `${player1.name} and ${player2.name} really dislike each other!`,
+          `${player1.name} thinks ${player2.name} is a big threat`,
+          `${player1.name} wants to target ${player2.name} sooner rather than later`,
+        ];
+        if (player1 !== player2 && player1.relationships[player2.name] <= -1) {
+          let pairKey = [player1.name, player2.name].sort().join("_");
+  
+          if (!seenPairs.has(pairKey)) {
+            seenPairs.add(pairKey);
+  
+            drasticEvents.push({
+              type: "event",
+              message: `<span class="text-red-400">${types[Math.floor(Math.random() * types.length)]}</span>`,
+              images: [player1.image, player2.image],
+            });
+          }
+        }
+      });
+    });
+    drasticEvents = drasticEvents.slice(0,2);
+  }
+
   drasticEvents.forEach(event => updateResults(event));
 };
 
+const findIdol = (tribe, tribeName, merged) => {
+  if (!usableAdvantages.includes("immunityIdol")) return;
+  if (!merged) {
+    if (tribeIdols[tribeName]) return;
+  }
+  else {
+    if (tribeIdols["tribe1"] || tribeIdols["tribe2"] || tribeIdols["merge"]) return null;
+  }
+
+  if (Math.random() < 0.50) {
+    let eligiblePlayers = tribe.filter(player => !player.hasIdol);
+    if (eligiblePlayers.length > 0) {
+      let finder = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+      finder.hasIdol = true;
+      tribeIdols[tribeName] = finder;
+      return {
+        type: "event",
+        message: `${finder.name} found a Hidden Immunity Idol!`,
+        images: [finder.image]
+      };
+    }
+  }
+  return null;
+};
 
 const generateRelationshipEvent = (tribe, customEvents) => {
   if (tribe.length < 2) return null;
@@ -163,7 +336,9 @@ const manageAlliances = (tribe) => {
       );
 
       if (!isDuplicate) {
-        let allianceName = members.map(m => m.name.slice(0, 2)).join("").toUpperCase();
+        const randomIndex = Math.floor(Math.random() * randomAllianceNames.length);
+        let allianceName = randomAllianceNames[randomIndex];
+        randomAllianceNames.splice(randomIndex, 1);
         newAlliances.push({
           name: allianceName,
           members: [player, ...potentialMembers],
@@ -206,9 +381,14 @@ const manageAlliances = (tribe) => {
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
 
-export const simulate = (players, updateResults, customEvents, tribes) => {
+export const simulate = (players, updateResults, customEvents, tribes, advantages) => {
   let episodes = [];
   tribeNames = tribes;
+  Object.entries(advantages).forEach(([key, value]) => {
+    if (value) {
+      usableAdvantages.push(key);
+    }
+  });
 
   populateTribes(players, updateResults);
 
@@ -239,6 +419,9 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       updateResults(
         { type: "tribe", title: tribeNames.tribe1, members: [...tribes[0]] }
       );
+
+      const idolEvent1 = findIdol(tribes[0], "tribe1");
+      if (idolEvent1) updateResults(idolEvent1);
 
       for(let i = 0; i < 5; i++){
         let willEventOccur = Math.random();
@@ -272,6 +455,8 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       updateResults(
         { type: "tribe", title: tribeNames.tribe2, members: [...tribes[1]] }
       );
+      const idolEvent2 = findIdol(tribes[1], "tribe2");
+      if (idolEvent2) updateResults(idolEvent2);
       for(let i = 0; i < 5; i++){
         let willEventOccur = Math.random();
         if(willEventOccur < 0.3){
@@ -311,15 +496,20 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }
 
+      /*updateResults({
+        type: "idols",
+        idols: tribeIdols,
+      });*/
+
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
-      updateResults({ type: "event", message: `Tribe ${winner + 1} wins immunity!` });
+      updateResults({ type: "immunity", message: `${winner + 1 === 1 ? tribeNames.tribe1 : tribeNames.tribe2} wins immunity! So, ${winner + 1 === 2 ? tribeNames.tribe1 : tribeNames.tribe2} will be going to tribal council`, members: [...tribes[loser]] });
 
       detectDrasticRelationships(tribes[loser], updateResults);
 
       state = "tribal";
-      const { voteIndex: out, voteDetails, voteSummary } = voting(tribes[loser], alliances, false);
+      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary } = voting(tribes[loser], alliances, false, -1, usableAdvantages, tribeIdols);
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
           updateResults({
@@ -328,7 +518,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
           });
           updateResults({
             type: "event",
-            message: `${votedout.name} voted out at tribal council.`,
+            message: `${votedout.name} voted out by a vote of ${sortedVotes}`,
             images: [votedout.image]
           });
           updateResults({
@@ -362,6 +552,8 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     }
 
     if (tribe.length > 3) {
+      const idolEvent1 = findIdol(tribes[0], "merge");
+      if (idolEvent1) updateResults(idolEvent1);
         for(let i = 0; i < 5; i++){
           let willEventOccur = Math.random();
           if(willEventOccur > 0.5){
@@ -401,6 +593,11 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           }
         }
 
+        /*updateResults({
+          type: "idols",
+          idols: tribeIdols,
+        });*/
+
         winner = individualImmunity(tribe);
         const immune = tribe[winner];
         immune.immunities++;
@@ -414,7 +611,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
 
         state = "tribal";
         const tribecopy = [...tribe];
-        const { voteIndex: out, voteDetails, voteSummary } = voting(tribecopy, alliances, true, winner);
+        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols);
   
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
@@ -425,7 +622,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
             });
             updateResults({
               type: "event",
-              message: `${votedout.name} voted out at tribal council.`,
+              message: `${votedout.name} voted out by a vote of ${sortedVotes}`,
               images: [votedout.image]
             });
             updateResults({
