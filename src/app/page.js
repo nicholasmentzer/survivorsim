@@ -30,7 +30,6 @@ export default function Home() {
     immunityIdol: false,
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
-  
 
   const addCustomEvent = (e) => {
     e.preventDefault();
@@ -109,7 +108,8 @@ export default function Home() {
   }
 
   return (
-    <>
+    <div>
+
       <Head>
         <title>Survivor Chains - A Survivor Simulator</title>
         <meta name="description" content="This is a simulator for the game of Survivor." />
@@ -199,6 +199,7 @@ export default function Home() {
                                     src={player.image}
                                     alt={player.name}
                                     className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                    style={{ imageRendering: "high-quality" }} 
                                   />
                                   {player.name}
                                 </div>
@@ -245,6 +246,7 @@ export default function Home() {
                                         <img 
                                           src={member.image} 
                                           className="w-20 h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                          style={{ imageRendering: "high-quality" }} 
                                         />
                                         <p className="text-white text-sm mt-1">{member.name}</p>
                                       </div>
@@ -263,6 +265,7 @@ export default function Home() {
                                       <img 
                                         src={member.image} 
                                         className="w-20 h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                        style={{ imageRendering: "high-quality" }} 
                                       />
                                       <p className="text-white text-sm mt-1">{member.name}</p>
                                     </div>
@@ -339,6 +342,7 @@ export default function Home() {
                                     src={player.image}
                                     alt={player.name}
                                     className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                    style={{ imageRendering: "high-quality" }} 
                                   />
                                   {player.name}
                                 </div>
@@ -369,7 +373,7 @@ export default function Home() {
                             {event.images ? (
                               <div className="flex space-x-4">
                                 {event.images.map((image, i) => (
-                                  <img key={i} src={image} alt="Event image" className="w-24 h-24 object-cover rounded-full mb-2" />
+                                  <img key={i} src={image} alt="Event image" className="w-24 h-24 object-cover rounded-full mb-2" style={{ imageRendering: "high-quality" }}  />
                                 ))}
                               </div>
                             ) : null}
@@ -606,6 +610,6 @@ export default function Home() {
       <aside className="w-[5%] bg-gray-900 text-white fixed right-0 top-0 h-full flex flex-col items-center p-4">
       </aside>
       </div>
-    </>
+    </div>
   );
 }

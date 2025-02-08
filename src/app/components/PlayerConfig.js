@@ -46,6 +46,10 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
+      if (file.size > 2000000) { // 2MB limit
+        alert("File is too large! Please upload an image under 2MB.");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageUrl(reader.result);
@@ -98,6 +102,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
                 alt={player.name}
                 className="w-24 h-24 object-cover rounded-full cursor-pointer border-2 border-gray-500"
                 onClick={() => openImageModal(index)}
+                style={{ imageRendering: "high-quality" }} 
               />
 
               <input
@@ -154,6 +159,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
                   src={imageUrl}
                   alt="Preview"
                   className="w-24 h-24 object-cover rounded-full border-2 border-gray-500"
+                  style={{ imageRendering: "high-quality" }} 
                 />
               ) : (
                 <div className="w-24 h-24 flex items-center justify-center text-red-500 border-2 border-red-500 rounded-full">
