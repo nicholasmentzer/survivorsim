@@ -70,7 +70,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
   
     return (
       <div className="flex items-center justify-between space-x-2 mb-4" key={`${label}-${num}`}>
-        <label className="w-40 text-gray-300 text-xs text-left">{labels[num]}</label>
+        <label className="w-24 sm:w-40 text-gray-300 text-[10px] sm:text-xs text-left">{labels[num]}</label>
   
         <input
           type="range"
@@ -78,10 +78,10 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
           max="10"
           value={player[label]}
           onChange={(e) => updatePlayerProperty(playerIndex, label, Number(e.target.value))}
-          className="w-full h-2 bg-stone-500 rounded-lg appearance-none cursor-pointer"
+          className="w-1/2 sm:w-full h-1 sm:h-2 bg-stone-500 rounded-lg appearance-none cursor-pointer"
         />
 
-        <span className="w-8 text-sm text-gray-400 text-center">{player[label]}</span>
+        <span className="w-8 text-xl sm:text-sm text-gray-400 text-center">{player[label]}</span>
       </div>
     );
   };
@@ -90,7 +90,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
     <>
       <div
         id="players"
-        className="grid grid-cols-1 gap-6"
+        className="grid grid-cols-2 sm:grid-cols-1 gap-6"
       >
         {playerData.map((player, index) => (
           <div
@@ -100,7 +100,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
               <img
                 src={player.image || "/default-player.png"}
                 alt={player.name}
-                className="w-24 h-24 object-cover rounded-full cursor-pointer border-2 border-gray-500"
+                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-full cursor-pointer border-2 border-gray-500"
                 onClick={() => openImageModal(index)}
                 style={{ imageRendering: "high-quality" }} 
               />
@@ -109,7 +109,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
                 type="text"
                 value={player.name}
                 onChange={(e) => updatePlayerProperty(index, "name", e.target.value)}
-                className="w-full text-lg font-semibold text-center bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400 text-white"
+                className="w-full text-sm sm:text-lg font-semibold text-center bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400 text-white"
               />
 
               {!hideSliders && (
