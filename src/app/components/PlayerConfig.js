@@ -70,7 +70,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
   
     return (
       <div className="flex flex-col sm:flex-row items-center justify-between space-x-2 mb-4" key={`${label}-${num}`}>
-        <label className="w-24 sm:w-40 text-gray-300 text-[10px] sm:text-xs text-left">{labels[num]}</label>
+        <label className="w-24 sm:w-40 mb-2 sm:mb-0 text-gray-300 text-[10px] sm:text-xs text-center sm:text-left">{labels[num]}</label>
   
         <input
           type="range"
@@ -78,10 +78,10 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
           max="10"
           value={player[label]}
           onChange={(e) => updatePlayerProperty(playerIndex, label, Number(e.target.value))}
-          className="w-1/2 sm:w-full h-1 sm:h-2 bg-stone-500 rounded-lg appearance-none cursor-pointer"
+          className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer"
         />
 
-        <span className="w-8 text-xl sm:text-sm text-gray-400 text-center">{player[label]}</span>
+        <span className="w-8 text-sm text-gray-400 text-center">{player[label]}</span>
       </div>
     );
   };
@@ -95,7 +95,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
         {playerData.map((player, index) => (
           <div
               key={player.id}
-              className="player border border-gray-300 rounded p-4 space-y-3 w-[330px] mx-auto bg-stone-900 shadow-md flex flex-col items-center"
+              className="player border border-gray-300 rounded p-4 space-y-3 w-auto sm:w-[330px] mx-auto bg-stone-900 shadow-md flex flex-col items-center"
             >
               <img
                 src={player.image || "/default-player.png"}
