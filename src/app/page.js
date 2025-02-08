@@ -34,8 +34,8 @@ export default function Home() {
   const addCustomEvent = (e) => {
     e.preventDefault();
 
-    const player1Exists = eventDescription.includes("{Player1}");
-    const player2Exists = eventDescription.includes("{Player2}");
+    const player1Exists = eventDescription.includes("Player1");
+    const player2Exists = eventDescription.includes("Player2");
     const numPlayers = (player1Exists ? 1 : 0) + (player2Exists ? 1 : 0);
 
     const newEvent = {
@@ -62,11 +62,12 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [currentEpisode, setCurrentEpisode] = useState(0);
+  const [useOnlyCustomEvents, setUseOnlyCustomEvents] = useState(false);
 
   const startSimulation = () => {
     window.scrollTo({ top: 0 });
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, tribeNames, advantages);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeNames, advantages);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -548,6 +549,18 @@ export default function Home() {
                 <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg">Add Event</button>
               </form>
 
+              {/* Use only Custom Events Checkbox */}
+              <div className=" flex items-center mt-6">
+                <input
+                  type="checkbox"
+                  id="useOnlyCustomEvents"
+                  checked={useOnlyCustomEvents}
+                  onChange={() => setUseOnlyCustomEvents((prev) => !prev)}
+                  className="mr-2 w-4 h-4"
+                />
+                <label htmlFor="useOnlyCustomEvents" className="text-white text-sm">Only use custom events (if any entered)</label>
+              </div>
+
               <h3 className="text-lg font-bold mt-4">Custom Events</h3>
               {customEvents.length === 0 ? (
                 <p className="text-gray-400">No custom events added yet.</p>
@@ -572,6 +585,7 @@ export default function Home() {
                   </div>
                 </ul>
               )}
+
               <div className="h-10" />
             </div>
           )}

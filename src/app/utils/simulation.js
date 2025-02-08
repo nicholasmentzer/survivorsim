@@ -11,56 +11,115 @@ let tribeNames = { tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" };
 let tribeIdols = {tribe1: null, tribe2: null, merge: null};
 let usableAdvantages = [];
 let randomAllianceNames = [
-  "The Titans",
-  "The Thunderbolts",
-  "The Ironclads",
-  "The Unbreakables",
-  "The Dominators",
-  "The Avalanche",
-  "The Colossals",
-  "The Echoes",
-  "The Shadows",
-  "The Mirage",
-  "The Visionaries",
-  "The Astrals",
-  "The Omens",
-  "The Luminaries",
-  "The Dreamers",
-  "The Illusions",
-  "The Gladiators",
-  "The Marauders",
-  "The Outlaws",
-  "The Spartans",
-  "The Conquerors",
-  "The Warlords",
-  "The Sentinels",
-  "The Phantoms",
-  "The Nomads",
-  "The Guardians",
-  "The Shamans",
-  "The Sphinxes",
-  "The Valkyries",
-  "The Wraiths",
-  "The Banshees",
-  "The Nomads",
-  "The Mystics",
-  "The Revenants",
-  "The Warlocks",
-  "The Arbiters",
-  "The Seers",
-  "The Elders",
-  "The Cryptids",
-  "The Ronin",
-  "The Vanguard",
-  "The Warhounds",
-  "The Legionnaires",
-  "The Bloodhounds",
-  "The Dreadnoughts",
-  "The Strikers",
-  "The Juggernauts",
-  "The Outriders",
-  "The Harbingers",
+    "The Titans",
+    "The Thunderbolts",
+    "The Ironclads",
+    "The Unbreakables",
+    "The Dominators",
+    "The Avalanche",
+    "The Colossals",
+    "The Echoes",
+    "The Shadows",
+    "The Mirage",
+    "The Visionaries",
+    "The Astrals",
+    "The Omens",
+    "The Luminaries",
+    "The Dreamers",
+    "The Illusions",
+    "The Gladiators",
+    "The Marauders",
+    "The Outlaws",
+    "The Spartans",
+    "The Conquerors",
+    "The Warlords",
+    "The Sentinels",
+    "The Phantoms",
+    "The Nomads",
+    "The Guardians",
+    "The Shamans",
+    "The Sphinxes",
+    "The Valkyries",
+    "The Wraiths",
+    "The Banshees",
+    "The Nomads",
+    "The Mystics",
+    "The Revenants",
+    "The Warlocks",
+    "The Arbiters",
+    "The Seers",
+    "The Elders",
+    "The Cryptids",
+    "The Ronin",
+    "The Vanguard",
+    "The Warhounds",
+    "The Legion",
+    "The Bloodhounds",
+    "The Dreadnoughts",
+    "The Strikers",
+    "The Juggernauts",
+    "The Outriders",
+    "The Harbingers",
+    "Oracle's Vision",
+    'Phoenix Pact',
+    "Fate's Hand",
+    "Fortune's Favor",
+    "Gods of the Island",
+    "Shadow Pact",
+    "Silent Strike",
+    "Phantom Coalition",
+    "Under the Radar",
+    "Hidden Daggers",
+    "The Inside Job",
+    "The Illusionists",
+    "Smoke & Mirrors",
+    "Double Agents",
+    "The Power Brokers",
+    "Ember Pact",
+    "Thunderhands",
+    "Nightfall",
+    "Hurricane Pact",
+    "Obsidian Bond",
+    "Whispering Winds",
+    "Blazing Sun",
+    "Ironclad Pact",
+    "Frostbite",
+    "Crimson Tide",
+    "The Storytellers",
+    "The Clockwork Pact",
+    "The Demon's Gambit",
+    "The Fabled Few",
+    "The Mad Hatters",
+    "The Drunken Sinners",
+    "The Townsfolk Tribunal",
+    "The Evil Twin Pact",
+    "The Circle of Shadows",
+    "The Butcher's Bargain",
+    "The Saint's Curse",
+    "The Scarlet Mark",
+    "The Poisoner's Whisper",
+    "The Lunatic's Folly",
+    "The Empath's Eye",
+    "The Recluse's Refuge",
+    "The Fortune Teller's Prophecy",
+    "The Ritual of the Ravenkeeper",
+    "The Sinister Pact",
+    "The No Dashii Society",
+    "The Blood Pact",
+    "The Betrayer's Haven",
+    "The Witch's Hex",
+    "The Undertaker's Witnesses",
+    "The Minion Conspiracy",
+    "The Shabaloth Coven",
+    "The Ill-Fated Oracles",
+    "The Town Square Syndicate",
+    "The Imp's Last Laugh",
+    "The Phantom Court",
+    "The Vortox's Labyrinth",
+    "The Cursed Outsiders",
+    "The Goon Squad"
 ];
+let useOnlyCustomEvents = false;
 
 
 export const resetSimulation = () => {
@@ -96,7 +155,6 @@ export const resetSimulation = () => {
     "The Outlaws",
     "The Spartans",
     "The Conquerors",
-    "The Predators",
     "The Warlords",
     "The Sentinels",
     "The Phantoms",
@@ -118,14 +176,73 @@ export const resetSimulation = () => {
     "The Ronin",
     "The Vanguard",
     "The Warhounds",
-    "The Legionnaires",
+    "The Legion",
     "The Bloodhounds",
     "The Dreadnoughts",
     "The Strikers",
     "The Juggernauts",
     "The Outriders",
     "The Harbingers",
+    "Oracle's Vision",
+    'Phoenix Pact',
+    "Fate's Hand",
+    "Fortune's Favor",
+    "Gods of the Island",
+    "Shadow Pact",
+    "Silent Strike",
+    "Phantom Coalition",
+    "Under the Radar",
+    "Hidden Daggers",
+    "The Inside Job",
+    "The Illusionists",
+    "Smoke & Mirrors",
+    "Double Agents",
+    "The Power Brokers",
+    "Ember Pact",
+    "Thunderhands",
+    "Nightfall",
+    "Hurricane Pact",
+    "Obsidian Bond",
+    "Whispering Winds",
+    "Blazing Sun",
+    "Ironclad Pact",
+    "Frostbite",
+    "Crimson Tide",
+    "The Storytellers",
+    "The Clockwork Pact",
+    "The Demon's Gambit",
+    "The Fabled Few",
+    "The Mad Hatters",
+    "The Drunken Sinners",
+    "The Townsfolk Tribunal",
+    "The Evil Twin Pact",
+    "The Circle of Shadows",
+    "The Butcher's Bargain",
+    "The Saint's Curse",
+    "The Scarlet Mark",
+    "The Poisoner's Whisper",
+    "The Lunatic's Folly",
+    "The Empath's Eye",
+    "The Recluse's Refuge",
+    "The Fortune Teller's Prophecy",
+    "The Ritual of the Ravenkeeper",
+    "The Sinister Pact",
+    "The No Dashii Society",
+    "The Blood Pact",
+    "The Betrayer's Haven",
+    "The Witch's Hex",
+    "The Undertaker's Witnesses",
+    "The Minion Conspiracy",
+    "The Shabaloth Coven",
+    "The Ill-Fated Oracles",
+    "The Town Square Syndicate",
+    "The Imp's Last Laugh",
+    "The Phantom Court",
+    "The Vortox's Labyrinth",
+    "The Cursed Outsiders",
+    "The Goon Squad"
   ];
+  useOnlyCustomEvents = false;
 };
 
 export const removeFromAlliance = (loser) => {
@@ -253,8 +370,30 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     .slice(0, 2);
 
   let eventType, severity, message, numPlayers, eventText, effectText;
+  const positiveEvents = [
+    "Player1 and Player2 bonded over a shared experience.",
+    "Player1 helped Player2 through a tough time.",
+    "Player1 and Player2 formed a strong trust.",
+    "Player1 stood up for Player2 in a conflict.",
+    "Player1 and Player2 had a deep strategic conversation.",
+    "Player1 and Player2 made a secret alliance.",
+    "Player1 taught Player2 a survival skill.",
+    "Player1 and Player2 enjoyed a relaxing moment together."
+  ];
+  
+  const negativeEvents = [
+    "Player1 and Player2 had a heated argument!",
+    "Player1 and Player2 got into a physical altercation.",
+    "Player1 stole food from Player2, causing distrust.",
+    "Player1 accused Player2 of playing both sides.",
+    "Player1 and Player2 clashed over leadership decisions.",
+    "Player1 and Player2 had an awkward moment after a failed alliance.",
+    "Player1 spread a rumor about Player2.",
+    "Player1 ignored Player2 in an important strategy discussion."
+  ];
 
-  if (customEvents.length > 0) {
+  console.log(useOnlyCustomEvents);
+  if (customEvents.length > 0 && (useOnlyCustomEvents || Math.random() < 0.5)) {
     const randomCustomEvent = customEvents[Math.floor(Math.random() * customEvents.length)];
     eventType = randomCustomEvent.type;
     severity = randomCustomEvent.severity;
@@ -263,9 +402,8 @@ const generateRelationshipEvent = (tribe, customEvents) => {
   } else {
     eventType = Math.random() > 0.5 ? "positive" : "negative";
     severity = Math.floor(Math.random() * 3) + 1;
-    message = eventType === "positive"
-      ? `Player1 and Player2 bonded over a shared experience.`
-      : `Player1 and Player2 had a heated argument!`;
+    const eventList = eventType === "positive" ? positiveEvents : negativeEvents;
+    message = eventList[Math.floor(Math.random() * eventList.length)];
     numPlayers = 2;
   }
 
@@ -382,9 +520,11 @@ const manageAlliances = (tribe) => {
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
 
-export const simulate = (players, updateResults, customEvents, tribes, advantages) => {
+export const simulate = (players, updateResults, customEvents, useOnlyCustom, tribes, advantages) => {
   let episodes = [];
   tribeNames = tribes;
+  useOnlyCustomEvents = useOnlyCustom;
+  console.log(useOnlyCustomEvents);
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {
       usableAdvantages.push(key);

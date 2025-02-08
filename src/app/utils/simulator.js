@@ -412,8 +412,6 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       const originalVote = exportVotes.find(v => v.voter === voter.name)?.target;
       if (!tiedIndexes.includes(tribe.indexOf(voter))) {
         let revoteTargetIndex;
-        console.log(tiedIndexes);
-        console.log(exportVotes);
         if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote))) {
           revoteTargetIndex = tribe.findIndex(p => p.name === originalVote);
         } else {
