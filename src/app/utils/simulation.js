@@ -279,12 +279,12 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     let effectSmallText = "relationship ";
     if(eventType === "positive"){
       for(let i = 0; i < severity; i++){
-        effectSmallText += "+";
+        effectSmallText += "+ ";
       }
     }
     else{
       for(let i = 0; i < severity; i++){
-        effectSmallText += "-";
+        effectSmallText += "- ";
       }
     }
     effectText = ` <span class="${eventType === "positive" ? 'text-green-400' : 'text-red-400'}">${effectSmallText}</span>`;
