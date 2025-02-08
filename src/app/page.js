@@ -186,7 +186,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
+                                  className="text-xs sm:text-base border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -241,7 +241,7 @@ export default function Home() {
                                           className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
                                           style={{ imageRendering: "high-quality" }} 
                                         />
-                                        <p className="text-white text-sm mt-1">{member.name}</p>
+                                        <p className="text-white text-xs sm:text-sm mt-1">{member.name}</p>
                                       </div>
                                     ))}
                                   </div>
@@ -260,7 +260,7 @@ export default function Home() {
                                         className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
                                         style={{ imageRendering: "high-quality" }} 
                                       />
-                                      <p className="text-white text-sm mt-1">{member.name}</p>
+                                      <p className="text-white text-xs sm:text-sm mt-1">{member.name}</p>
                                     </div>
                                   ))}
                                 </div>
@@ -329,7 +329,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
+                                  className="text-xs sm:text-base border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -374,18 +374,18 @@ export default function Home() {
                             {event.type === "voting-summary" ?
                               <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
                                 {event.message.map((vote, i) => (
-                                  <div key={i} className="text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
+                                  <div key={i} className="text-xs sm:text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
                               </div>
                             : event.type === "voting" ?
                               <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
                                 {event.message.map((vote, i) => (
-                                  <div key={i} className="text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
+                                  <div key={i} className="text-xs sm:text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
                               </div>
                             : event.type === "event" && event.numPlayers === 2 ?
                               <div
-                                className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-xs sm:text-base font-semibold ${
                                   event.images ? "" : "py-4 px-8"
                                 }`}
                               > 
@@ -397,7 +397,7 @@ export default function Home() {
                                 )))}
                               </div>
                               : <div
-                                  className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                  className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-xs sm:text-base font-semibold ${
                                     event.images ? "" : "py-4 px-8"
                                   }`}
                                 > <div dangerouslySetInnerHTML={{ __html: event.message }} />
