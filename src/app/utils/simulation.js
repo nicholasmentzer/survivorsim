@@ -32,7 +32,6 @@ let randomAllianceNames = [
   "The Outlaws",
   "The Spartans",
   "The Conquerors",
-  "The Predators",
   "The Warlords",
   "The Sentinels",
   "The Phantoms",

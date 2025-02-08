@@ -112,7 +112,7 @@ export default function Home() {
 
       <Head>
         <title>Chains - A Survivor Simulator</title>
-        <meta name="description" content="This is a simulator for the game of Survivor." />
+        <meta name="description" content="Customize the contestants, set the rules and scenarios, and experience unique Survivor simulations every time!"/>
         <link rel="icon" href="/favicon.ico" />
         <script src="https://code.jquery.com/jquery-2.1.4.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js" defer></script>
@@ -191,7 +191,7 @@ export default function Home() {
                                   <img
                                     src={player.image}
                                     alt={player.name}
-                                    className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full mx-auto mb-2"
                                     style={{ imageRendering: "high-quality" }} 
                                   />
                                   {player.name}
@@ -238,7 +238,7 @@ export default function Home() {
                                       <div key={member.name} className="text-center">
                                         <img 
                                           src={member.image} 
-                                          className="w-20 h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                          className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
                                           style={{ imageRendering: "high-quality" }} 
                                         />
                                         <p className="text-white text-sm mt-1">{member.name}</p>
@@ -257,7 +257,7 @@ export default function Home() {
                                     <div key={member.name} className="text-center">
                                       <img 
                                         src={member.image} 
-                                        className="w-20 h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                        className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
                                         style={{ imageRendering: "high-quality" }} 
                                       />
                                       <p className="text-white text-sm mt-1">{member.name}</p>
@@ -334,7 +334,7 @@ export default function Home() {
                                   <img
                                     src={player.image}
                                     alt={player.name}
-                                    className="w-16 h-16 object-cover rounded-full mx-auto mb-2"
+                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full mx-auto mb-2"
                                     style={{ imageRendering: "high-quality" }} 
                                   />
                                   {player.name}
@@ -366,7 +366,7 @@ export default function Home() {
                             {event.images ? (
                               <div className="flex space-x-4">
                                 {event.images.map((image, i) => (
-                                  <img key={i} src={image} alt="Event image" className="w-24 h-24 object-cover rounded-full mb-2" style={{ imageRendering: "high-quality" }}  />
+                                  <img key={i} src={image} alt="Event image" className="w-12 h-12 sm:w-24 sm:h-24 object-cover rounded-full mb-2" style={{ imageRendering: "high-quality" }}  />
                                 ))}
                               </div>
                             ) : null}
