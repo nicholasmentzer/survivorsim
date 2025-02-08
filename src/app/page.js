@@ -636,7 +636,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => setMode("configure")}
+                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");}}
                   >
                     BACK TO CONFIGURE
                   </button>
