@@ -426,7 +426,9 @@ export default function Home() {
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <div className="flex flex-col justify-center items-center">
-                <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
+                <h2 className="text-xl text-stone-200 font-bold">Configure your cast</h2>
+                <p className="text-base text-stone-200">Edit player names and images by clicking on them!</p>
+                <p className="text-base mb-5 text-stone-200">Then click "Simulate" to start the simulation!</p>
 
                 {/* Hide Sliders Toggle Checkbox */}
                 <div className=" flex items-center">
