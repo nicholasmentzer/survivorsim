@@ -69,7 +69,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
     ];
   
     return (
-      <div className="flex items-center justify-between space-x-2 mb-4" key={`${label}-${num}`}>
+      <div className="flex flex-col sm:flex-row items-center justify-between space-x-2 mb-4" key={`${label}-${num}`}>
         <label className="w-24 sm:w-40 text-gray-300 text-[10px] sm:text-xs text-left">{labels[num]}</label>
   
         <input
