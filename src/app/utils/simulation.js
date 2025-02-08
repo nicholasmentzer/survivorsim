@@ -264,8 +264,8 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     eventType = Math.random() > 0.5 ? "positive" : "negative";
     severity = Math.floor(Math.random() * 3) + 1;
     message = eventType === "positive"
-      ? `{Player1} and {Player2} bonded over a shared experience.`
-      : `{Player1} and {Player2} had a heated argument!`;
+      ? `Player1 and Player2 bonded over a shared experience.`
+      : `Player1 and Player2 had a heated argument!`;
     numPlayers = 2;
   }
 
@@ -291,8 +291,8 @@ const generateRelationshipEvent = (tribe, customEvents) => {
   }
 
   eventText = message
-    .replace(/{Player1}/g, player1.name)
-    .replace(/{Player2}/g, player2?.name || "");
+    .replace(/\bPlayer1/g, player1.name)
+    .replace(/\bPlayer2/g, player2?.name || "");
 
   const images = [];
   if (numPlayers === 1 && player1.image) {

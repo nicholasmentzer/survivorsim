@@ -515,8 +515,8 @@ export default function Home() {
                   type="text"
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
-                  placeholder="Example: {Player1} and {Player2} got into a huge argument. (max 2 players)"
-                  className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
+                  placeholder="Use 'Player1' and 'Player2' as placeholders (max 2 players) Example: Player1 argued with Player2."
+                  className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400 text-xs sm:text-base"
                 />
                 
                 <div className="h-2"/>
