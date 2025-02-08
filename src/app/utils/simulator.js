@@ -127,6 +127,49 @@ const generateVotingSummaryWithIdol = (votes, immunePlayer) => {
   });
 };
 
+/**
+ * Calculates who each alliance in a tribe is targeting for vote-out
+ * @param {*} tribe The tribe currently being evaluated
+ * @param {*} alliances The alliances that exist in this simulation
+ * @returns {*} Entries that display who each alliance is targetting
+ */
+const getAllianceTargets = (tribe, alliances) => {
+  let allianceTargets = {};
+
+  let filteredAlliances = alliances.filter(alliance => 
+    alliance.members.some(member => tribe.includes(member))
+  );
+
+  filteredAlliances.forEach(alliance => {
+    let bestTarget = null;
+    let lowestRelationship = Infinity;
+
+    alliance.members.forEach(member => {
+      tribe.forEach(candidate => {
+        if (
+          candidate !== member &&
+          !alliance.members.includes(candidate)
+        ) {
+          let relationshipScore = member.relationships[candidate.name] || 0;
+
+          if (relationshipScore < lowestRelationship) {
+            lowestRelationship = relationshipScore;
+            bestTarget = candidate;
+          }
+        }
+      });
+    });
+
+    if (bestTarget) {
+      allianceTargets[alliance.name] = bestTarget.name;
+    }
+  });
+
+  return Object.entries(allianceTargets).map(([allianceName, target]) => 
+    `<span class="text-blue-400">${allianceName}</span> targeted <span class="text-red-400">${target}</span>.`
+  );
+};
+
 
 /**
  * Voting logic for a tribe during the simulation.
@@ -141,6 +184,8 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   const voteSummary = [];
   voteDetails.push(`<span class="font-bold text-lg">Vote Summary</span>`);
   voteSummary.push(`<span class="font-bold text-lg">It's time to vote!</span>`);
+
+  voteDetails.push(...getAllianceTargets(tribe, alliances2));
 
   tribe.forEach((voter, voterIndex) => {
     if (!voter) return;

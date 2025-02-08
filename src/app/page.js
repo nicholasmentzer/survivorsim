@@ -125,22 +125,8 @@ export default function Home() {
 
       <main className="w-[100%] mx-auto flex flex-col items-center">
       <div className="relative min-h-screen flex-col items-center justify-center">
-        <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-8 p-6 rounded-lg">
+        <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-12 p-6 rounded-lg">
           <h1 className="text-2xl font-bold text-white text-center">Survivor Chains - A Survivor Simulator</h1>
-
-          {/* Hide Sliders Toggle Checkbox */}
-          {mode === "configure" ? (
-            <div className="absolute top-4 left-4 flex items-center">
-              <input
-                type="checkbox"
-                id="hideSliders"
-                checked={hideSliders}
-                onChange={() => setHideSliders((prev) => !prev)}
-                className="mr-2 w-4 h-4"
-              />
-              <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
-            </div>) : <></>
-          }
 
           <div id="interface" className="text-center mt-8">
 
@@ -191,7 +177,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white"
+                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -334,7 +320,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white"
+                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -423,6 +409,18 @@ export default function Home() {
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
+
+              {/* Hide Sliders Toggle Checkbox */}
+              <div className=" flex items-center">
+                <input
+                  type="checkbox"
+                  id="hideSliders"
+                  checked={hideSliders}
+                  onChange={() => setHideSliders((prev) => !prev)}
+                  className="mr-2 w-4 h-4"
+                />
+                <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
+              </div>
 
               {/*3 Columns*/}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">

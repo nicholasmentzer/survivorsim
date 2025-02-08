@@ -175,9 +175,6 @@ const detectDrasticRelationships = (tribe, updateResults) => {
         `${player1.name} and ${player2.name} really dislike each other!`,
         `${player1.name} thinks ${player2.name} is a big threat`,
         `${player1.name} wants to target ${player2.name} sooner rather than later`,
-        `${player2.name} and ${player1.name} really dislike each other!`,
-        `${player2.name} thinks ${player1.name} is a big threat`,
-        `${player2.name} wants to target ${player1.name} sooner rather than later`,
       ];
       if (player1 !== player2 && player1.relationships[player2.name] <= -3) {
         let pairKey = [player1.name, player2.name].sort().join("_");
@@ -195,7 +192,7 @@ const detectDrasticRelationships = (tribe, updateResults) => {
     });
   });
 
-  if(drasticEvents.length < 2){
+  if(drasticEvents.length < 3){
     tribe.forEach(player1 => {
       tribe.forEach(player2 => {
         let types = [
