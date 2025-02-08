@@ -122,10 +122,8 @@ export default function Home() {
         style={{ backgroundImage: "url('/background.jpg')" }}
       />
       <div className="flex min-h-screen">
-      <aside className="w-[5%] bg-gray-900 text-white fixed left-0 top-0 h-full flex flex-col items-center p-4">
-      </aside>
 
-      <main className="w-[90%] mx-auto flex flex-col items-center">
+      <main className="w-[100%] mx-auto flex flex-col items-center">
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-8 p-6 rounded-lg">
           <h1 className="text-2xl font-bold text-white text-center">Survivor Chains - A Survivor Simulator</h1>
@@ -607,8 +605,6 @@ export default function Home() {
           </div>
       </div>
       </main>
-      <aside className="w-[5%] bg-gray-900 text-white fixed right-0 top-0 h-full flex flex-col items-center p-4">
-      </aside>
       </div>
     </div>
   );
