@@ -157,7 +157,7 @@ export default function Home() {
             <p className="text-base text-left font-bold">
               Reminder: To edit player images and names, just click on the picture or names, and use sliders to adjust stats!! <br/><br/>
             </p>
-            <p className="text-base mb-4 text-left text-red-200 font-bold">
+            <p className="text-base mb-4 text-left text-red-200">
               (If you want to add custom events to your simulation, scroll to the bottom of this page!)
             </p>
             <button
