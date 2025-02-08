@@ -154,8 +154,11 @@ export default function Home() {
             <p className="text-sm text-left">
               Customize your players, configure settings, and simulate unique Survivor seasons! <br/><br/>
             </p>
-            <p className="text-base mb-4 text-left font-bold">
-              Reminder: To edit player images and names, just click on the picture or names, and use sliders to adjust stats!!
+            <p className="text-base text-left font-bold">
+              Reminder: To edit player images and names, just click on the picture or names, and use sliders to adjust stats!! <br/><br/>
+            </p>
+            <p className="text-base mb-4 text-left text-red-200 font-bold">
+              (If you want to add custom events to your simulation, scroll to the bottom of this page!)
             </p>
             <button
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
