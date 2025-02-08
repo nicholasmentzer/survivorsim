@@ -457,12 +457,13 @@ const manageAlliances = (tribe) => {
   const allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length * 2))));
 
   tribe.forEach(player => {
+    if(Math.random() > allianceThreshold){
 
     let potentialMembers = tribe.filter(
       other => player !== other && player.relationships[other.name] >= 1
     );
 
-    if (potentialMembers.length >= 1 && Math.random() > allianceThreshold) {
+    if (potentialMembers.length >= 1) {
       const members = [player, ...potentialMembers];
 
       const isDuplicate = existingAlliances2.some(existingAlliance =>
@@ -476,7 +477,12 @@ const manageAlliances = (tribe) => {
 
       scaledStrength = Math.max(1, Math.min(10, scaledStrength));
 
-      if (!isDuplicate) {
+      const isTooSimilar = existingAlliances2.some(existingAlliance => {
+        const commonMembers = existingAlliance.members.filter(member => members.includes(member)).length;
+        return existingAlliance.members.length >= 5 && commonMembers >= existingAlliance.members.length * 0.8;
+      });
+
+      if (!isDuplicate && !isTooSimilar) {
         const randomIndex = Math.floor(Math.random() * randomAllianceNames.length);
         let allianceName = randomAllianceNames[randomIndex];
         randomAllianceNames.splice(randomIndex, 1);
@@ -487,6 +493,7 @@ const manageAlliances = (tribe) => {
         });
       }
     }
+  }
   });
 
   alliances = alliances.concat(newAlliances);
@@ -494,18 +501,6 @@ const manageAlliances = (tribe) => {
   let existingAlliances = [];
   let seenAlliances = new Set();
   alliances.forEach(alliance => {
-    let totalRelationship = 0;
-    let numPairs = 0;
-  
-    alliance.members.forEach(player => {
-      alliance.members.forEach(other => {
-        if (player !== other) {
-          totalRelationship += player.relationships[other.name];
-          numPairs++;
-        }
-      });
-    });
-
     let memberNames = alliance.members.map(p => p.name).sort().join(",");
     
     if (seenAlliances.has(memberNames)) {
@@ -513,6 +508,9 @@ const manageAlliances = (tribe) => {
       return;
     }
     seenAlliances.add(memberNames);
+
+    alliance.strength += Math.floor(Math.random() * 3) - 1;
+    alliance.strength = Math.max(1, Math.min(10, alliance.strength));
   
     if (alliance.strength <= 4 && Math.random() < .5) {
       if (newAlliances.includes(alliance)){
