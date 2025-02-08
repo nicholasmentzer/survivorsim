@@ -12,7 +12,7 @@ export default {
         foreground: "var(--foreground)",
       },
       backgroundImage: {
-        'survivor-bg': "url('/background.jpg')",
+        'survivor-bg': "url('/background.png')",
       },
     },
   },

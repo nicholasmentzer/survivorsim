@@ -472,15 +472,22 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
  */
 export const votingWinner = (finalThree, jury) => {
   const choices = [];
+  const voteDetails = [];
+  const voteSummary = [];
+  
   finalThree.forEach((player, i) => {
     player.voteCount = 0;
     for (let n = 0; n < player.likeability; n++) choices.push(i);
     for (let n = 0; n < player.strategicness; n++) choices.push(i);
   });
 
-  jury.forEach(() => {
+  jury.forEach((juror, index) => {
     const vote = choices[getRandomInt(choices.length)];
     finalThree[vote].voteCount++;
+    
+    voteDetails.push(`${juror.name} voted for ${finalThree[vote].name}`);
+    
+    voteSummary.push(`${index + 1}${getOrdinalSuffix(index + 1)} vote: ${finalThree[vote].name}`);
   });
 
   finalThree.sort((a, b) => b.voteCount - a.voteCount);
@@ -490,7 +497,11 @@ export const votingWinner = (finalThree, jury) => {
   finalThree[1].placement = 2;
   finalThree[2].placement = 3;
 
-  return soleSurvivor;
+  voteSummary.push(
+    `<span class="font-bold text-lg">${soleSurvivor.name} wins Survivor with a vote of ${soleSurvivor.voteCount}-${finalThree[1].voteCount}-${finalThree[2].voteCount}!</span>`
+  );
+
+  return { winner: soleSurvivor, voteDetails, voteSummary };
 };
 
 /**

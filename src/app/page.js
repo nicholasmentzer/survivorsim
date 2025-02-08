@@ -111,22 +111,31 @@ export default function Home() {
     <div>
 
       <Head>
-        <title>Survivor Chains - A Survivor Simulator</title>
+        <title>Chains - A Survivor Simulator</title>
         <meta name="description" content="This is a simulator for the game of Survivor." />
         <link rel="icon" href="/favicon.ico" />
         <script src="https://code.jquery.com/jquery-2.1.4.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js" defer></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
       </Head>
       <div
         className="fixed inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-        style={{ backgroundImage: "url('/background.jpg')" }}
+        style={{ backgroundImage: "url('/background.png')" }}
       />
       <div className="flex min-h-screen">
 
       <main className="w-[100%] mx-auto flex flex-col items-center">
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-12 p-6 rounded-lg">
-          <h1 className="text-2xl font-bold text-white text-center">Survivor Chains - A Survivor Simulator</h1>
+          <div className="flex justify-center">
+            <img 
+              src="/logo.png"
+              alt="Survivor Chains Logo"
+              className="h-40 w-auto object-contain"
+            />
+          </div>
+          <h4 className="text-2xl font-bold text-slate-300 text-center mt-4" style={{ fontFamily: "Bebas Neue" }}> A Survivor Simulator</h4>
 
           <div id="interface" className="text-center mt-8">
 
@@ -143,13 +152,13 @@ export default function Home() {
                 <div className="flex justify-center items-center space-x-4 mb-6">
                   <button
                     onClick={prevEpisode}
-                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-gray-600" : "bg-blue-500"}`}
+                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-stone-600" : "bg-blue-500"}`}
                   >
                     Previous
                   </button>
 
                   <button
-                    className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
+                    className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
                     onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");}}
                   >
                     BACK TO CONFIGURE
@@ -157,7 +166,7 @@ export default function Home() {
 
                   <button
                     onClick={nextEpisode}
-                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-gray-600" : "bg-green-500"}`}
+                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-stone-600" : "bg-green-500"}`}
                   >
                     Next
                   </button>
@@ -177,7 +186,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white break-words"
+                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -203,7 +212,7 @@ export default function Home() {
                             {event.title === "Current Alliances" && (
                               <button
                                 onClick={() => setShowCurrentAlliances((prev) => !prev)}
-                                className="p-2 rounded-lg hover:bg-gray-700 transition"
+                                className="p-2 rounded-lg hover:bg-stone-700 transition"
                               >
                                 {showCurrentAlliances ? (
                                   <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -221,7 +230,7 @@ export default function Home() {
                           {event.title === "Current Alliances" ? 
                             <div className={`${showCurrentAlliances ? "block" : "hidden"}`}>
                               {event.alliances.map((alliance, i) => (
-                                <div key={i} className="mt-3 p-4 bg-gray-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
+                                <div key={i} className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
                                   <h4 className="text-lg font-bold text-white">{alliance.name}</h4>
                                   <div className="text-white">{`Strength: ${alliance.strength}`}</div>
                                   <div className="flex flex-wrap justify-center gap-3 mt-2">
@@ -240,7 +249,7 @@ export default function Home() {
                               ))}
                             </div>
                             : event.alliances.map((alliance, i) => (
-                              <div key={i} className="mt-3 p-4 bg-gray-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
+                              <div key={i} className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
                                 <h4 className="text-lg font-bold text-white">{alliance.name}</h4>
                                 <div className="text-white">{`Strength: ${alliance.strength}`}</div>
                                 <div className="flex flex-wrap justify-center gap-3 mt-2">
@@ -270,7 +279,7 @@ export default function Home() {
                             {event.type === "idols" && (
                               <button
                                 onClick={() => setShowAdvantages((prev) => !prev)}
-                                className="p-2 rounded-lg hover:bg-gray-700 transition"
+                                className="p-2 rounded-lg hover:bg-stone-700 transition"
                               >
                                 {showAdvantages ? (
                                   <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -286,7 +295,7 @@ export default function Home() {
                           </div>
                           
                           {showAdvantages && event.idols && (
-                            <div className="bg-gray-800 bg-opacity-40 rounded-lg shadow-lg p-4 mt-3">
+                            <div className="bg-stone-800 bg-opacity-40 rounded-lg shadow-lg p-4 mt-3">
                               <div className="space-y-2">
                                 {Object.entries(event.idols).map(([tribe, player]) => (
                                   player ? (
@@ -311,7 +320,7 @@ export default function Home() {
                           <div className="mb-2 border-t-4 border-gray-400"></div>
                           <div className="mt-4 pb-6">
                             <div
-                                className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
                                   event.images ? "" : "py-4 px-8"
                                 }`}
                               > <div dangerouslySetInnerHTML={{ __html: event.message }} />
@@ -320,7 +329,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-gray-800 text-white break-words"
+                                  className="border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -363,20 +372,20 @@ export default function Home() {
                             ) : null}
 
                             {event.type === "voting-summary" ?
-                              <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
                                 {event.message.map((vote, i) => (
                                   <div key={i} className="text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
                               </div>
                             : event.type === "voting" ?
-                              <div className="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
                                 {event.message.map((vote, i) => (
                                   <div key={i} className="text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
                               </div>
                             : event.type === "event" && event.numPlayers === 2 ?
                               <div
-                                className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
                                   event.images ? "" : "py-4 px-8"
                                 }`}
                               > 
@@ -388,7 +397,7 @@ export default function Home() {
                                 )))}
                               </div>
                               : <div
-                                  className={`bg-gray-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
+                                  className={`bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-base font-semibold ${
                                     event.images ? "" : "py-4 px-8"
                                   }`}
                                 > <div dangerouslySetInnerHTML={{ __html: event.message }} />
@@ -498,14 +507,14 @@ export default function Home() {
 
               {/*Below the 3 columns*/}
               <h2 className="text-xl font-bold mt-8">Add Custom Events</h2>
-              <form onSubmit={addCustomEvent} className="bg-gray-800 p-4 rounded-lg">
+              <form onSubmit={addCustomEvent} className="bg-stone-800 p-4 rounded-lg">
                 <label className="text-gray-300 text-sm">Description</label>
                 <input
                   type="text"
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
                   placeholder="Example: {Player1} and {Player2} got into a huge argument. (max 2 players)"
-                  className="w-full p-2 rounded border border-gray-600 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+                  className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
                 />
                 
                 <div className="h-2"/>
@@ -513,7 +522,7 @@ export default function Home() {
                 <select
                   value={eventType}
                   onChange={(e) => setEventType(e.target.value)}
-                  className="w-full p-2 rounded border border-gray-700 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+                  className="w-full p-2 rounded border border-gray-700 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
                 >
                   <option value="positive">Positive</option>
                   <option value="negative">Negative</option>
@@ -529,7 +538,7 @@ export default function Home() {
                       onChange={(e) => setEventSeverity(Number(e.target.value))}
                       min="1"
                       max="5"
-                      className="w-full p-2 rounded border border-gray-700 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+                      className="w-full p-2 rounded border border-gray-700 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
                     />
                   </>
                 )}
@@ -544,7 +553,7 @@ export default function Home() {
                 <ul className="text-white space-y-1">
                   <div className="mt-4 space-y-2">
                     {customEvents.map((event, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md">
+                      <div key={index} className="flex items-center justify-between bg-stone-800 text-white px-4 py-2 rounded-lg shadow-md">
                         <span>
                           {event.description} - <span className={event.type === "positive" ? "text-green-400" : "text-red-400"}>
                             {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
@@ -579,13 +588,13 @@ export default function Home() {
                 <div className="flex justify-center items-center space-x-4">
                   <button
                     onClick={prevEpisode}
-                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-gray-600" : "bg-blue-500"}`}
+                    className={`px-4 py-2 rounded ${currentEpisode === 0 ? "bg-stone-600" : "bg-blue-500"}`}
                   >
                     Previous
                   </button>
 
                   <button
-                    className="bg-gray-500 text-white px-6 py-3 rounded-lg font-bold"
+                    className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
                     onClick={() => setMode("configure")}
                   >
                     BACK TO CONFIGURE
@@ -593,7 +602,7 @@ export default function Home() {
 
                   <button
                     onClick={nextEpisode}
-                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-gray-600" : "bg-green-500"}`}
+                    className={`px-4 py-2 rounded ${currentEpisode === episodes.length - 1 ? "bg-stone-600" : "bg-green-500"}`}
                   >
                     Next
                   </button>

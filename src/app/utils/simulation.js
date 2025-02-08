@@ -643,13 +643,17 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     } else {
         state = "final";
         updateResults({ type: "event", message: "Final tribal votes are being tallied." });
-        const soleSurvivor = votingWinner(tribes[0], tribes[1]);
-        soleSurvivor.totalWins++;
+        const { winner, voteDetails, voteSummary } = votingWinner(tribes[0], tribes[1]);
         updateResults({
-          type: "event",
-          message: `The sole survivor is ${soleSurvivor.name}!`,
-          images: [soleSurvivor.image]
+          type: "voting-summary", message: voteSummary
         });
+        updateResults({
+          type: "event", message: `${winner.name} is the Sole Survivor!`, images: [winner.image]
+        });
+        updateResults({
+          type: "voting", message: voteDetails
+        });
+        winner.totalWins++;
         state = "gameover";
     }
   };

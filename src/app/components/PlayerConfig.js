@@ -78,7 +78,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
           max="10"
           value={player[label]}
           onChange={(e) => updatePlayerProperty(playerIndex, label, Number(e.target.value))}
-          className="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer"
+          className="w-full h-2 bg-stone-500 rounded-lg appearance-none cursor-pointer"
         />
 
         <span className="w-8 text-sm text-gray-400 text-center">{player[label]}</span>
@@ -95,7 +95,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
         {playerData.map((player, index) => (
           <div
               key={player.id}
-              className="player border border-gray-300 rounded p-4 space-y-3 w-[330px] mx-auto bg-slate-900 shadow-md flex flex-col items-center"
+              className="player border border-gray-300 rounded p-4 space-y-3 w-[330px] mx-auto bg-stone-900 shadow-md flex flex-col items-center"
             >
               <img
                 src={player.image || "/default-player.png"}
@@ -128,7 +128,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
 
       {modalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-gray-900 p-6 rounded-lg shadow-lg w-96 text-white">
+          <div className="bg-stone-900 p-6 rounded-lg shadow-lg w-96 text-white">
             <h2 className="text-xl font-bold text-center mb-4">Update Player Image</h2>
 
             <input
@@ -139,7 +139,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
                 validateImage(e.target.value);
               }}
               placeholder="Enter Image URL"
-              className="w-full p-2 rounded border border-gray-700 bg-gray-800 text-white focus:outline-none focus:border-blue-400"
+              className="w-full p-2 rounded border border-gray-700 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
             />
 
             <div className="text-center my-3">
@@ -150,7 +150,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full text-sm text-gray-400 border border-gray-700 rounded p-1 bg-gray-800 cursor-pointer"
+              className="w-full text-sm text-gray-400 border border-gray-700 rounded p-1 bg-stone-800 cursor-pointer"
             />
 
             <div className="flex justify-center my-4">
@@ -170,14 +170,14 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
 
             <div className="flex justify-between mt-4">
               <button
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg"
+                className="px-4 py-2 bg-stone-500 text-white rounded-lg"
                 onClick={() => setModalOpen(false)}
               >
                 Cancel
               </button>
               <button
                 className={`px-4 py-2 rounded-lg ${
-                  imageValid ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-600 cursor-not-allowed"
+                  imageValid ? "bg-blue-500 hover:bg-blue-600" : "bg-stone-600 cursor-not-allowed"
                 }`}
                 onClick={saveImage}
                 disabled={!imageValid}
