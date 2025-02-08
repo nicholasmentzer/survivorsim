@@ -492,6 +492,7 @@ const manageAlliances = (tribe) => {
   alliances = alliances.concat(newAlliances);
 
   let existingAlliances = [];
+  let seenAlliances = new Set();
   alliances.forEach(alliance => {
     let totalRelationship = 0;
     let numPairs = 0;
@@ -504,6 +505,14 @@ const manageAlliances = (tribe) => {
         }
       });
     });
+
+    let memberNames = alliance.members.map(p => p.name).sort().join(",");
+    
+    if (seenAlliances.has(memberNames)) {
+      dissolvedAlliances.push(alliance);
+      return;
+    }
+    seenAlliances.add(memberNames);
   
     if (alliance.strength <= 4 && Math.random() < .5) {
       if (newAlliances.includes(alliance)){
@@ -759,13 +768,17 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
             tribes[0] = tribecopy;
+            const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
+            console.log(wasEliminatedByRocks);
             updateResults({
               type: "voting-summary",
               message: voteSummary,
             });
             updateResults({
               type: "event",
-              message: `${votedout.name} voted out by a vote of ${sortedVotes}`,
+              message: wasEliminatedByRocks 
+                ? `${votedout.name} is eliminated by rocks!` 
+                : `${votedout.name} voted out by a vote of ${sortedVotes}`,
               images: [votedout.image]
             });
             updateResults({
