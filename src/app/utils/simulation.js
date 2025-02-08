@@ -393,7 +393,6 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     "Player1 ignored Player2 in an important strategy discussion."
   ];
 
-  console.log(useOnlyCustomEvents);
   if (customEvents.length > 0 && (useOnlyCustomEvents || Math.random() < 0.5)) {
     const randomCustomEvent = customEvents[Math.floor(Math.random() * customEvents.length)];
     eventType = randomCustomEvent.type;
@@ -533,7 +532,6 @@ export const simulate = (players, updateResults, customEvents, useOnlyCustom, ts
   tribeNames = tribes;
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
-  console.log(useOnlyCustomEvents);
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {
       usableAdvantages.push(key);
@@ -662,13 +660,17 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary } = voting(tribes[loser], alliances, false, -1, usableAdvantages, tribeIdols);
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
+          const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
+          const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
           updateResults({
             type: "voting-summary",
             message: voteSummary,
           });
           updateResults({
             type: "event",
-            message: `${votedout.name} voted out by a vote of ${sortedVotes}`,
+            message: wasEliminatedByRocks 
+              ? `${votedout.name} is eliminated by rocks!` 
+              : wasEliminatedByFire ? `${votedout.name} is eliminated in fire!` : `${votedout.name} voted out by a vote of ${sortedVotes}`,
             images: [votedout.image]
           });
           updateResults({
@@ -767,7 +769,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
             const votedout = tribecopy.splice(out, 1)[0];
             tribes[0] = tribecopy;
             const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
-            console.log(wasEliminatedByRocks);
+            const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
             updateResults({
               type: "voting-summary",
               message: voteSummary,
@@ -776,7 +778,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
               type: "event",
               message: wasEliminatedByRocks 
                 ? `${votedout.name} is eliminated by rocks!` 
-                : `${votedout.name} voted out by a vote of ${sortedVotes}`,
+                : wasEliminatedByFire ? `${votedout.name} is eliminated in fire!` : `${votedout.name} voted out by a vote of ${sortedVotes}`,
               images: [votedout.image]
             });
             updateResults({

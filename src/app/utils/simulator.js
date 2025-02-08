@@ -429,10 +429,37 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
     let revoteSorted = Object.entries(revoteVotes).sort((a, b) => b[1] - a[1]);
 
-    if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
-      let safePlayers = tribe.filter((p, i) => !tiedIndexes.includes(p.name) && i !== immuneIndex && i !== immuneIdolIndex);
+    let highestVoteCount = revoteSorted[0][1];
+    let safePlayers = revoteSorted
+      .filter(([_, count]) => count === highestVoteCount)
+      .map(([name]) => name);
+      console.log(safePlayers);
+
+      console.log(revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1] && merged && tribe.length === 4);
+
+    if(revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1] && merged && tribe.length === 4){
+      console.log("hi");
       if (safePlayers.length > 0) {
-        let eliminatedByRock = safePlayers[Math.floor(Math.random() * safePlayers.length)];
+        let eliminatedByFire = safePlayers[Math.floor(Math.random() * safePlayers.length)];
+        console.log(eliminatedByFire);
+        let eliminatedIndex = eliminatedByFire;
+        voteDetails.push(``);
+        voteDetails.push( `<span class="font-bold text-lg">Firemaking competition</span>`);
+        voteSummary.push(``);
+        voteSummary.push( `<span class="font-bold text-lg">Tied again! Since it is final 4, we will have a firemaking challenge to decide who goes home.</span>`);
+
+        voteDetails.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
+        voteSummary.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
+        removeFromAlliance(tribe[eliminatedIndex]);
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
+      }
+    } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
+      let eligibleForRocks = tribe.filter(
+        (p) => !safePlayers.includes(p.name) && p.name !== immuneIndex && p.name !== immuneIdolIndex
+      );
+    
+      if (eligibleForRocks.length > 0) {
+        let eliminatedByRock = eligibleForRocks[Math.floor(Math.random() * eligibleForRocks.length)];
         let eliminatedIndex = tribe.indexOf(eliminatedByRock);
         voteDetails.push(``);
         voteDetails.push( `<span class="font-bold text-lg">Rock Draw</span>`);
