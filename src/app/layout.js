@@ -14,6 +14,20 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Chains",
   description: "A Survivor Simulator",
+  openGraph: {
+    title: "Chains",
+    description: "A Survivor Simulator",
+    url: "https://www.thesurvivorchains.com",
+    type: "website",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Chains - Banner",
+      },
+    ],
+  },
   icons: {
     icon: '/favicon.ico',
   },
