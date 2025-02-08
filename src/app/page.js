@@ -417,18 +417,20 @@ export default function Home() {
         </article>
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
-              <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
+              <div className="flex flex-col justify-center items-center">
+                <h2 className="text-xl font-bold mb-5">Configure your cast</h2>
 
-              {/* Hide Sliders Toggle Checkbox */}
-              <div className=" flex items-center">
-                <input
-                  type="checkbox"
-                  id="hideSliders"
-                  checked={hideSliders}
-                  onChange={() => setHideSliders((prev) => !prev)}
-                  className="mr-2 w-4 h-4"
-                />
-                <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
+                {/* Hide Sliders Toggle Checkbox */}
+                <div className=" flex items-center">
+                  <input
+                    type="checkbox"
+                    id="hideSliders"
+                    checked={hideSliders}
+                    onChange={() => setHideSliders((prev) => !prev)}
+                    className="mr-2 w-4 h-4"
+                  />
+                  <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
+                </div>
               </div>
 
               {/*3 Columns*/}
