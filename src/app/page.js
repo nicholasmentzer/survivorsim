@@ -32,6 +32,19 @@ export default function Home() {
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
   const [tribeSize, setTribeSize] = useState(10);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+    }
+  }, []);
+
+  const closeWelcomePopup = () => {
+    localStorage.setItem("hasSeenWelcome", "true");
+    setShowWelcome(false);
+  };
 
   const addCustomEvent = (e) => {
     e.preventDefault();
@@ -134,6 +147,25 @@ export default function Home() {
       <div className="flex min-h-screen">
 
       <main className="w-[100%] mx-auto flex flex-col items-center flex-grow relative">
+      {showWelcome && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+          <div className="bg-stone-900 text-white p-6 rounded-lg shadow-lg max-w-md w-full text-center">
+            <h2 className="text-xl font-bold mb-3">Welcome to Chains - A Survivor Simulator!</h2>
+            <p className="text-sm text-left">
+              Customize your players, configure settings, and simulate unique Survivor seasons! <br/><br/>
+            </p>
+            <p className="text-base mb-4 text-left font-bold">
+              Reminder: To edit player images and names, just click on the picture or names, and use sliders to adjust stats!!
+            </p>
+            <button
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+              onClick={closeWelcomePopup}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-12 p-6 rounded-lg">
           <div className="flex justify-center">
