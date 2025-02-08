@@ -117,6 +117,11 @@ export default function Home() {
         <title>Chains - A Survivor Simulator</title>
         <meta name="description" content="Customize the contestants, set the rules and scenarios, and experience unique Survivor simulations every time!"/>
         <link rel="icon" href="/favicon.ico" />
+        <meta property="og:title" content="Chains" />
+        <meta property="og:description" content="A Survivor Simulator" />
+        <meta property="og:image" content="https://thesurvivorchains.com/logo.png" />
+        <meta property="og:url" content="https://thesurvivorchains.com/" />
+        <meta property="og:type" content="website" />
         <script src="https://code.jquery.com/jquery-2.1.4.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js" defer></script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />

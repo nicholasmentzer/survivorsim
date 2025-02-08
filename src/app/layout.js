@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Survivor Chains",
+  title: "Chains",
   description: "A Survivor Simulator",
   icons: {
     icon: '/favicon.ico',
