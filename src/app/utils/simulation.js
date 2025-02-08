@@ -120,6 +120,7 @@ let randomAllianceNames = [
     "The Goon Squad"
 ];
 let useOnlyCustomEvents = false;
+let tribeSize = 10;
 
 
 export const resetSimulation = () => {
@@ -243,6 +244,7 @@ export const resetSimulation = () => {
     "The Goon Squad"
   ];
   useOnlyCustomEvents = false;
+  tribeSize = 10;
 };
 
 export const removeFromAlliance = (loser) => {
@@ -253,9 +255,8 @@ export const removeFromAlliance = (loser) => {
 }
 
 const populateTribes = (players, updateResults) => {
-  const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
-  const tribe1 = players.slice(0, 10);
-  const tribe2 = players.slice(10, 20);
+  const tribe1 = players.slice(0, tribeSize);
+  const tribe2 = players.slice(tribeSize);
 
   tribes = [tribe1, tribe2];
   merged = false;
@@ -520,10 +521,11 @@ const manageAlliances = (tribe) => {
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
 
-export const simulate = (players, updateResults, customEvents, useOnlyCustom, tribes, advantages) => {
+export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages) => {
   let episodes = [];
   tribeNames = tribes;
   useOnlyCustomEvents = useOnlyCustom;
+  tribeSize = tsize;
   console.log(useOnlyCustomEvents);
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {

@@ -1,12 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData, hideSliders }) => {
+const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData, hideSliders, tribeSize }) => {
   const [playerData, setPlayerData] = useState(players[gender]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [imageValid, setImageValid] = useState(true);
+
+  useEffect(() => {
+    setPlayerData(players[gender].slice(0, tribeSize));
+  }, [players, tribeSize, gender]);
 
   const updatePlayerProperty = (playerIndex, prop, value) => {
     const updatedPlayers = playerData.map((player, index) =>

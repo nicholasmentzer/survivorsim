@@ -7,6 +7,7 @@ import playersData from "./data/players.json";
 import careersData from "./data/careers.json";
 import regionsData from "./data/regions.json";
 import tribesData from "./data/tribes.json";
+import Footer from "./components/Footer";
 
 const getRandomPlayers = (players, num) => {
   const shuffled = [...players].sort(() => 0.5 - Math.random());
@@ -30,6 +31,7 @@ export default function Home() {
     immunityIdol: false,
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
+  const [tribeSize, setTribeSize] = useState(10);
 
   const addCustomEvent = (e) => {
     e.preventDefault();
@@ -54,10 +56,10 @@ export default function Home() {
 
   useEffect(() => {
     setPlayerConfig({
-      men: getRandomPlayers(playersData.men, 10),
-      women: getRandomPlayers(playersData.women, 10),
+      men: getRandomPlayers(playersData.men, tribeSize),
+      women: getRandomPlayers(playersData.women, tribeSize),
     });
-  }, []);
+  }, [tribeSize]);
 
   const [results, setResults] = useState([]);
   const [episodes, setEpisodes] = useState([]);
@@ -67,7 +69,7 @@ export default function Home() {
   const startSimulation = () => {
     window.scrollTo({ top: 0 });
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeNames, advantages);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -126,7 +128,7 @@ export default function Home() {
       />
       <div className="flex min-h-screen">
 
-      <main className="w-[100%] mx-auto flex flex-col items-center">
+      <main className="w-[100%] mx-auto flex flex-col items-center flex-grow relative">
       <div className="relative min-h-screen flex-col items-center justify-center">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-12 p-6 rounded-lg">
           <div className="flex justify-center">
@@ -454,6 +456,7 @@ export default function Home() {
                     regions={regionsData}
                     tribes={tribesData}
                     hideSliders={hideSliders}
+                    tribeSize={tribeSize}
                   />
                 </div>
 
@@ -466,6 +469,20 @@ export default function Home() {
                     className="w-auto bg-transparent text-xl font-bold text-purple-400 text-center border-b-2 border-purple-400 focus:outline-none"
                   />
 
+                  <div className="h-4" />
+                  <div className="flex flex-col items-center">
+                    <h2 className="font-bold text-white mb-2">Select Tribe Size</h2>
+                    
+                    <input 
+                      type="range" 
+                      min="7" 
+                      max="15" 
+                      value={tribeSize} 
+                      onChange={(e) => setTribeSize(Number(e.target.value))} 
+                      className="w-64"
+                    />
+                    <p className="text-white">{`Tribe Size: ${tribeSize} (${tribeSize * 2} Total Players)`}</p>
+                  </div>
                   <div className="h-4" />
                   <h3 className="text-white font-bold mb-2">Select Advantages</h3>
                   <div className="flex flex-col space-y-2">
@@ -502,6 +519,7 @@ export default function Home() {
                     regions={regionsData}
                     tribes={tribesData}
                     hideSliders={hideSliders}
+                    tribeSize={tribeSize}
                   />
                 </div>
 
@@ -627,6 +645,7 @@ export default function Home() {
             )}
           </div>
       </div>
+      <Footer />
       </main>
       </div>
     </div>
