@@ -415,7 +415,7 @@ export default function Home() {
                             ) : null}
 
                             {event.type === "voting-summary" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-1/2">
                                 {event.message.map((vote, i) => (
                                   <div key={i} className="text-xs sm:text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}

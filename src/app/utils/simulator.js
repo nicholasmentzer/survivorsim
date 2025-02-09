@@ -54,7 +54,7 @@ const generateFormattedVotes = (votes) => {
   return votes.map(([name, count]) => `${count}`).join("-");
 }
 
-const generateVotingSummary = (votes) => {
+const generateVotingSummary = (votes, tribe) => {
   let voteCounts = {};
   let voteOrder = [];
 
@@ -80,11 +80,17 @@ const generateVotingSummary = (votes) => {
   }
 
   return voteOrder.map((vote, index) => {
-    return `${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target}`;
+    let player = tribe.find(p => p.name === vote.target);
+    return `
+      <div class="flex flex-col items-center space-x-3">
+        <img src="${player.image}" alt="${vote.target}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+        <p>${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target}</p>
+      </div>
+    `;
   });
 };
 
-const generateVotingSummaryWithIdol = (votes, immunePlayer) => {
+const generateVotingSummaryWithIdol = (votes, immunePlayer, tribe) => {
   let voteCounts = {};
   let voteOrder = [];
   let immuneVotes = [];
@@ -121,9 +127,16 @@ const generateVotingSummaryWithIdol = (votes, immunePlayer) => {
   }
 
   return voteOrder.map((vote, index) => {
+    let player = tribe.find(p => p.name === vote.target);
     return vote.immune
-      ? `${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target} <span class="text-red-500">DOES NOT COUNT</span>`
-      : `${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target}`;
+      ? `<div class="flex flex-col items-center space-x-3">
+        <img src="${player.image}" alt="${vote.voter}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+        <p>${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target} <span class="text-red-500">DOES NOT COUNT</span></p>
+      </div>`
+      : `<div class="flex flex-col items-center space-x-3">
+          <img src="${player.image}" alt="${vote.voter}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+          <p>${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target}</p>
+        </div>`;
   });
 };
 
@@ -360,7 +373,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     highestVoteCount = sortedVotes[0][1];
     tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
 
-    voteSummary.push(...generateVotingSummaryWithIdol([...exportVotes], immunePlayer));
+    voteSummary.push(...generateVotingSummaryWithIdol([...exportVotes], immunePlayer, tribe));
     
     let newSortedVotes;
 
@@ -396,7 +409,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       }
     }
   } else {
-    voteSummary.push(...generateVotingSummary([...exportVotes]));
+    voteSummary.push(...generateVotingSummary([...exportVotes], tribe));
   }
 
   if (tiedPlayers.length > 1) {
@@ -425,7 +438,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     });
     voteDetails.push(...revoteDetails);
     voteSummary.push(...revoteSummary);
-    voteSummary.push(...generateVotingSummary([...revoteExportVotes]));
+    voteSummary.push(...generateVotingSummary([...revoteExportVotes], tribe));
 
     let revoteSorted = Object.entries(revoteVotes).sort((a, b) => b[1] - a[1]);
 
@@ -433,15 +446,10 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     let safePlayers = revoteSorted
       .filter(([_, count]) => count === highestVoteCount)
       .map(([name]) => name);
-      console.log(safePlayers);
-
-      console.log(revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1] && merged && tribe.length === 4);
 
     if(revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1] && merged && tribe.length === 4){
-      console.log("hi");
       if (safePlayers.length > 0) {
         let eliminatedByFire = safePlayers[Math.floor(Math.random() * safePlayers.length)];
-        console.log(eliminatedByFire);
         let eliminatedIndex = eliminatedByFire;
         voteDetails.push(``);
         voteDetails.push( `<span class="font-bold text-lg">Firemaking competition</span>`);

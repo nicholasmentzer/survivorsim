@@ -555,6 +555,42 @@ export const simulate = (players, updateResults, customEvents, useOnlyCustom, ts
   updateResults(episodes);
 };
 
+const getAllianceTargets = (tribe, alliances, updateResults) => {
+  let allianceTargets = [];
+
+  let filteredAlliances = alliances.filter(alliance => 
+    alliance.members.some(member => tribe.includes(member))
+  );
+
+  filteredAlliances.forEach(alliance => {
+    let bestTarget = null;
+    let lowestRelationship = Infinity;
+
+    alliance.members.forEach(member => {
+      tribe.forEach(candidate => {
+        if (
+          candidate !== member &&
+          !alliance.members.includes(candidate)
+        ) {
+          let relationshipScore = member.relationships[candidate.name] || 0;
+
+          if (relationshipScore < lowestRelationship) {
+            lowestRelationship = relationshipScore;
+            bestTarget = candidate;
+          }
+        }
+      });
+    });
+
+    if (bestTarget) {
+      updateResults({
+        type: "allianceTarget",
+        message: `<span class="text-blue-400 font-bold">${alliance.name}</span><span class="font-normal"> alliance plans to target </span><span class="text-red-400 font-bold">${bestTarget.name}</span>.`,
+      });
+    }
+  });
+};
+
 /**
  * Handles the pre-merge phase of the game.
  * @param {Function} updateResults - Callback to update the game status.
@@ -659,6 +695,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       state = "tribal";
       const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary } = voting(tribes[loser], alliances, false, -1, usableAdvantages, tribeIdols);
       if (out !== undefined) {
+          getAllianceTargets(tribes[loser], alliances, updateResults);
           const votedout = tribes[loser].splice(out, 1)[0];
           const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
           const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
