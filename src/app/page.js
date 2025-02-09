@@ -28,7 +28,7 @@ export default function Home() {
   const [showDetailedVotes, setShowDetailedVotes] = useState(false);
   const [tribeNames, setTribeNames] = useState({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
   const [advantages, setAdvantages] = useState({
-    immunityIdol: false,
+    immunityIdol: true,
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
   const [tribeSize, setTribeSize] = useState(10);
