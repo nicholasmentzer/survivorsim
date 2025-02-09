@@ -421,10 +421,35 @@ export default function Home() {
                                 ))}
                               </div>
                             : event.type === "voting" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm max-w-max">
-                                {event.message.map((vote, i) => (
-                                  <div key={i} className="text-xs sm:text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>
-                                ))}
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center w-1/2">
+                                {event.message.map((vote, i) => {
+                                  if(!vote.includes("voted for")){ return(<div key={i} className="text-xs sm:text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>); } else { 
+                                    let action = "voted for";
+                                    if (vote.includes("revoted for")) {
+                                      action = "revoted for";
+                                    }
+
+                                    const voteParts = vote.split(` ${action} `);
+                                    const voter = voteParts[0];
+                                    let target = voteParts[1] || "";
+
+                                    let allianceText = "";
+                                    if (target.includes(" with ")) {
+                                      const targetParts = target.split(" with ");
+                                      target = targetParts[0];
+                                      allianceText = ` with ${targetParts[1]}`;
+                                    }
+
+                                    return (
+                                      <div key={i} className="grid grid-cols-3 gap-2 px-4 py-1">
+                                        <span className="text-sm font-semibold text-blue-300 text-left">{voter}</span>
+                                        <span className="text-sm text-gray-400 text-center">→</span>
+                                        <span className="text-sm font-semibold text-red-300 text-right">{target}</span>
+                                        {allianceText && <span className="text-xs text-gray-400 italic">{allianceText}</span>}
+                                      </div>
+                                    );
+                                  }
+                                })}
                               </div>
                             : event.type === "event" && event.numPlayers === 2 ?
                               <div

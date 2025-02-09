@@ -198,7 +198,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   voteDetails.push(`<span class="font-bold text-lg">Vote Summary</span>`);
   voteSummary.push(`<span class="font-bold text-lg">It's time to vote!</span>`);
 
-  voteDetails.push(...getAllianceTargets(tribe, alliances2));
+  //voteDetails.push(...getAllianceTargets(tribe, alliances2));
 
   tribe.forEach((voter, voterIndex) => {
     if (!voter) return;
@@ -266,7 +266,6 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         bestAlliance ? ` with ${bestAlliance.name}` : ""
       }`);
       exportVotes.push({target: target.name, voter: voter.name});
-      //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${target.name}`);
     } else {
       let perceivedVotes = {};
       Object.keys(votes).forEach(vote => {
@@ -462,11 +461,13 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
       }
     } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
+      console.log(safePlayers);
       let eligibleForRocks = tribe.filter(
-        (p) => !safePlayers.includes(p.name) && p.name !== immuneIndex && p.name !== immuneIdolIndex
+        (p, i) => !safePlayers.includes(`${i}`) && p.name !== immuneIndex && p.name !== immuneIdolIndex
       );
     
       if (eligibleForRocks.length > 0) {
+        console.log(eligibleForRocks);
         let eliminatedByRock = eligibleForRocks[Math.floor(Math.random() * eligibleForRocks.length)];
         let eliminatedIndex = tribe.indexOf(eliminatedByRock);
         voteDetails.push(``);
@@ -475,7 +476,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         voteSummary.push( `<span class="font-bold text-lg">Tied again! Every other non-immune player will draw rocks to decide who goes home</span>`);
 
         voteDetails.push(`${eliminatedByRock.name} eliminated by rocks.`);
-        voteSummary.push(`${eliminatedByRock.name} eliminated by rocks.`);
+        voteSummary.push(`${eliminatedByRock.name} drew the bad rock and is eliminated!`);
         removeFromAlliance(tribe[eliminatedIndex]);
         return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
       }
