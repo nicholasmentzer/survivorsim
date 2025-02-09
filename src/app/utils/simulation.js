@@ -119,6 +119,7 @@ let randomAllianceNames = [
     "The Cursed Outsiders",
     "The Goon Squad"
 ];
+let customRandomAllianceNames = [];
 let useOnlyCustomEvents = false;
 let tribeSize = 10;
 
@@ -244,6 +245,7 @@ export const resetSimulation = () => {
     "The Goon Squad"
   ];
   useOnlyCustomEvents = false;
+  customRandomAllianceNames = [];
   tribeSize = 10;
 };
 
@@ -482,9 +484,19 @@ const manageAlliances = (tribe) => {
       });
 
       if (!isDuplicate && !isTooSimilar) {
-        const randomIndex = Math.floor(Math.random() * randomAllianceNames.length);
-        let allianceName = randomAllianceNames[randomIndex];
-        randomAllianceNames.splice(randomIndex, 1);
+
+        let allianceName;
+
+        if(customRandomAllianceNames.length > 0){
+          const randomIndex = Math.floor(Math.random() * customRandomAllianceNames.length);
+          allianceName = customRandomAllianceNames[randomIndex];
+          customRandomAllianceNames.splice(randomIndex, 1);
+        } else {
+          const randomIndex = Math.floor(Math.random() * randomAllianceNames.length);
+          allianceName = randomAllianceNames[randomIndex];
+          randomAllianceNames.splice(randomIndex, 1);
+        }
+
         newAlliances.push({
           name: allianceName,
           members: [player, ...potentialMembers],
@@ -527,11 +539,12 @@ const manageAlliances = (tribe) => {
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
 
-export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages) => {
+export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames) => {
   let episodes = [];
   tribeNames = tribes;
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
+  customRandomAllianceNames = customAllianceNames;
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {
       usableAdvantages.push(key);

@@ -20,7 +20,9 @@ export default function Home() {
   const [tribes, setTribes] = useState([]);
   const [playerConfig, setPlayerConfig] = useState(null);
   const [customEvents, setCustomEvents] = useState([]);
+  const [customAllianceNames, setCustomAllianceNames] = useState("");
   const [eventDescription, setEventDescription] = useState("");
+  const [customAllianceDescription, setCustomAllianceDescription] = useState("");
   const [eventType, setEventType] = useState("positive");
   const [eventSeverity, setEventSeverity] = useState(1);
   const [hideSliders, setHideSliders] = useState(false);
@@ -63,6 +65,12 @@ export default function Home() {
     setEventDescription("");
   };
 
+  const addCustomAllianceName = (e) => {
+    e.preventDefault();
+    setCustomAllianceNames([...customAllianceNames, customAllianceDescription]);
+    setCustomAllianceDescription("");
+  };
+
   const removeCustomEvent = (index) => {
     setCustomEvents((prevEvents) => prevEvents.filter((_, i) => i !== index));
   };  
@@ -82,7 +90,7 @@ export default function Home() {
   const startSimulation = () => {
     window.scrollTo({ top: 0 });
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages, customAllianceNames);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -672,6 +680,43 @@ export default function Home() {
               )}
 
               <div className="h-10" />
+
+              <h2 className="text-xl font-bold mt-8">Add Custom Alliance Name</h2>
+              <form onSubmit={addCustomAllianceName} className="bg-stone-800 p-4 rounded-lg">
+                <input
+                  type="text"
+                  value={customAllianceDescription}
+                  onChange={(e) => setCustomAllianceDescription(e.target.value)}
+                  placeholder="Custom Alliance name"
+                  className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400 text-xs sm:text-base"
+                />
+                
+                <div className="h-2"/>
+                <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg">Add Alliance Name</button>
+              </form>
+
+              <h3 className="text-lg font-bold mt-4">Custom alliance Names</h3>
+              {customAllianceNames.length === 0 ? (
+                <p className="text-gray-400">No custom alliance names added yet.</p>
+              ) : (
+                <ul className="text-white space-y-1">
+                  <div className="mt-4 space-y-2">
+                    {customAllianceNames.map((name, index) => (
+                      <div key={index} className="flex items-center justify-between bg-stone-800 text-white px-4 py-2 rounded-lg shadow-md">
+                        <span>
+                          {name}
+                        </span>
+                        <button
+                          className="ml-4 bg-white px-2 py-1 rounded-full text-sm hover:bg-red-300"
+                          onClick={() => removeCustomEvent(index)}
+                        >
+                          ❌
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </ul>
+              )}
             </div>
           )}
 
