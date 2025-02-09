@@ -82,7 +82,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
           max="10"
           value={player[label]}
           onChange={(e) => updatePlayerProperty(playerIndex, label, Number(e.target.value))}
-          className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer"
+          className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
         />
 
         <span className="w-8 text-sm text-gray-400 text-center">{player[label]}</span>
