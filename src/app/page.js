@@ -374,7 +374,6 @@ export default function Home() {
                                 className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
                                 style={{ imageRendering: "high-quality" }} 
                               />
-                              <p className="text-white text-xs sm:text-sm mt-1">{member.name}</p>
                             </div>
                           ))}
                         </div>
