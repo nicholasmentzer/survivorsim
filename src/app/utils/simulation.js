@@ -598,6 +598,7 @@ const getAllianceTargets = (tribe, alliances, updateResults) => {
     if (bestTarget) {
       updateResults({
         type: "allianceTarget",
+        alliance: alliance,
         message: `<span class="text-blue-400 font-bold">${alliance.name}</span><span class="font-normal"> alliance plans to target </span><span class="text-red-400 font-bold">${bestTarget.name}</span>.`,
       });
     }

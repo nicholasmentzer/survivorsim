@@ -364,6 +364,27 @@ export default function Home() {
                             
                         </div>
                       );
+                    } else if (event.type === "allianceTarget") {
+                      return( <div key={index} className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full max-w-3xl mx-auto">
+                        <div className="flex flex-wrap justify-center gap-3 mt-2">
+                          {event.alliance.members.map((member) => (
+                            <div key={member.name} className="text-center">
+                              <img 
+                                src={member.image} 
+                                className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 mx-auto" 
+                                style={{ imageRendering: "high-quality" }} 
+                              />
+                              <p className="text-white text-xs sm:text-sm mt-1">{member.name}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div
+                          className={` text-white px-6 pt-6 rounded-lg text-center text-xs sm:text-base font-semibold ${
+                            event.images ? "" : "py-4 px-8"
+                          }`}
+                        > <div dangerouslySetInnerHTML={{ __html: event.message }} />
+                        </div>
+                      </div> );
                     } else if (event.type === "immunity") {
                       return (
                         <div key={index}>
