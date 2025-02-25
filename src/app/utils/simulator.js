@@ -183,7 +183,6 @@ const getAllianceTargets = (tribe, alliances) => {
   );
 };
 
-
 /**
  * Voting logic for a tribe during the simulation.
  * @param {Array} tribe - Array of players in the tribe.
@@ -336,7 +335,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   let tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
 
   {/*Idol Check*/}
-  if (usableAdvantages.includes("immunityIdol") && idols != null) {
+  if (usableAdvantages.includes("immunityIdol") && idols != null && tribe.length >= 5) {
 
     let potentialIdolPlayers = tribe.filter(player => 
       Object.values(idols)
@@ -346,11 +345,13 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
     let primaryTargetIndex = parseInt(sortedVotes[0][0]);
     let primaryTarget = tribe[primaryTargetIndex];
+    let idolUser = null;
 
     if (potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7) {
       immunePlayer = primaryTarget.name;
       immuneIdolIndex = tribe.indexOf(primaryTarget);
       idolUsed = true;
+      idolUser = primaryTarget;
       voteSummary.push(`<span class="font-bold text-lg">${primaryTarget.name} plays the Hidden Immunity Idol!</span>`);
     }
 
@@ -365,6 +366,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         immunePlayer = primaryTarget.name;
         immuneIdolIndex = tribe.indexOf(primaryTarget);
         idolUsed = true;
+        idolUser = idolHolderAlly;
         voteSummary.push(`<span class="font-bold text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
       }
     }
@@ -376,10 +378,10 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     
     let newSortedVotes;
 
-    if (idolUsed) {
+    if (idolUsed && idolUser) {
       Object.keys(idols).forEach(key => {
-        if (idols[key] === immunePlayer) {
-          idols[key] = null;
+        if (idols[key] && idols[key].name === idolUser.name) {
+            idols[key] = null;
         }
       });
       let validVotes = exportVotes.filter(vote => vote.target !== immunePlayer);
@@ -401,10 +403,10 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       } else if (newSortedVotes.length > 0) {
         const [loserIndex] = newSortedVotes[0];
         removeFromAlliance(tribe[loserIndex]);
-        return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary };
+        return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary, idols };
       } else {
         voteSummary.push(`<span class="font-bold text-lg">All votes were nullified. Revote required!</span>`);
-        return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary };
+        return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols };
       }
     }
   } else {
@@ -458,7 +460,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         voteDetails.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
         voteSummary.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
         removeFromAlliance(tribe[eliminatedIndex]);
-        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
       }
     } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
       console.log(safePlayers);
@@ -478,24 +480,24 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         voteDetails.push(`${eliminatedByRock.name} eliminated by rocks.`);
         voteSummary.push(`${eliminatedByRock.name} drew the bad rock and is eliminated!`);
         removeFromAlliance(tribe[eliminatedIndex]);
-        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
       }
     }
 
     if (revoteSorted.length === 0) {
       voteDetails.push(`<span class="font-bold text-lg">Error: No valid revote occurred.</span>`);
       voteSummary.push(`<span class="font-bold text-lg">Error: No valid revote occurred.</span>`);
-      return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary };
+      return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols };
     }
 
     let revoteLoser = parseInt(revoteSorted[0][0]);
     removeFromAlliance(tribe[revoteLoser]);
-    return { voteIndex: revoteLoser, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary };
+    return { voteIndex: revoteLoser, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
   }
 
   const [loser] = sortedVotes[0];
   removeFromAlliance(tribe[loser]);
-  return { voteIndex: parseInt(loser), sortedVotes: generateFormattedVotes(sortedVotes), voteDetails, voteSummary };
+  return { voteIndex: parseInt(loser), sortedVotes: generateFormattedVotes(sortedVotes), voteDetails, voteSummary, idols };
 };
 
 /**

@@ -705,11 +705,12 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       updateResults({ type: "immunity", message: `${winner + 1 === 1 ? tribeNames.tribe1 : tribeNames.tribe2} wins immunity! So, ${winner + 1 === 2 ? tribeNames.tribe1 : tribeNames.tribe2} will be going to tribal council`, members: [...tribes[loser]] });
 
       detectDrasticRelationships(tribes[loser], updateResults);
+      getAllianceTargets(tribes[loser], alliances, updateResults);
 
       state = "tribal";
-      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary } = voting(tribes[loser], alliances, false, -1, usableAdvantages, tribeIdols);
+      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribes[loser], alliances, false, -1, usableAdvantages, tribeIdols);
+      tribeIdols = idols;
       if (out !== undefined) {
-          getAllianceTargets(tribes[loser], alliances, updateResults);
           const votedout = tribes[loser].splice(out, 1)[0];
           const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
           const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
@@ -811,11 +812,12 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         });
 
         detectDrasticRelationships(tribes[0], updateResults);
+        getAllianceTargets(tribes[0], alliances, updateResults);
 
         state = "tribal";
         const tribecopy = [...tribe];
-        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols);
-  
+        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols);
+        tribeIdols = idols;
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
             tribes[0] = tribecopy;
