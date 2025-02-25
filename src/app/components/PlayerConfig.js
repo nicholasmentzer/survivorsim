@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import playersData from "../data/players.json";
 
 const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData, hideSliders, tribeSize }) => {
   const [playerData, setPlayerData] = useState(players[gender]);
@@ -11,6 +12,23 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
   useEffect(() => {
     setPlayerData(players[gender].slice(0, tribeSize));
   }, [players, tribeSize, gender]);
+
+  const presetPlayers = [...playersData.men, ...playersData.women];
+
+  const assignPresetCharacter = (playerIndex, selectedName) => {
+    const selectedPreset = presetPlayers.find(preset => preset.name === selectedName);
+    
+    if (selectedPreset) {
+      const updatedPlayers = playerData.map((player, index) =>
+        index === playerIndex
+          ? { ...player, name: selectedPreset.name, image: selectedPreset.image }
+          : player
+      );
+  
+      setPlayerData(updatedPlayers);
+      updatePlayers(gender, updatedPlayers);
+    }
+  };
 
   const updatePlayerProperty = (playerIndex, prop, value) => {
     const updatedPlayers = playerData.map((player, index) =>
@@ -99,8 +117,23 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
         {playerData.map((player, index) => (
           <div
               key={player.id}
-              className="player border border-gray-300 rounded p-4 space-y-3 w-auto sm:w-[330px] mx-auto bg-stone-900 shadow-md flex flex-col items-center"
+              className="player relative border border-gray-300 rounded p-4 space-y-3 w-auto sm:w-[330px] mx-auto bg-stone-900 shadow-md flex flex-col items-center"
             >
+              <div className="absolute top-2 left-2">
+                <select
+                  className="bg-stone-800 text-white text-xs px-2 py-1 rounded w-[18px]"
+                  onChange={(e) => assignPresetCharacter(index, e.target.value)}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Select Preset</option>
+                  {presetPlayers
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name)).map((preset, index) => (
+                      <option key={index} value={preset.name}>{preset.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <img
                 src={player.image || "/default-player.png"}
                 alt={player.name}

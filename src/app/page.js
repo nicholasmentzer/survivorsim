@@ -565,7 +565,7 @@ export default function Home() {
                 <div className="flex flex-col items-center justify-center">
                   <input
                     type="text"
-                    value={tribeNames.tribe1}
+                    placeholder={"Tribe 1 Name"}
                     onChange={(e) => setTribeNames({ ...tribeNames, tribe1: e.target.value })}
                     className="w-auto bg-transparent text-xl font-bold text-blue-400 text-center border-b-2 border-blue-400 focus:outline-none"
                   />
@@ -628,7 +628,7 @@ export default function Home() {
                 <div className="flex flex-col items-center justify-center">
                   <input
                     type="text"
-                    value={tribeNames.tribe2}
+                    placeholder={"Tribe 2 Name"}
                     onChange={(e) => setTribeNames({ ...tribeNames, tribe2: e.target.value })}
                     className="w-auto bg-transparent text-xl font-bold text-red-400 text-center border-b-2 border-red-400 focus:outline-none"
                   />
