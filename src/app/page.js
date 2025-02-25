@@ -742,7 +742,7 @@ export default function Home() {
                 <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg">Add Alliance Name</button>
               </form>
 
-              <h3 className="text-lg font-bold mt-4">Custom alliance Names</h3>
+              <h3 className="text-lg font-bold mt-4">Custom Alliance Names</h3>
               {customAllianceNames.length === 0 ? (
                 <p className="text-gray-400">No custom alliance names added yet.</p>
               ) : (
