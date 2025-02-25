@@ -136,6 +136,7 @@ export default function Home() {
     setShowDetailedVotes(false);
     if (currentEpisode === episodes.length - 1) {
       resetSimulation();
+      setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
       setMode("configure");
     } else {
       setCurrentEpisode((prev) => Math.min(prev + 1, episodes.length - 1));
@@ -148,6 +149,7 @@ export default function Home() {
     setShowDetailedVotes(false);
     if (currentEpisode === 0) {
       resetSimulation();
+      setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
       setMode("configure");
     } else {
       setCurrentEpisode((prev) => Math.max(prev - 1, 0));
@@ -246,7 +248,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");}}
+                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
                   >
                     BACK TO CONFIGURE
                   </button>
@@ -804,7 +806,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");}}
+                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
                   >
                     BACK TO CONFIGURE
                   </button>
