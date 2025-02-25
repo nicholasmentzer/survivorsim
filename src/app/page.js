@@ -71,6 +71,26 @@ export default function Home() {
     setCustomAllianceDescription("");
   };
 
+  const randomizeAllStats = () => {
+    setPlayerConfig((prevConfig) => {
+      const randomizeStats = (players) => {
+        return players.map(player => ({
+          ...player,
+          premerge: Math.floor(Math.random() * 10) + 1,
+          postmerge: Math.floor(Math.random() * 10) + 1,
+          likeability: Math.floor(Math.random() * 10) + 1,
+          threat: Math.floor(Math.random() * 10) + 1,
+          strategicness: Math.floor(Math.random() * 10) + 1,
+        }));
+      };
+  
+      return {
+        men: randomizeStats(prevConfig.men),
+        women: randomizeStats(prevConfig.women),
+      };
+    });
+  };
+
   const removeCustomEvent = (index) => {
     setCustomEvents((prevEvents) => prevEvents.filter((_, i) => i !== index));
   };  
@@ -529,6 +549,13 @@ export default function Home() {
                   />
                   <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
                 </div>
+
+                <button
+                  className="bg-gray-700 text-white px-2 py-1 rounded-lg font-bold text-sm mt-4 hover:bg-gray-800 transition"
+                  onClick={randomizeAllStats}
+                >
+                  Randomize Stats
+                </button>
               </div>
 
               {/*3 Columns*/}
