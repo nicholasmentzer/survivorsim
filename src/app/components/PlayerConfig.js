@@ -133,14 +133,27 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
                   ))}
                 </select>
               </div>
+              <div className="relative w-16 h-16 sm:w-24 sm:h-24">
+                {/* Character Image */}
+                <img
+                  src={player.image || "/default-player.png"}
+                  alt={player.name}
+                  className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-full cursor-pointer border-2 border-gray-500"
+                  onClick={() => openImageModal(index)}
+                  style={{ imageRendering: "high-quality" }} 
+                />
 
-              <img
-                src={player.image || "/default-player.png"}
-                alt={player.name}
-                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-full cursor-pointer border-2 border-gray-500"
-                onClick={() => openImageModal(index)}
-                style={{ imageRendering: "high-quality" }} 
-              />
+                {/* Edit Icon Overlay */}
+                <div 
+                  className="absolute bottom-1 right-1 bg-gray-900 bg-opacity-70 p-1 rounded-full cursor-pointer"
+                  onClick={() => openImageModal(index)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                </div>
+              </div>
 
               <input
                 type="text"
