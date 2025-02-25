@@ -108,6 +108,22 @@ export default function Home() {
   const [useOnlyCustomEvents, setUseOnlyCustomEvents] = useState(false);
 
   const startSimulation = () => {
+    const allNames = [...playerConfig.men.map(p => p.name), ...playerConfig.women.map(p => p.name)];
+
+    // Check for duplicates
+    const nameSet = new Set();
+    const duplicates = allNames.filter(name => {
+      if (nameSet.has(name)) return true;
+      nameSet.add(name);
+      return false;
+    });
+
+    // If duplicates exist, show an alert and stop the function
+    if (duplicates.length > 0) {
+      alert(`Duplicate names found: ${duplicates.join(", ")}. Please make all names unique before starting the simulation.`);
+      return;
+    }
+
     window.scrollTo({ top: 0 });
     setEpisodes([]);
     simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages, customAllianceNames);
