@@ -63,8 +63,8 @@ const generateVotingSummary = (votes, tribe) => {
   });
 
   let sortedCandidates = Object.entries(voteCounts)
-    .sort((a, b) => b[1] - a[1]) 
     .map(([name]) => name);
+    console.log(sortedCandidates);
 
   while (votes.length > 0) {
     for (let i = 0; i < sortedCandidates.length; i++) {
@@ -106,7 +106,6 @@ const generateVotingSummaryWithIdol = (votes, immunePlayer, tribe) => {
   });
 
   let sortedCandidates = Object.entries(voteCounts)
-    .sort((a, b) => b[1] - a[1])
     .map(([name]) => name);
 
   immuneVotes.forEach(target => {
@@ -138,49 +137,6 @@ const generateVotingSummaryWithIdol = (votes, immunePlayer, tribe) => {
           <p>${index + 1}${getOrdinalSuffix(index + 1)} vote: ${vote.target}</p>
         </div>`;
   });
-};
-
-/**
- * Calculates who each alliance in a tribe is targeting for vote-out
- * @param {*} tribe The tribe currently being evaluated
- * @param {*} alliances The alliances that exist in this simulation
- * @returns {*} Entries that display who each alliance is targetting
- */
-const getAllianceTargets = (tribe, alliances) => {
-  let allianceTargets = {};
-
-  let filteredAlliances = alliances.filter(alliance => 
-    alliance.members.some(member => tribe.includes(member))
-  );
-
-  filteredAlliances.forEach(alliance => {
-    let bestTarget = null;
-    let lowestRelationship = Infinity;
-
-    alliance.members.forEach(member => {
-      tribe.forEach(candidate => {
-        if (
-          candidate !== member &&
-          !alliance.members.includes(candidate)
-        ) {
-          let relationshipScore = member.relationships[candidate.name] || 0;
-
-          if (relationshipScore < lowestRelationship) {
-            lowestRelationship = relationshipScore;
-            bestTarget = candidate;
-          }
-        }
-      });
-    });
-
-    if (bestTarget) {
-      allianceTargets[alliance.name] = bestTarget.name;
-    }
-  });
-
-  return Object.entries(allianceTargets).map(([allianceName, target]) => 
-    `<span class="text-blue-400">${allianceName}</span> targeted <span class="text-red-400">${target}</span>.`
-  );
 };
 
 /**
