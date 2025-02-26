@@ -34,6 +34,7 @@ export default function Home() {
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
   const [tribeSize, setTribeSize] = useState(10);
+  const [mergeTime, setMergeTime] = useState(12);
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
@@ -126,7 +127,7 @@ export default function Home() {
 
     window.scrollTo({ top: 0 });
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages, customAllianceNames);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages, customAllianceNames, mergeTime);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -623,7 +624,22 @@ export default function Home() {
                     />
                     <p className="text-white">{`Tribe Size: ${tribeSize} (${tribeSize * 2} Total Players)`}</p>
                   </div>
+
                   <div className="h-4" />
+                  <div className="flex flex-col items-center">
+                    <h2 className="font-bold text-white mb-1">{`Merge At: ${mergeTime}`}</h2>
+                    
+                    <input 
+                      type="range" 
+                      min="7" 
+                      max="13" 
+                      value={mergeTime} 
+                      onChange={(e) => setMergeTime(Number(e.target.value))} 
+                      className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                    />
+                  </div>
+
+                  <div className="h-6" />
                   <h3 className="text-white font-bold mb-2">Select Advantages</h3>
                   <div className="flex flex-col space-y-2">
                     <label className="flex items-center space-x-2">

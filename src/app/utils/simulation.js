@@ -93,6 +93,7 @@ let randomAllianceNames = [
 let customRandomAllianceNames = [];
 let useOnlyCustomEvents = false;
 let tribeSize = 10;
+let mergeAt = 12;
 
 
 export const resetSimulation = () => {
@@ -189,6 +190,7 @@ export const resetSimulation = () => {
   useOnlyCustomEvents = false;
   customRandomAllianceNames = [];
   tribeSize = 10;
+  mergeAt = 12;
 };
 
 export const removeFromAlliance = (loser) => {
@@ -481,11 +483,12 @@ const manageAlliances = (tribe) => {
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
 
-export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames) => {
+export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames, mergeNum) => {
   let episodes = [];
   tribeNames = tribes;
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
+  mergeAt = mergeNum;
   customRandomAllianceNames = customAllianceNames;
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {
@@ -552,7 +555,7 @@ const getAllianceTargets = (tribe, alliances, updateResults) => {
  * @param {Function} updateResults - Callback to update the game status.
  */
 const handlePreMergePhase = (updateResults, customEvents) => {
-  if (tribes[0].length + tribes[1].length === 12) {
+  if (tribes[0].length + tribes[1].length === mergeAt) {
     mergeTribes(updateResults);
     handlePostMergePhase(updateResults, customEvents);
   } else {
