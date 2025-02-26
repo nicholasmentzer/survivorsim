@@ -560,6 +560,20 @@
          "region":0,
          "career":0,
          "image":"https://parade.com/.image/t_share/MTkwNTgwODc2Njg5NzQ1Nzg4/evvie-jagoda-survivor-41-header.jpg"
+      },
+      {
+         "id":41,
+         "name":"Kaelan Lockhart",
+         "premerge":5,
+         "postmerge":5,
+         "likeability":5,
+         "threat":5,
+         "strategicness":5,
+         "gender":"male",
+         "tribe":0,
+         "region":0,
+         "career":0,
+         "image":"https://www.sunshinecoastnews.com.au/wp-content/uploads/2025/02/SCN130225-kaelan-04-696x464.jpg"
       }
    ]
 }
