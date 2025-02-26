@@ -216,9 +216,8 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     if (target && target !== voter) {
       let targetIndex = tribe.indexOf(target);
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
-      voteDetails.push(`${voter.name} voted for ${target.name}${
-        bestAlliance ? ` with ${bestAlliance.name}` : ""
-      }`);
+      let votedWithAlliance = bestAlliance && !bestAlliance.members.includes(target);
+      voteDetails.push(`${voter.name} voted for ${target.name}${votedWithAlliance ? ` with ${bestAlliance.name}` : ""}`);
       exportVotes.push({target: target.name, voter: voter.name});
     } else {
       let perceivedVotes = {};
