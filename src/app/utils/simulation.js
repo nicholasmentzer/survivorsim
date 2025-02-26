@@ -409,7 +409,7 @@ const manageAlliances = (tribe) => {
   let dissolvedAlliances = [];
   let existingAlliances2 = [...alliances];
 
-  let allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length))));
+  let allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length * 2))));
   if(alliances.length > 7){
     allianceThreshold = 0.999999999;
   }
@@ -444,10 +444,16 @@ const manageAlliances = (tribe) => {
 
       scaledStrength = Math.max(1, Math.min(10, scaledStrength));
 
-      const isTooSimilar = existingAlliances2.some(existingAlliance => {
+      let isTooSimilar = existingAlliances2.some(existingAlliance => {
         const commonMembers = existingAlliance.members.filter(member => members.includes(member)).length;
-        return existingAlliance.members.length >= 5 && commonMembers >= existingAlliance.members.length * 0.7;
+        return commonMembers > 2 || (members.length < 4 && commonMembers > 1);
       });
+      if(!isTooSimilar){
+        isTooSimilar = newAlliances.some(existingAlliance => {
+          const commonMembers = existingAlliance.members.filter(member => members.includes(member)).length;
+          return commonMembers > 2 || (members.length < 4 && commonMembers > 1);
+        });
+      }
 
       if (!isDuplicate && !isTooSimilar && !isSubset) {
 
@@ -465,7 +471,7 @@ const manageAlliances = (tribe) => {
 
         newAlliances.push({
           name: allianceName,
-          members: [player, ...potentialMembers],
+          members: [player, ...potentialMembers].sort((a, b) => a.name.localeCompare(b.name)),
           strength: scaledStrength,
         });
       }
@@ -491,10 +497,11 @@ const manageAlliances = (tribe) => {
 
     const isInCurrentTribe = alliance.members.some(member => tribe.includes(member));
 
-    const isFullyContained = alliances.some(existingAlliance =>
+    let isFullyContained = alliances.some(existingAlliance =>
       existingAlliance !== alliance &&
       alliance.members.every(member => existingAlliance.members.includes(member))
     );
+    if(alliance.members.length === 2){isFullyContained = false;}
   
     if (isFullyContained && isInCurrentTribe) {
       dissolvedAlliances.push(alliance);
