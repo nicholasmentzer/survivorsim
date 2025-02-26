@@ -98,7 +98,7 @@ export default function Home() {
   };  
 
   useEffect(() => {
-    setMergeTime(prev => Math.max(tribeSize, Math.min(prev, tribeSize * 2)));
+    setMergeTime(prev => Math.max(tribeSize+1, Math.min(prev, tribeSize * 2)));
   }, [tribeSize]);  
 
   useEffect(() => {
@@ -638,7 +638,7 @@ export default function Home() {
                     
                     <input 
                       type="range" 
-                      min={tribeSize} 
+                      min={tribeSize+1} 
                       max={tribeSize*2} 
                       value={mergeTime} 
                       onChange={(e) => setMergeTime(Number(e.target.value))} 
