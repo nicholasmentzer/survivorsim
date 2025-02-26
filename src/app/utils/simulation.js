@@ -516,7 +516,7 @@ export const simulate = (players, updateResults, customEvents, useOnlyCustom, ts
   updateResults(episodes);
 };
 
-const getAllianceTargets = (tribe, alliances, updateResults) => {
+const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
   let allianceTargets = [];
 
   let filteredAlliances = alliances.filter(alliance => 
@@ -533,11 +533,13 @@ const getAllianceTargets = (tribe, alliances, updateResults) => {
           candidate !== member &&
           !alliance.members.includes(candidate)
         ) {
-          let relationshipScore = member.relationships[candidate.name] || 0;
+          if(immune == null || immune != candidate.name){
+            let relationshipScore = member.relationships[candidate.name] || 0;
 
-          if (relationshipScore < lowestRelationship) {
-            lowestRelationship = relationshipScore;
-            bestTarget = candidate;
+            if (relationshipScore < lowestRelationship) {
+              lowestRelationship = relationshipScore;
+              bestTarget = candidate;
+            }
           }
         }
       });
@@ -760,7 +762,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         });
 
         detectDrasticRelationships(tribes[0], updateResults);
-        getAllianceTargets(tribes[0], alliances, updateResults);
+        getAllianceTargets(tribes[0], alliances, updateResults, immune.name);
 
         state = "tribal";
         const tribecopy = [...tribe];
