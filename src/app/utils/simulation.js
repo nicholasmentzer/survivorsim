@@ -293,7 +293,7 @@ const findIdol = (tribe, tribeName, merged) => {
     if (tribeIdols["tribe1"] || tribeIdols["tribe2"] || tribeIdols["merge"]) return null;
   }
 
-  if (Math.random() < 0.50) {
+  if (Math.random() < 0.375) {
     let eligiblePlayers = tribe.filter(player => !player.hasIdol);
     if (eligiblePlayers.length > 0) {
       let finder = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
@@ -644,10 +644,10 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }
 
-      /*updateResults({
+      updateResults({
         type: "idols",
-        idols: tribeIdols,
-      });*/
+        idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
+      });
 
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
@@ -747,10 +747,10 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           }
         }
 
-        /*updateResults({
+        updateResults({
           type: "idols",
-          idols: tribeIdols,
-        });*/
+          idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
+        });
 
         winner = individualImmunity(tribe);
         const immune = tribe[winner];

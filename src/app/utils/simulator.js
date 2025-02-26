@@ -64,7 +64,6 @@ const generateVotingSummary = (votes, tribe) => {
 
   let sortedCandidates = Object.entries(voteCounts)
     .map(([name]) => name);
-    console.log(sortedCandidates);
 
   while (votes.length > 0) {
     for (let i = 0; i < sortedCandidates.length; i++) {
@@ -419,13 +418,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
       }
     } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
-      console.log(safePlayers);
       let eligibleForRocks = tribe.filter(
         (p, i) => !safePlayers.includes(`${i}`) && p.name !== immuneIndex && p.name !== immuneIdolIndex
       );
     
       if (eligibleForRocks.length > 0) {
-        console.log(eligibleForRocks);
         let eliminatedByRock = eligibleForRocks[Math.floor(Math.random() * eligibleForRocks.length)];
         let eliminatedIndex = tribe.indexOf(eliminatedByRock);
         voteDetails.push(``);

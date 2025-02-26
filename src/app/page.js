@@ -27,6 +27,7 @@ export default function Home() {
   const [eventSeverity, setEventSeverity] = useState(1);
   const [hideSliders, setHideSliders] = useState(false);
   const [showCurrentAlliances, setShowCurrentAlliances] = useState(false);
+  const [showCurrentAdvantages, setShowCurrentAdvantages] = useState(false);
   const [showDetailedVotes, setShowDetailedVotes] = useState(false);
   const [tribeNames, setTribeNames] = useState({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
   const [advantages, setAdvantages] = useState({
@@ -97,6 +98,10 @@ export default function Home() {
   };  
 
   useEffect(() => {
+    setMergeTime(prev => Math.max(tribeSize, Math.min(prev, tribeSize * 2)));
+  }, [tribeSize]);  
+
+  useEffect(() => {
     setPlayerConfig({
       men: getRandomPlayers(playersData.men, tribeSize),
       women: getRandomPlayers(playersData.women, tribeSize),
@@ -109,6 +114,7 @@ export default function Home() {
   const [useOnlyCustomEvents, setUseOnlyCustomEvents] = useState(false);
 
   const startSimulation = () => {
+    resetSimulation();
     const allNames = [...playerConfig.men.map(p => p.name), ...playerConfig.women.map(p => p.name)];
 
     // Check for duplicates
@@ -293,10 +299,10 @@ export default function Home() {
                       );
                     } else if(event.type === "alliance"){
                       return (
-                        <div key={index} className="mt-4 pb-6">
+                        <div key={index} className="mt-8">
                           {event.title === "Current Alliances" && (<div className="mb-6 border-t-4 border-gray-400"></div>)}
                           <div className="flex items-center justify-center">
-                            <h3 className="text-xl font-bold text-blue-400">{event.title}</h3>
+                            <h3 className="text-xl font-bold text-white ml-6">{event.title}</h3>
 
                             {/* Dropdown Icon Toggle (Only for Current Alliances) */}
                             {event.title === "Current Alliances" && (
@@ -363,7 +369,7 @@ export default function Home() {
                       return (
                         <div key={index} className="pb-6">
                           <div className="flex items-center justify-center">
-                            <h3 className="text-xl font-bold text-blue-400">Current Advantages</h3>
+                            <h3 className="text-xl font-bold text-white ml-6">Current Advantages</h3>
 
                             {/* Dropdown Icon Toggle (Idols) */}
                             {event.type === "idols" && (
@@ -385,18 +391,21 @@ export default function Home() {
                           </div>
                           
                           {showAdvantages && event.idols && (
-                            <div className="bg-stone-800 bg-opacity-40 rounded-lg shadow-lg p-4 mt-3">
-                              <div className="space-y-2">
+                            <div className="rounded-lg">
+                              <div className="space-y-2 mt-2">
                                 {Object.entries(event.idols).map(([tribe, player]) => (
                                   player ? (
-                                    <div key={tribe} className="text-white p-2">
-                                      <span className="font-bold">{player.name}</span> has an idol!
+                                    <div key={tribe} className="text-white">
+                                      <span className="font-bold text-blue-400">{player.name}</span> has an immunity idol
                                     </div>
                                   ) : (
-                                    <div key={tribe} className="text-gray-400 p-2">
+                                    <div key={tribe} className="text-gray-400">
                                     </div>
                                   )
                                 ))}
+                                {!Object.values(event.idols).some(idol => idol) && (
+                                  <p className="text-gray-400 text-center mt-2">No idols currently in play.</p>
+                                )}
                               </div>
                             </div>
                           )}
@@ -553,9 +562,7 @@ export default function Home() {
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <div className="flex flex-col justify-center items-center">
-                <h2 className="text-xl text-stone-200 font-bold">Configure your cast</h2>
-                <p className="text-base text-stone-200">Edit player names and images by clicking on them!</p>
-                <p className="text-base mb-5 text-stone-200">Then click "Simulate" to start the simulation!</p>
+                <h2 className="text-xl text-stone-200 font-bold mb-4">Configure your cast</h2>
 
                 {/* Hide Sliders Toggle Checkbox */}
                 <div className=" flex items-center">
@@ -631,8 +638,8 @@ export default function Home() {
                     
                     <input 
                       type="range" 
-                      min="7" 
-                      max="13" 
+                      min={tribeSize} 
+                      max={tribeSize*2} 
                       value={mergeTime} 
                       onChange={(e) => setMergeTime(Number(e.target.value))} 
                       className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
