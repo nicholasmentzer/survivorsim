@@ -411,6 +411,10 @@ const manageAlliances = (tribe) => {
       other => player !== other && player.relationships[other.name] >= 1
     );
 
+    while (potentialMembers.length > 7) {
+      potentialMembers.splice(Math.floor(Math.random() * potentialMembers.length), 1);
+    }
+
     if (potentialMembers.length >= 1) {
       const members = [player, ...potentialMembers];
 
