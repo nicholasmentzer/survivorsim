@@ -690,11 +690,15 @@ export default function Home() {
                   type="text"
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
-                  placeholder="Use 'Player1' and 'Player2' as placeholders (max 2 players) Example: Player1 argued with Player2."
+                  placeholder="Use Player1 and Player2 as placeholders (max 2 players) Example: Player1 argued with Player2."
                   className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400 text-xs sm:text-base"
                 />
                 
                 <div className="h-2"/>
+
+                {eventDescription.includes("Player1") && eventDescription.includes("Player2") ? (
+                <>
+
                 <label className="text-gray-300 text-sm">Relationship Impact (only used if event has 2 players)</label>
                 <select
                   value={eventType}
@@ -719,6 +723,19 @@ export default function Home() {
                     />
                   </>
                 )}
+                </>
+                ) : (
+                  <>
+                    <label className="text-gray-500 text-sm">Relationship Impact (only available if event has 2 players)</label>
+                    <select
+                      disabled
+                      className="w-full p-2 rounded border border-gray-700 bg-stone-900 text-gray-500 cursor-not-allowed"
+                    >
+                      <option value="neutral">Neutral</option>
+                    </select>
+                  </>
+                )
+                }
                 <div className="h-2"/>
                 <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg">Add Event</button>
               </form>

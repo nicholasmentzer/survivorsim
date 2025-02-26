@@ -399,7 +399,10 @@ const manageAlliances = (tribe) => {
   let dissolvedAlliances = [];
   let existingAlliances2 = [...alliances];
 
-  const allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length * 2))));
+  let allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length))));
+  if(alliances.length > 7){
+    allianceThreshold = 0.999999999;
+  }
 
   tribe.forEach(player => {
     if(Math.random() > allianceThreshold){
