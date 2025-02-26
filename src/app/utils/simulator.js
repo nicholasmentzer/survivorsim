@@ -178,29 +178,24 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       }
     });
     
-    if (allianceOptions.length > 0) {
-      let totalStrength = allianceOptions.reduce((sum, option) => sum + option.strength, 0);
-      let rand = Math.random() * totalStrength;
-      let cumulative = 0;
-    
-      for (let option of allianceOptions) {
-        cumulative += option.strength;
-        if (rand <= cumulative) {
-          bestAlliance = option.alliance;
-          break;
-        }
-      }
+    if (allianceOptions.length > 0 && Math.random() > 0.1) {
+      let strongestAlliance = allianceOptions.reduce((prev, current) =>
+        prev.strength > current.strength ? prev : current
+      );
+      bestAlliance = strongestAlliance.alliance;
     }
 
     let target = null;
 
     if (bestAlliance) {
       let lowestRelationship = Infinity;
+
       bestAlliance.members.forEach(member => {
         tribe.forEach(candidate => {
           if (
             candidate !== voter &&
             candidate !== member &&
+            !bestAlliance.members.includes(candidate) &&
             tribe.indexOf(candidate) !== immuneIndex
           ) {
             let relationshipScore = member.relationships[candidate.name] || 0;
@@ -228,17 +223,38 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       const sortedVotes = Object.entries(perceivedVotes).sort((a, b) => b[1] - a[1]);
       
       let targetIndex;
+
+      let probability = Math.min(0 + (sortedVotes.length * 0.4), 0.9);
       
-      if (sortedVotes.length > 0) {
-        if (Math.random() < 0.5 && tribe[parseInt(sortedVotes[0][0])] !== voter) {
-          targetIndex = parseInt(sortedVotes[0][0]);
+      if (sortedVotes.length > 0 && Math.random() < probability) {
+        
+        let weightedTargets = [];
+
+        sortedVotes.forEach(([index, voteCount]) => {
+          let candidate = tribe[parseInt(index)];
+          if (!candidate || candidate === voter || parseInt(index) === immuneIndex) return;
+
+          let relationshipScore = (2/voteCount) * 10;
+          
+          for (let i = 0; i < relationshipScore; i++) {
+            weightedTargets.push(parseInt(index));
+          }
+        });
+
+        if (weightedTargets.length > 0) {
+          targetIndex = weightedTargets[Math.floor(Math.random() * weightedTargets.length)];
         } else {
           const potentialFlips = tribe.filter(p => !alliances2.some(a => a.members.includes(p)) && p !== immuneIndex);
           if (potentialFlips.length > 0) {
             targetIndex = tribe.findIndex(p => p.name === potentialFlips[Math.floor(Math.random() * potentialFlips.length)].name);
-            if(targetIndex === -1 || tribe[targetIndex] === voter){targetIndex = undefined;}
+            if (targetIndex === -1 || tribe[targetIndex] === voter) {
+              targetIndex = undefined;
+            }
           }
         }
+      }
+      else{
+        console.log("nope");
       }
   
       if (targetIndex === undefined) {

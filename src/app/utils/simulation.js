@@ -220,7 +220,6 @@ const initializeRelationships = (players) => {
       if (player !== other) {
         let baseChance = (other.likeability / 10) * 0.9;
         let relationshipValue;
-        console.log(baseChance);
 
         if (Math.random() < baseChance) {
           relationshipValue = Math.floor(Math.random() * 3) + 1;
@@ -230,7 +229,6 @@ const initializeRelationships = (players) => {
         player.relationships[other.name] = relationshipValue;
       }
     });
-    console.log(player.relationships);
   });
 };
 
