@@ -275,7 +275,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="text-xs sm:text-base border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
+                                  className="text-xs sm:text-sm border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
@@ -438,7 +438,7 @@ export default function Home() {
                               {event.members?.map((player) => (
                                 <div
                                   key={player.name}
-                                  className="text-xs sm:text-base border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
+                                  className="text-xs sm:text-sm border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
                                 >
                                   <img
                                     src={player.image}
