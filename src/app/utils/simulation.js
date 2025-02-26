@@ -218,9 +218,19 @@ const initializeRelationships = (players) => {
     player.relationships = {};
     players.forEach((other) => {
       if (player !== other) {
-        player.relationships[other.name] = Math.floor(Math.random() * 5) - 2;
+        let baseChance = (other.likeability / 10) * 0.9;
+        let relationshipValue;
+        console.log(baseChance);
+
+        if (Math.random() < baseChance) {
+          relationshipValue = Math.floor(Math.random() * 3) + 1;
+        } else {
+          relationshipValue = Math.floor(Math.random() * 3) - 2;
+        }
+        player.relationships[other.name] = relationshipValue;
       }
     });
+    console.log(player.relationships);
   });
 };
 
