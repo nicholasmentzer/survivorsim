@@ -436,7 +436,7 @@ const manageAlliances = (tribe) => {
 
       const isTooSimilar = existingAlliances2.some(existingAlliance => {
         const commonMembers = existingAlliance.members.filter(member => members.includes(member)).length;
-        return existingAlliance.members.length >= 5 && commonMembers >= existingAlliance.members.length * 0.8;
+        return existingAlliance.members.length >= 5 && commonMembers >= existingAlliance.members.length * 0.7;
       });
 
       if (!isDuplicate && !isTooSimilar && !isSubset) {
