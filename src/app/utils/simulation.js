@@ -409,13 +409,20 @@ const manageAlliances = (tribe) => {
   let dissolvedAlliances = [];
   let existingAlliances2 = [...alliances];
 
+  let tribeMembersInAlliances = alliances.some(alliance =>
+    alliance.members.some(member => tribe.includes(member))
+  );
+
   let allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length * 2))));
   if(alliances.length > 7){
     allianceThreshold = 0.999999999;
   }
 
   tribe.forEach(player => {
-    if(Math.random() > allianceThreshold){
+    let tribeMembersInNewAlliances = newAlliances.some(alliance =>
+      alliance.members.some(member => tribe.includes(member))
+    );
+    if(Math.random() > allianceThreshold || (!tribeMembersInNewAlliances && !tribeMembersInAlliances)){
 
     let potentialMembers = tribe.filter(
       other => player !== other && player.relationships[other.name] >= 1
