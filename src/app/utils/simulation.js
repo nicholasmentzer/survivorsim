@@ -423,6 +423,11 @@ const manageAlliances = (tribe) => {
         existingAlliance.members.every(member => members.includes(member))
       );
 
+      const isSubset = existingAlliances2.some(existingAlliance =>
+        members.length < existingAlliance.members.length &&
+        members.every(member => existingAlliance.members.includes(member))
+      );
+
       let baseStrength = potentialMembers.reduce((sum, p) => sum + player.relationships[p.name], 0) / potentialMembers.length;
 
       let scaledStrength = Math.round(((baseStrength + 5) / 10) * 9 + 1);
@@ -434,7 +439,7 @@ const manageAlliances = (tribe) => {
         return existingAlliance.members.length >= 5 && commonMembers >= existingAlliance.members.length * 0.8;
       });
 
-      if (!isDuplicate && !isTooSimilar) {
+      if (!isDuplicate && !isTooSimilar && !isSubset) {
 
         let allianceName;
 
@@ -473,9 +478,16 @@ const manageAlliances = (tribe) => {
 
     alliance.strength += Math.floor(Math.random() * 3) - 1;
     alliance.strength = Math.max(1, Math.min(10, alliance.strength));
+
+    const isFullyContained = alliances.some(existingAlliance =>
+      existingAlliance !== alliance &&
+      alliance.members.every(member => existingAlliance.members.includes(member))
+    );
   
-    if (alliance.strength <= 4 && Math.random() < .5) {
-      if (newAlliances.includes(alliance)){
+    if (isFullyContained) {
+      dissolvedAlliances.push(alliance);
+    } else if (alliance.strength <= 4 && Math.random() < 0.5) {
+      if (newAlliances.includes(alliance)) {
         existingAlliances.push(alliance);
       } else {
         dissolvedAlliances.push(alliance);
