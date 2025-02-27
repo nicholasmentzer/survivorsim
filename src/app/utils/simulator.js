@@ -234,9 +234,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
           let candidate = tribe[parseInt(index)];
           if (!candidate || candidate === voter || parseInt(index) === immuneIndex) return;
 
-          let relationshipScore = (2/voteCount) * 10;
+          let relationshipScore = voter.relationships?.[candidate.name] || 0;
+          let relationshipScore2 = relationshipScore+7;
+          let adjustedRelationship = Math.max(1, 10 - Math.abs(relationshipScore2));
           
-          for (let i = 0; i < relationshipScore; i++) {
+          for (let i = 0; i < adjustedRelationship; i++) {
             weightedTargets.push(parseInt(index));
           }
         });

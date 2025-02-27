@@ -411,7 +411,7 @@ const manageAlliances = (tribe) => {
     alliance.members.some(member => tribe.includes(member))
   );
 
-  let allianceThreshold = 0.9 + (0.0999 * (1 - Math.exp(-alliances.length / (tribe.length * 2))));
+  let allianceThreshold = tribe.length > 20 ? 0.8 : 0.5;
   if(alliances.length > 7){
     allianceThreshold = 0.999999999;
   }
