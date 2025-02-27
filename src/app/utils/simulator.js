@@ -195,7 +195,6 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
           if (
             candidate !== voter &&
             candidate !== member &&
-            !bestAlliance.members.includes(candidate) &&
             tribe.indexOf(candidate) !== immuneIndex
           ) {
             let relationshipScore = member.relationships[candidate.name] || 0;
@@ -546,7 +545,7 @@ export const votingWinner = (finalThree, jury) => {
 export const individualImmunity = (tribe) => {
   const choices = [];
   tribe.forEach((player, i) => {
-    for (let j = 0; j < player.postmerge; j++) choices.push(i);
+    for (let j = 0; j < player.postmerge*2; j++) choices.push(i);
   });
   return choices[getRandomInt(choices.length)];
 };

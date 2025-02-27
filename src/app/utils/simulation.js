@@ -516,6 +516,10 @@ const manageAlliances = (tribe) => {
       dissolvedAlliances.push(alliance);
       return;
     }
+    if(alliance.members.length === tribe.length && alliance.members.some(member => tribe.includes(member))){
+      dissolvedAlliances.push(alliance);
+      return;
+    }
     seenAlliances.add(memberNames);
 
     alliance.strength += Math.floor(Math.random() * 3) - 1;
