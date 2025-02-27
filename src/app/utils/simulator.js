@@ -178,7 +178,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       }
     });
     
-    if (allianceOptions.length > 0 && Math.random() > 0.1) {
+    if (allianceOptions.length > 0 && Math.random() > 0.01) {
       let strongestAlliance = allianceOptions.reduce((prev, current) =>
         prev.strength > current.strength ? prev : current
       );
@@ -208,7 +208,12 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         });
       });
     }
-    if (target && target !== voter) {
+    if(target){
+    console.log(voter.name);
+    console.log(voter.relationships[target.name]);
+    console.log((voter.relationships[target.name] < 2 || Math.random() < 0.3));
+    }
+    if (target && target !== voter && (voter.relationships[target.name] < 2 || Math.random() < 0.3)) {
       let targetIndex = tribe.indexOf(target);
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
       let votedWithAlliance = bestAlliance && !bestAlliance.members.includes(target);
@@ -343,6 +348,29 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       }
     }
 
+    /*if (!idolUsed) {
+      let randomIdolPlay = potentialIdolPlayers.find(player =>
+        Math.random() < 0.1
+      );
+      if (randomIdolPlay) {
+        let target = Math.random() < 0.5 
+            ? randomIdolPlay
+            : tribe.find(ally => 
+                ally !== randomIdolPlay && 
+                randomIdolPlay.relationships[ally.name] > 2 &&
+                Math.random() < 0.3
+            );
+
+        if (target) {
+            immunePlayer = target.name;
+            immuneIdolIndex = tribe.indexOf(target);
+            idolUsed = true;
+            idolUser = randomIdolPlay;
+            voteSummary.push(`<span class="font-bold text-lg">${idolUser.name} plays the Hidden Immunity Idol on ${immunePlayer}!</span>`);
+        }
+      }
+    }*/
+
     highestVoteCount = sortedVotes[0][1];
     tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
 
@@ -398,7 +426,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       const originalVote = exportVotes.find(v => v.voter === voter.name)?.target;
       if (!tiedIndexes.includes(tribe.indexOf(voter))) {
         let revoteTargetIndex;
-        if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote))) {
+        if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote) && Math.random() < 0.9)) {
           revoteTargetIndex = tribe.findIndex(p => p.name === originalVote);
         } else {
           revoteTargetIndex = tiedIndexes[Math.floor(Math.random() * tiedIndexes.length)];

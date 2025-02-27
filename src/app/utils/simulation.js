@@ -411,24 +411,45 @@ const manageAlliances = (tribe) => {
     alliance.members.some(member => tribe.includes(member))
   );
 
-  let allianceThreshold = tribe.length > 20 ? 0.8 : 0.5;
-  if(alliances.length > 7){
-    allianceThreshold = 0.999999999;
+  const baseThreshold = 0.7; // **Base chance of an alliance forming**
+  const maxAlliancesAllowed = Math.max(5, Math.floor(tribeSize / 4)); // **More allowed in bigger tribes**
+
+  let finalThreshold = baseThreshold;
+  let allianceThreshold = Math.min(0.9999, finalThreshold);
+
+  if(existingAlliances2.length > maxAlliancesAllowed){
+    allianceThreshold = 1;
   }
 
   tribe.forEach(player => {
+    if(newAlliances.length >= 2){
+      allianceThreshold = 0.99;
+    }
+    if(newAlliances.length === 0 && existingAlliances2.length === 0){allianceThreshold === 0.5}
+    let playerAllianceCounts = {};
+    alliances.forEach(alliance => {
+      alliance.members.forEach(member => {
+        playerAllianceCounts[member.name] = (playerAllianceCounts[member.name] || 0) + 1;
+      });
+    });
+    newAlliances.forEach(alliance => {
+      alliance.members.forEach(member => {
+        playerAllianceCounts[member.name] = (playerAllianceCounts[member.name] || 0) + 1;
+      });
+    });
     let tribeMembersInNewAlliances = newAlliances.some(alliance =>
       alliance.members.some(member => tribe.includes(member))
     );
     if(Math.random() > allianceThreshold || (!tribeMembersInNewAlliances && !tribeMembersInAlliances)){
 
     let potentialMembers = tribe.filter(
-      other => player !== other && player.relationships[other.name] >= 1
+      other => player !== other && player.relationships[other.name] >= 1 && (playerAllianceCounts[other.name] || 0) < 2
     );
 
-    while (potentialMembers.length > 7) {
-      potentialMembers.splice(Math.floor(Math.random() * potentialMembers.length), 1);
-    }
+    potentialMembers.sort((a, b) => (playerAllianceCounts[a.name] || 0) - (playerAllianceCounts[b.name] || 0));
+      while (potentialMembers.length > 7) {
+        potentialMembers.splice(Math.floor(Math.random() * potentialMembers.length), 1);
+      }
 
     if (potentialMembers.length >= 1) {
       const members = [player, ...potentialMembers];
@@ -525,6 +546,150 @@ const manageAlliances = (tribe) => {
 
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
+
+
+
+
+
+
+
+/*const manageAlliances = (tribe) => {
+  let newAlliances = [];
+  let dissolvedAlliances = [];
+  let existingAlliances2 = [...alliances];
+
+  // **Limit total alliances & formation per round**
+  const maxTotalAlliances = 7;
+  const maxNewAlliancesPerRound = 3;
+
+  // **Dynamically adjust the chance of new alliances forming**
+  let allianceThreshold = 0.95 - (alliances.length / (maxTotalAlliances * 2));
+  if (alliances.length >= maxTotalAlliances) {
+    allianceThreshold = 0.9999; // Block new alliances if at cap
+  }
+
+  // **Track how many alliances each player is in**
+  let playerAllianceCounts = {};
+  alliances.forEach(alliance => {
+    alliance.members.forEach(member => {
+      playerAllianceCounts[member.name] = (playerAllianceCounts[member.name] || 0) + 1;
+    });
+  });
+
+  let alliancesFormed = 0;
+
+  tribe.forEach(player => {
+    if (alliancesFormed >= maxNewAlliancesPerRound) return;
+
+    if (Math.random() > allianceThreshold) {
+      let potentialMembers = tribe.filter(other =>
+        player !== other &&
+        player.relationships[other.name] >= 2 && // **Mutual strong bonds**
+        (playerAllianceCounts[other.name] || 0) < 2 // **Favors players not already in many alliances**
+      );
+
+      // **Prioritize players in fewer alliances**
+      potentialMembers.sort((a, b) => (playerAllianceCounts[a.name] || 0) - (playerAllianceCounts[b.name] || 0));
+
+      // **Create alliance of varying size (between 2-6 members)**
+      let allianceSize = 2 + Math.floor(Math.random() * 5);
+      potentialMembers = potentialMembers.slice(0, allianceSize - 1);
+
+      if (potentialMembers.length >= 1) {
+        const members = [player, ...potentialMembers];
+
+        // **Ensure new alliances are not subsets of existing ones**
+        const isDuplicate = existingAlliances2.some(existingAlliance =>
+          existingAlliance.members.length === members.length &&
+          existingAlliance.members.every(member => members.includes(member))
+        );
+
+        const isSubset = existingAlliances2.some(existingAlliance =>
+          members.length < existingAlliance.members.length &&
+          members.every(member => existingAlliance.members.includes(member))
+        );
+
+        let baseStrength = potentialMembers.reduce((sum, p) => sum + player.relationships[p.name], 0) / potentialMembers.length;
+        let scaledStrength = Math.round(((baseStrength + 5) / 10) * 9 + 1);
+        scaledStrength = Math.max(1, Math.min(10, scaledStrength));
+
+        if (!isDuplicate && !isSubset) {
+          let allianceName;
+          if (customRandomAllianceNames.length > 0) {
+            const randomIndex = Math.floor(Math.random() * customRandomAllianceNames.length);
+            allianceName = customRandomAllianceNames[randomIndex];
+            customRandomAllianceNames.splice(randomIndex, 1);
+          } else {
+            const randomIndex = Math.floor(Math.random() * randomAllianceNames.length);
+            allianceName = randomAllianceNames[randomIndex];
+            randomAllianceNames.splice(randomIndex, 1);
+          }
+
+          let sortedMembers = members.sort((a, b) => a.name.localeCompare(b.name));
+          newAlliances.push({
+            name: allianceName,
+            members: sortedMembers,
+            strength: scaledStrength,
+          });
+
+          // **Update the alliance count for each player**
+          sortedMembers.forEach(member => {
+            playerAllianceCounts[member.name] = (playerAllianceCounts[member.name] || 0) + 1;
+          });
+
+          alliancesFormed++;
+        }
+      }
+    }
+  });
+
+  alliances = alliances.concat(newAlliances);
+
+  // **Dissolving Phase (Same as before)**
+  let existingAlliances = [];
+  let seenAlliances = new Set();
+  alliances.forEach(alliance => {
+    let memberNames = alliance.members.map(p => p.name).sort().join(",");
+    
+    if (seenAlliances.has(memberNames)) {
+      dissolvedAlliances.push(alliance);
+      return;
+    }
+    seenAlliances.add(memberNames);
+
+    alliance.strength += Math.floor(Math.random() * 3) - 1;
+    alliance.strength = Math.max(1, Math.min(10, alliance.strength));
+
+    const isInCurrentTribe = alliance.members.some(member => tribe.includes(member));
+
+    let isFullyContained = alliances.some(existingAlliance =>
+      existingAlliance !== alliance &&
+      alliance.members.every(member => existingAlliance.members.includes(member))
+    );
+    if (alliance.members.length === 2) { isFullyContained = false; }
+
+    if (isFullyContained && isInCurrentTribe) {
+      dissolvedAlliances.push(alliance);
+    } else if (alliance.strength <= 4 && Math.random() < 0.5 && isInCurrentTribe) {
+      if (newAlliances.includes(alliance)) {
+        existingAlliances.push(alliance);
+      } else {
+        dissolvedAlliances.push(alliance);
+      }
+    } else {
+      existingAlliances.push(alliance);
+    }
+  });
+
+  alliances = existingAlliances;
+
+  return { newAlliances, dissolvedAlliances, allAlliances: alliances };
+};*/
+
+
+
+
+
 
 export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames, mergeNum) => {
   let episodes = [];
