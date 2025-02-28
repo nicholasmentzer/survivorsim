@@ -573,11 +573,11 @@ export default function Home() {
                     onChange={() => setHideSliders((prev) => !prev)}
                     className="mr-2 w-4 h-4"
                   />
-                  <label htmlFor="hideSliders" className="text-white text-sm">Hide Statistics</label>
+                  <label htmlFor="hideSliders" className="text-white text-sm">Hide Stats</label>
                 </div>
 
                 <button
-                  className="bg-gray-700 text-white px-2 py-1 rounded-lg font-bold text-sm mt-4 hover:bg-gray-800 transition"
+                  className="bg-stone-800 text-white px-2 py-1 rounded-lg font-bold text-sm mt-4 hover:bg-stone-900 transition"
                   onClick={randomizeAllStats}
                 >
                   Randomize Stats
