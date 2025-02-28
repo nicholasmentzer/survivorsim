@@ -562,26 +562,7 @@ export default function Home() {
         {mode === "configure" && (
             <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
               <div className="flex flex-col justify-center items-center">
-                <h2 className="text-xl text-stone-200 font-bold mb-4">Configure your cast</h2>
-
-                {/* Hide Sliders Toggle Checkbox */}
-                <div className=" flex items-center">
-                  <input
-                    type="checkbox"
-                    id="hideSliders"
-                    checked={hideSliders}
-                    onChange={() => setHideSliders((prev) => !prev)}
-                    className="mr-2 w-4 h-4"
-                  />
-                  <label htmlFor="hideSliders" className="text-white text-sm">Hide Stats</label>
-                </div>
-
-                <button
-                  className="bg-stone-800 text-white px-2 py-1 rounded-lg font-bold text-sm mt-4 hover:bg-stone-900 transition"
-                  onClick={randomizeAllStats}
-                >
-                  Randomize Stats
-                </button>
+                <h2 className="text-xl text-stone-200 font-bold mb-2">Configure your cast</h2>
               </div>
 
               {/*3 Columns*/}
@@ -618,6 +599,25 @@ export default function Home() {
                   />
 
                   <div className="h-4" />
+
+                  <button
+                    className="bg-stone-800 text-white px-2 py-1 mb-3 rounded-lg font-bold text-sm mt-4 hover:bg-stone-900 transition"
+                    onClick={randomizeAllStats}
+                  >
+                    Randomize Stats
+                  </button>
+
+                  <div className=" flex items-center mb-6">
+                    <input
+                      type="checkbox"
+                      id="hideSliders"
+                      checked={hideSliders}
+                      onChange={() => setHideSliders((prev) => !prev)}
+                      className="mr-2 w-4 h-4"
+                    />
+                    <label htmlFor="hideSliders" className="text-white text-sm">Hide Stats</label>
+                  </div>
+
                   <div className="flex flex-col items-center">
                     <h2 className="font-bold text-white mb-2">Select Tribe Size</h2>
                     
