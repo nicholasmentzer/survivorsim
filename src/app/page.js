@@ -10,7 +10,11 @@ import tribesData from "./data/tribes.json";
 import Footer from "./components/Footer";
 
 const getRandomPlayers = (players, num) => {
-  const shuffled = [...players].sort(() => 0.5 - Math.random());
+  const filteredPlayers = players.filter(player =>
+    ["Survivor", "Australian Survivor"].includes(player.show)
+  );
+
+  const shuffled = [...filteredPlayers].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, num);
 };
 
