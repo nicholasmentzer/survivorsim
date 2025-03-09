@@ -526,22 +526,47 @@ export const votingWinner = (finalThree, jury) => {
     finalThree[vote].voteCount++;
     
     voteDetails.push(`${juror.name} voted for ${finalThree[vote].name}`);
-    
     voteSummary.push(`${index + 1}${getOrdinalSuffix(index + 1)} vote: ${finalThree[vote].name}`);
   });
 
   finalThree.sort((a, b) => b.voteCount - a.voteCount);
 
-  const soleSurvivor = finalThree[0];
-  soleSurvivor.placement = 1;
-  finalThree[1].placement = 2;
-  finalThree[2].placement = 3;
+  const highestVoteCount = finalThree[0].voteCount;
+  const tiedPlayers = finalThree.filter(player => player.voteCount === highestVoteCount);
 
+  if (tiedPlayers.length === 1) {
+    const soleSurvivor = tiedPlayers[0];
+    soleSurvivor.placement = 1;
+    finalThree[1].placement = 2;
+    finalThree[2].placement = 3;
+
+    voteSummary.push(
+      `<span class="font-bold text-lg">${soleSurvivor.name} wins Survivor with a vote of ${finalThree[0].voteCount}-${finalThree[1].voteCount}-${finalThree[2].voteCount}!</span>`
+    );
+    return { winner: soleSurvivor, voteDetails, voteSummary };
+  }
+
+  if (tiedPlayers.length === 2) {
+    const thirdFinalist = finalThree.find(player => !tiedPlayers.includes(player));
+
+    if (thirdFinalist) {
+      const decidingVote = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
+      decidingVote.voteCount++;
+
+      voteSummary.push(
+        `<span class="font-bold text-lg">It's a tie! ${thirdFinalist.name} casts the deciding vote for ${decidingVote.name}!</span>`
+      );
+
+      return { winner: decidingVote, voteDetails, voteSummary };
+    }
+  }
+
+  const rockWinner = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
   voteSummary.push(
-    `<span class="font-bold text-lg">${soleSurvivor.name} wins Survivor with a vote of ${soleSurvivor.voteCount}-${finalThree[1].voteCount}-${finalThree[2].voteCount}!</span>`
+    `<span class="font-bold text-lg">All finalists are tied! ${rockWinner.name} wins Survivor by a rock draw!</span>`
   );
 
-  return { winner: soleSurvivor, voteDetails, voteSummary };
+  return { winner: rockWinner, voteDetails, voteSummary };
 };
 
 /**
