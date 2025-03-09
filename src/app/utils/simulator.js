@@ -207,11 +207,6 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         });
       });
     }
-    if(target){
-    console.log(voter.name);
-    console.log(voter.relationships[target.name]);
-    console.log((voter.relationships[target.name] < 2 || Math.random() < 0.3));
-    }
     if (target && target !== voter && (voter.relationships[target.name] < 2 || Math.random() < 0.3)) {
       let targetIndex = tribe.indexOf(target);
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
@@ -260,7 +255,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         }
       }
       else{
-        console.log("nope");
+        
       }
   
       if (targetIndex === undefined) {
@@ -425,7 +420,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       const originalVote = exportVotes.find(v => v.voter === voter.name)?.target;
       if (!tiedIndexes.includes(tribe.indexOf(voter))) {
         let revoteTargetIndex;
-        if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote) && Math.random() < 0.9)) {
+        if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote)) && Math.random() < 0.9) {
           revoteTargetIndex = tribe.findIndex(p => p.name === originalVote);
         } else {
           revoteTargetIndex = tiedIndexes[Math.floor(Math.random() * tiedIndexes.length)];
