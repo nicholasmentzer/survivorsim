@@ -334,20 +334,25 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     }
 
     if (!idolUsed) {
-      let idolHolderAlly = potentialIdolPlayers.find(player =>
-        player.name !== primaryTarget.name &&
-        primaryTarget.relationships[player.name] > 1 && // Positive relationship
-        Math.random() < (0.2 + (primaryTarget.relationships[player.name] * 0.1)) // Higher chance if strong bond
-      );
-  
+      let idolHolderAlly = potentialIdolPlayers.find(player => {
+          let votedForTarget = exportVotes.some(vote => vote.voter === player.name && vote.target === primaryTarget.name);
+
+          return (
+              player.name !== primaryTarget.name &&
+              primaryTarget.relationships[player.name] > 1 &&
+              !votedForTarget &&
+              Math.random() < (0.2 + (primaryTarget.relationships[player.name] * 0.1))
+          );
+      });
+
       if (idolHolderAlly) {
-        immunePlayer = primaryTarget.name;
-        immuneIdolIndex = tribe.indexOf(primaryTarget);
-        idolUsed = true;
-        idolUser = idolHolderAlly;
-        voteSummary.push(`<span class="font-bold text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
+          immunePlayer = primaryTarget.name;
+          immuneIdolIndex = tribe.indexOf(primaryTarget);
+          idolUsed = true;
+          idolUser = idolHolderAlly;
+          voteSummary.push(`<span class="font-bold text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
       }
-    }
+  }
 
     /*if (!idolUsed) {
       let randomIdolPlay = potentialIdolPlayers.find(player =>
