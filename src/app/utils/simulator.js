@@ -179,10 +179,17 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     });
     
     if (allianceOptions.length > 0 && Math.random() > 0.01) {
-      let strongestAlliance = allianceOptions.reduce((prev, current) =>
-        prev.strength > current.strength ? prev : current
-      );
-      bestAlliance = strongestAlliance.alliance;
+      let totalStrength = allianceOptions.reduce((sum, option) => sum + option.strength, 0);
+      let rand = Math.random() * totalStrength;
+      let cumulative = 0;
+
+      for (let option of allianceOptions) {
+          cumulative += option.strength;
+          if (rand <= cumulative) {
+              bestAlliance = option.alliance;
+              break;
+          }
+      }
     }
 
     let target = null;
