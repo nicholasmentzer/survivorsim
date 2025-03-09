@@ -99,7 +99,11 @@ export default function Home() {
 
   const removeCustomEvent = (index) => {
     setCustomEvents((prevEvents) => prevEvents.filter((_, i) => i !== index));
-  };  
+  };
+
+  const removeCustomName = (index) => {
+    setCustomAllianceNames((prevNames) => prevNames.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     setMergeTime(prev => Math.max(tribeSize+1, Math.min(prev, tribeSize * 2)));
@@ -817,7 +821,7 @@ export default function Home() {
                         </span>
                         <button
                           className="ml-4 bg-white px-2 py-1 rounded-full text-sm hover:bg-red-300"
-                          onClick={() => removeCustomEvent(index)}
+                          onClick={() => removeCustomName(index)}
                         >
                           ❌
                         </button>
