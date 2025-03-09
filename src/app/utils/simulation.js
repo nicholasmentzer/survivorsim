@@ -1,4 +1,5 @@
 import { voting, votingWinner, individualImmunity, tribalImmunity, getVoteResults, determineVotedOut } from "./simulator";
+import { finalPlacements } from "../page";
 
 let tribes = [];
 let merged = false;
@@ -94,6 +95,7 @@ let customRandomAllianceNames = [];
 let useOnlyCustomEvents = false;
 let tribeSize = 10;
 let mergeAt = 12;
+let count = 20;
 
 
 export const resetSimulation = () => {
@@ -694,9 +696,9 @@ const manageAlliances = (tribe) => {
 
 
 
-
 export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames, mergeNum) => {
   let episodes = [];
+  count = tsize*2;
   tribeNames = tribes;
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
@@ -871,6 +873,9 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       tribeIdols = idols;
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
+          votedout.placement = count;
+          count--;
+          finalPlacements.push(votedout);
           const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
           const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
           updateResults({
@@ -979,6 +984,9 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         tribeIdols = idols;
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
+            votedout.placement = count;
+            count--;
+            finalPlacements.push(votedout);
             tribes[0] = tribecopy;
             const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
             const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
@@ -1010,6 +1018,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         state = "final";
         updateResults({ type: "event", message: "Final tribal votes are being tallied." });
         const { winner, voteDetails, voteSummary } = votingWinner(tribes[0], tribes[1]);
+        finalPlacements.push(tribes[0][0], tribes[0][1], tribes[0][2]);
         updateResults({
           type: "voting-summary", message: voteSummary
         });

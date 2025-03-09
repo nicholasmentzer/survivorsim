@@ -18,6 +18,8 @@ const getRandomPlayers = (players, num) => {
   return shuffled.slice(0, num);
 };
 
+export let finalPlacements = [];
+
 export default function Home() {
   const [status, setStatus] = useState("Configure your cast.");
   const [mode, setMode] = useState("configure");
@@ -123,6 +125,7 @@ export default function Home() {
 
   const startSimulation = () => {
     resetSimulation();
+    finalPlacements = [];
     const allNames = [...playerConfig.men.map(p => p.name), ...playerConfig.women.map(p => p.name)];
 
     // Check for duplicates
@@ -149,10 +152,14 @@ export default function Home() {
   const nextEpisode = () => {
     setShowCurrentAlliances(false);
     setShowDetailedVotes(false);
-    if (currentEpisode === episodes.length - 1) {
+    if(mode === "summary"){
       resetSimulation();
+      finalPlacements = [];
       setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
       setMode("configure");
+    }
+    else if (currentEpisode === episodes.length - 1) {
+      setMode("summary");
     } else {
       setCurrentEpisode((prev) => Math.min(prev + 1, episodes.length - 1));
     }
@@ -162,8 +169,12 @@ export default function Home() {
   const prevEpisode = () => {
     setShowCurrentAlliances(false);
     setShowDetailedVotes(false);
-    if (currentEpisode === 0) {
+    if(mode === "summary"){
+      setMode("simulate");
+    }
+    else if (currentEpisode === 0) {
       resetSimulation();
+      finalPlacements = [];
       setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
       setMode("configure");
     } else {
@@ -251,6 +262,28 @@ export default function Home() {
               >
                 SIMULATE
               </button>
+            ) : 
+            mode === "summary" ? (
+              <div className="bg-stone-800 text-white p-6 rounded-lg shadow-lg w-full mx-auto text-center">
+                <h2 className="text-2xl font-bold mb-4">Final Placements</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {finalPlacements
+                    .sort((a, b) => a.placement - b.placement)
+                    .map((player, index) => (
+                      <div key={player.name} className="bg-stone-700 p-3 rounded-lg flex items-center space-x-4">
+                        <img
+                          src={player.image || "/default-player.png"}
+                          alt={player.name}
+                          className="w-12 h-12 object-cover rounded-full border-2 border-gray-600"
+                        />
+                        <div>
+                          <p className="text-lg">{player.name}</p>
+                          <p className="text-gray-400">{player.placement === 1 ? "Winner" : `#${player.placement}`}</p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
             ) : (
               <div className="text-center p-4 text-white min-h-screen">
                 <div className="flex justify-center items-center space-x-4 mb-6">
@@ -263,7 +296,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
+                    onClick={() => {resetSimulation();finalPlacements = [];window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
                   >
                     BACK TO CONFIGURE
                   </button>
@@ -874,7 +907,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
+                    onClick={() => {resetSimulation();finalPlacements = [];window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
                   >
                     BACK TO CONFIGURE
                   </button>

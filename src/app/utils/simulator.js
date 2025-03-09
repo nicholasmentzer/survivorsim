@@ -557,14 +557,21 @@ export const votingWinner = (finalThree, jury) => {
         `<span class="font-bold text-lg">It's a tie! ${thirdFinalist.name} casts the deciding vote for ${decidingVote.name}!</span>`
       );
 
+      decidingVote.placement = 1;
+      tiedPlayers.find(p => p !== decidingVote).placement = 2;
+      thirdFinalist.placement = 3;
+
       return { winner: decidingVote, voteDetails, voteSummary };
     }
   }
 
   const rockWinner = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
   voteSummary.push(
-    `<span class="font-bold text-lg">All finalists are tied! ${rockWinner.name} wins Survivor by a rock draw!</span>`
+    `<span class="font-bold text-lg">All finalists are tied! ${rockWinner.name} wins Survivor by a firemaking challenge!</span>`
   );
+  rockWinner.placement = 1;
+  tiedPlayers.filter(p => p !== rockWinner)[0].placement = 2;
+  tiedPlayers.filter(p => p !== rockWinner)[1].placement = 3;
 
   return { winner: rockWinner, voteDetails, voteSummary };
 };
