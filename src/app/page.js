@@ -321,11 +321,11 @@ export default function Home() {
                           <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
                             {event.members?.map((member) => (
-                              <div key={member.name} className="text-center">
+                              <div key={member.name} className="flex flex-col items-center text-center">
                                 <img
                                     src={member.image}
                                     alt={member.name}
-                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 mx-auto"
+                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
                                     style={{ imageRendering: "high-quality" }} 
                                   />
                                 <p className="text-white text-xs mt-1">{member.name}</p>
@@ -508,11 +508,11 @@ export default function Home() {
                         <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
                             {event.members?.map((member) => (
-                              <div key={member.name} className="text-center">
+                              <div key={member.name} className="flex flex-col items-center text-center">
                                 <img
                                     src={member.image}
                                     alt={member.name}
-                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 mx-auto"
+                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
                                     style={{ imageRendering: "high-quality" }} 
                                   />
                                 <p className="text-white text-xs mt-1">{member.name}</p>
