@@ -218,7 +218,7 @@ export default function Home() {
       />
       <div className="flex min-h-screen">
 
-      <main className="w-[100%] mx-auto flex flex-col items-center flex-grow relative">
+      <main className="w-full mx-auto flex flex-col items-center flex-grow relative">
       {showWelcome && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
           <div className="bg-stone-900 text-white p-6 rounded-lg shadow-lg max-w-md w-full text-center">
@@ -326,7 +326,7 @@ export default function Home() {
                                     src={member.image}
                                     alt={member.name}
                                     className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
-                                    style={{ imageRendering: "high-quality" }} 
+                                    style={{ minWidth: "64px", minHeight: "64px", imageRendering: "high-quality" }} 
                                   />
                                 <p className="text-white text-xs mt-1">{member.name}</p>
                               </div>
@@ -513,7 +513,7 @@ export default function Home() {
                                     src={member.image}
                                     alt={member.name}
                                     className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
-                                    style={{ imageRendering: "high-quality" }} 
+                                    style={{ minWidth: "64px", minHeight: "64px", imageRendering: "high-quality" }} 
                                   />
                                 <p className="text-white text-xs mt-1">{member.name}</p>
                               </div>
