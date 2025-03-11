@@ -335,7 +335,23 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     "Player1 and Player2 had a deep strategic conversation.",
     "Player1 and Player2 made a secret alliance.",
     "Player1 taught Player2 a survival skill.",
-    "Player1 and Player2 enjoyed a relaxing moment together."
+    "Player1 and Player2 enjoyed a relaxing moment together.",
+    "Player1 and Player2 promised to always have each other's back.",
+    "Player1 saved Player2 from getting caught searching for an idol.",
+    "Player1 reassured Player2 when they were feeling uncertain about their game.",
+    "Player1 and Player2 discovered they share a mutual friend outside the game!",
+    "Player1 gifted Player2 their extra portion of rice.",
+    "Player1 and Player2 developed a secret handshake.",
+    "Player1 and Player2 shared a heartfelt conversation by the fire.",
+    "Player1 saved Player2 from a dangerous situation.",
+    "Player1 and Player2 laughed over an inside joke no one else understood.",
+    "Player1 and Player2 worked together to find food for the tribe.",
+    "Player1 and Player2 shared a late-night strategy talk under the stars.",
+    "Player1 and Player2 planned a future move together.",
+    "Player1 and Player2 agreed to have each other's backs.",
+    "Player1 and Player2 played a prank on the rest of the tribe, laughing together.",
+    "Player1 and Player2 sang together while working around camp.",
+    "Player1 and Player2 enjoyed a moment of peace away from the tribe."
   ];
   
   const negativeEvents = [
@@ -346,7 +362,25 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     "Player1 and Player2 clashed over leadership decisions.",
     "Player1 and Player2 had an awkward moment after a failed alliance.",
     "Player1 spread a rumor about Player2.",
-    "Player1 ignored Player2 in an important strategy discussion."
+    "Player1 ignored Player2 in an important strategy discussion.",
+    "Player1 threw Player2's name out as a target, causing tensions.",
+    "Player1 and Player2 argued over who was slacking in camp.",
+    "Player1 made a sarcastic remark that offended Player2.",
+    "Player1 accused Player2 of throwing the challenge.",
+    "Player1 dismissed Player2's game plan, making them feel excluded.",
+    "Player1 tried to manipulate Player2, but it backfired.",
+    "Player1 warned others not to trust Player2.",
+    "Player1 and Player2 got into a petty fight over sleeping arrangements.",
+    "Player1 criticized the challenge performance of Player2 in front of the whole tribe.",
+    "Player1 called out Player2 for playing a weak game.",
+    "Player1 and Player2 got into a public shouting match.",
+    "Player1 called out Player2 for being lazy at camp.",
+    "Player1 spread a lie about Player2 to the rest of the tribe.",
+    "Player1 openly questioned the loyalty of Player2.",
+    "Player1 rolled their eyes at Player2 during a tribe discussion.",
+    "Player1 purposely left Player2 out of a big decision.",
+    "Player1 let slip that they didn't trust Player2.",
+    "Player1 and Player2 had a passive-aggressive conversation."
   ];
 
   if (customEvents.length > 0 && (useOnlyCustomEvents || Math.random() < 0.5)) {
@@ -357,7 +391,7 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     numPlayers = randomCustomEvent.numPlayers;
   } else {
     eventType = Math.random() > 0.5 ? "positive" : "negative";
-    severity = Math.floor(Math.random() * 3) + 1;
+    severity = Math.floor(Math.random() * 5) + 1;
     const eventList = eventType === "positive" ? positiveEvents : negativeEvents;
     message = eventList[Math.floor(Math.random() * eventList.length)];
     numPlayers = 2;
