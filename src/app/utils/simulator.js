@@ -214,7 +214,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         });
       });
     }
-    if (target && target !== voter && (voter.relationships[target.name] < 2 || Math.random() < 0.3)) {
+    if (target && target !== voter && (voter.relationships[target.name] < 2 || Math.random() < 0.5)) {
       let targetIndex = tribe.indexOf(target);
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
       let votedWithAlliance = bestAlliance && !bestAlliance.members.includes(target);
@@ -409,6 +409,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       } else if (newSortedVotes.length > 0) {
         const [loserIndex] = newSortedVotes[0];
         removeFromAlliance(tribe[loserIndex]);
+        Object.keys(idols).forEach(key => {
+          if (idols[key] && idols[key].name === tribe[loserIndex].name) {
+              idols[key] = null;
+          }
+        });
         return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary, idols };
       } else {
         voteSummary.push(`<span class="font-bold text-lg">All votes were nullified. Revote required!</span>`);
@@ -484,6 +489,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         voteDetails.push(`${eliminatedByRock.name} eliminated by rocks.`);
         voteSummary.push(`${eliminatedByRock.name} drew the bad rock and is eliminated!`);
         removeFromAlliance(tribe[eliminatedIndex]);
+        Object.keys(idols).forEach(key => {
+          if (idols[key] && idols[key].name === tribe[eliminatedIndex].name) {
+              idols[key] = null;
+          }
+        });
         return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
       }
     }
@@ -496,11 +506,21 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
     let revoteLoser = parseInt(revoteSorted[0][0]);
     removeFromAlliance(tribe[revoteLoser]);
+    Object.keys(idols).forEach(key => {
+      if (idols[key] && idols[key].name === tribe[revoteLoser].name) {
+          idols[key] = null;
+      }
+    });
     return { voteIndex: revoteLoser, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
   }
 
   const [loser] = sortedVotes[0];
   removeFromAlliance(tribe[loser]);
+  Object.keys(idols).forEach(key => {
+    if (idols[key] && idols[key].name === tribe[loser].name) {
+        idols[key] = null;
+    }
+  });
   return { voteIndex: parseInt(loser), sortedVotes: generateFormattedVotes(sortedVotes), voteDetails, voteSummary, idols };
 };
 

@@ -316,46 +316,24 @@ export default function Home() {
                     if (event.type === "tribe") {
                       return (
                         <div key={index} className="w-full">
-                        <div className="mb-2 border-t-4 border-gray-400"></div>
-                        <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
-                          <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
-                          <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
-                            {event.members?.map((member) => (
-                              <div key={member.name} className="flex flex-col items-center text-center w-20">
-                                <img
-                                    src={member.image}
-                                    alt={member.name}
-                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
-                                    style={{ minWidth: "64px", minHeight: "64px", imageRendering: "high-quality" }} 
-                                  />
-                                <p className="text-white text-xs mt-1">{member.name}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        </div>
-                        /*<div key={index}>
-                          <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
                           <div className="mb-2 border-t-4 border-gray-400"></div>
-                          <div className="mt-4 pb-6">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
-                              {event.members?.map((player) => (
-                                <div
-                                  key={player.name}
-                                  className="text-xs sm:text-sm border border-gray-500 pb-2 pt-4 pl-2 pr-2 text-center rounded bg-stone-800 text-white break-words"
-                                >
+                          <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
+                            <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
+                            <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
+                              {event.members?.map((member) => (
+                                <div key={member.name} className="flex flex-col items-center text-center w-20">
                                   <img
-                                    src={player.image}
-                                    alt={player.name}
-                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full mx-auto mb-2"
-                                    style={{ imageRendering: "high-quality" }} 
-                                  />
-                                  {player.name}
+                                      src={member.image}
+                                      alt={member.name}
+                                      className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
+                                      style={{ minWidth: "64px", minHeight: "64px", imageRendering: "high-quality" }} 
+                                    />
+                                  <p className="text-white text-xs mt-1">{member.name}</p>
                                 </div>
                               ))}
                             </div>
                           </div>
-                        </div>*/
+                        </div>
                       );
                     } else if(event.type === "alliance"){
                       return (
@@ -512,7 +490,7 @@ export default function Home() {
                                 <img
                                     src={member.image}
                                     alt={member.name}
-                                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
+                                    className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
                                     style={{ minWidth: "64px", minHeight: "64px", imageRendering: "high-quality" }} 
                                   />
                                 <p className="text-white text-xs mt-1">{member.name}</p>
