@@ -321,7 +321,7 @@ export default function Home() {
                           <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
                           <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
                             {event.members?.map((member) => (
-                              <div key={member.name} className="flex flex-col items-center text-center w-16">
+                              <div key={member.name} className="flex flex-col items-center text-center w-20">
                                 <img
                                     src={member.image}
                                     alt={member.name}
@@ -508,7 +508,7 @@ export default function Home() {
                         <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
                           <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
                             {event.members?.map((member) => (
-                              <div key={member.name} className="flex flex-col items-center text-center w-16">
+                              <div key={member.name} className="flex flex-col items-center text-center w-20">
                                 <img
                                     src={member.image}
                                     alt={member.name}
