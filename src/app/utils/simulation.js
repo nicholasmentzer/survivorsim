@@ -810,7 +810,10 @@ const handlePreMergePhase = (updateResults, customEvents) => {
     handlePostMergePhase(updateResults, customEvents);
   } else {
       updateResults(
-        { type: "tribe", title: tribeNames.tribe1, members: [...tribes[0]] }
+        { type: "tribe", title: tribeNames.tribe1, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
+          ...member,
+          relationships: { ...member.relationships }
+        })) }
       );
 
       const idolEvent1 = findIdol(tribes[0], "tribe1");
@@ -846,7 +849,10 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       }
 
       updateResults(
-        { type: "tribe", title: tribeNames.tribe2, members: [...tribes[1]] }
+        { type: "tribe", title: tribeNames.tribe2, members: tribes[1].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
+          ...member,
+          relationships: { ...member.relationships }
+        })) }
       );
       const idolEvent2 = findIdol(tribes[1], "tribe2");
       if (idolEvent2) updateResults(idolEvent2);
@@ -945,7 +951,10 @@ const handlePreMergePhase = (updateResults, customEvents) => {
 const handlePostMergePhase = (updateResults, customEvents) => {
     const tribe = tribes[0];
     updateResults(
-      { type: "tribe", title: tribeNames.merge, members: [...tribes[0]] },
+      { type: "tribe", title: tribeNames.merge, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
+        ...member,
+        relationships: { ...member.relationships }
+      })) },
     );
     if (tribes[0].length === 3) {
       updateResults(

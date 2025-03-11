@@ -43,6 +43,30 @@ export default function Home() {
   const [tribeSize, setTribeSize] = useState(10);
   const [mergeTime, setMergeTime] = useState(12);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [selectedTribe, setSelectedTribe] = useState(null);
+  const [showRelationshipsModal, setShowRelationshipsModal] = useState(false);
+
+  const [playerFilters, setPlayerFilters] = useState(() =>
+    selectedTribe ? Object.fromEntries(selectedTribe.map(player => [player.name, "extreme"])) : {}
+  );
+  
+  const toggleFilterMode = (playerName) => {
+    setPlayerFilters(prevFilters => ({
+      ...prevFilters,
+      [playerName]: prevFilters[playerName] === "all" ? "none" :
+                    prevFilters[playerName] === "none" ? "extreme" : "all"
+    }));
+  };
+
+  const openRelationshipsModal = (tribe) => {
+    setSelectedTribe(tribe);
+    setShowRelationshipsModal(true);
+  };
+  
+  const closeRelationshipsModal = () => {
+    setShowRelationshipsModal(false);
+    setSelectedTribe(null);
+  };
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem("hasSeenWelcome");
@@ -317,8 +341,17 @@ export default function Home() {
                       return (
                         <div key={index} className="w-full">
                           <div className="mb-2 border-t-4 border-gray-400"></div>
-                          <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
+                          <div className="relative mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
+
+                            <button 
+                              className="absolute top-2 left-2 bg-stone-800 text-stone-400 text-xs px-2 py-1 rounded hover:bg-stone-700 transition"
+                              onClick={() => openRelationshipsModal(event.members)}
+                            >
+                              View Relationships
+                            </button>
+
                             <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
+
                             <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
                               {event.members?.map((member) => (
                                 <div key={member.name} className="flex flex-col items-center text-center w-20">
@@ -333,6 +366,90 @@ export default function Home() {
                               ))}
                             </div>
                           </div>
+
+                          {showRelationshipsModal && selectedTribe && (
+                            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50" onClick={closeRelationshipsModal}>
+                              <div className="bg-stone-900 text-white p-6 rounded-lg shadow-lg w-[80%] max-w-2xl relative" onClick={(e) => e.stopPropagation()}>
+                                <h2 className="text-lg font-bold mb-4 text-center">Tribe Relationships</h2>
+
+                                <div className="overflow-auto max-h-[60vh] space-y-4">
+                                  {selectedTribe.map((player) => {
+                                    const filterMode = playerFilters[player.name] || "extreme";
+
+                                    const sortedRelationships = [...selectedTribe]
+                                      .filter(other => other !== player)
+                                      .map(other => ({
+                                        name: other.name,
+                                        score: player.relationships?.[other.name] ?? 0
+                                      }))
+                                      .sort((a, b) => b.score - a.score);
+
+                                    let displayedRelationships = sortedRelationships;
+
+                                    if (filterMode === "extreme") {
+                                      displayedRelationships = sortedRelationships.filter(({ score }) => Math.abs(score) >= 3);
+                                    } else if (filterMode === "none") {
+                                      displayedRelationships = [];
+                                    }
+
+                                    return (
+                                      <div key={player.name} className="bg-stone-800 p-4 rounded-lg shadow-md">
+                                        <div className="flex justify-between items-center">
+                                          <h3 className="text-md font-bold text-white">{player.name}</h3>
+
+                                          <div className="relative">
+                                            <button
+                                              onClick={() => toggleFilterMode(player.name)}
+                                              className="bg-stone-700 text-white text-xs px-3 py-1 rounded-full flex items-center space-x-1"
+                                            >
+                                              <span>
+                                                {filterMode === "none" ? "Show Important" : filterMode === "all" ? "Hide All" : "Show All"}
+                                              </span>
+                                              
+                                              {filterMode === "none" ? (
+                                                <span className="text-green-400">+</span>
+                                              ) : filterMode === "all" ? (
+                                                <span className="text-red-400">-</span>
+                                              ) : (
+                                                <span className="text-green-400">+</span>
+                                              )}
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        <div className="mt-2 space-y-1">
+                                          {displayedRelationships.length > 0 ? (
+                                            displayedRelationships.map(({ name, score }) => {
+                                              const bgColor =
+                                                score > 2 ? "bg-green-500" :
+                                                score > 0 ? "bg-green-300" :
+                                                score === 0 ? "bg-gray-500" :
+                                                score < -2 ? "bg-red-500" : "bg-red-300";
+
+                                              return (
+                                                <div key={name} className={`flex justify-between px-3 py-2 rounded ${bgColor} bg-opacity-50`}>
+                                                  <span className="text-white text-sm">{name}</span>
+                                                  <span className="text-white font-bold">{score}</span>
+                                                </div>
+                                              );
+                                            })
+                                          ) : (<></>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                <button
+                                  className="mt-6 bg-stone-600 hover:bg-stone-700 text-white px-4 py-2 rounded-lg w-full"
+                                  onClick={closeRelationshipsModal}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     } else if(event.type === "alliance"){

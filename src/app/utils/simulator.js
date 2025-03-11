@@ -214,7 +214,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         });
       });
     }
-    if (target && target !== voter && (voter.relationships[target.name] < 2 || Math.random() < 0.5)) {
+    if (target && target !== voter && (voter.relationships[target.name] < 3 || Math.random() < 0.5)) {
       let targetIndex = tribe.indexOf(target);
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
       let votedWithAlliance = bestAlliance && !bestAlliance.members.includes(target);
