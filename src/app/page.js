@@ -241,7 +241,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      <div className="relative min-h-screen flex-col items-center justify-center">
+      <div className="relative min-h-screen flex-col items-center justify-center w-full">
         <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-12 p-6 rounded-lg">
           <div className="flex justify-center">
             <img 
@@ -252,7 +252,7 @@ export default function Home() {
           </div>
           <h4 className="text-2xl font-bold text-slate-300 text-center mt-4" style={{ fontFamily: "Bebas Neue" }}> A Survivor Simulator</h4>
 
-          <div id="interface" className="text-center mt-8">
+          <div id="interface" className="text-center mt-8 w-full">
 
             {/*TOP BUTTON SETS*/}
             {mode === "configure" ? (
@@ -285,7 +285,7 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <div className="text-center p-4 text-white min-h-screen">
+              <div className="text-center p-4 text-white min-h-screen w-full">
                 <div className="flex justify-center items-center space-x-4 mb-6">
                   <button
                     onClick={prevEpisode}
@@ -311,7 +311,7 @@ export default function Home() {
 
 
                 <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
-                <div className="mt-8 space-y-8">
+                <div className="mt-8 space-y-8 w-full">
                   {episodes[currentEpisode]?.map((event, index) => {
                     if (event.type === "tribe") {
                       return (
@@ -319,9 +319,9 @@ export default function Home() {
                         <div className="mb-2 border-t-4 border-gray-400"></div>
                         <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
                           <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
+                          <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
                             {event.members?.map((member) => (
-                              <div key={member.name} className="flex flex-col items-center text-center">
+                              <div key={member.name} className="flex flex-col items-center text-center w-16">
                                 <img
                                     src={member.image}
                                     alt={member.name}
@@ -506,9 +506,9 @@ export default function Home() {
                               </div>
                               <div key={index} className="w-full">
                         <div className="mt-3 p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-lg w-full mx-auto">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-10 gap-4 mt-2">
+                          <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
                             {event.members?.map((member) => (
-                              <div key={member.name} className="flex flex-col items-center text-center">
+                              <div key={member.name} className="flex flex-col items-center text-center w-16">
                                 <img
                                     src={member.image}
                                     alt={member.name}
