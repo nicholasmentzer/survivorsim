@@ -96,7 +96,10 @@ let useOnlyCustomEvents = false;
 let tribeSize = 10;
 let mergeAt = 12;
 let count = 20;
-
+let numberedAlliances = true;
+let numberedTribe1 = 0;
+let numberedTribe2 = 0;
+let numberedMerge = 0;
 
 export const resetSimulation = () => {
   tribes = [];
@@ -193,6 +196,10 @@ export const resetSimulation = () => {
   customRandomAllianceNames = [];
   tribeSize = 10;
   mergeAt = 12;
+  numberedAlliances = true;
+  numberedTribe1 = 0;
+  numberedTribe2 = 0;
+  numberedMerge = 0;
 };
 
 export const removeFromAlliance = (loser) => {
@@ -458,7 +465,7 @@ const generateRelationshipEvent = (tribe, customEvents) => {
   };
 };
 
-const manageAlliances = (tribe) => {
+const manageAlliances = (tribe, tribeType) => {
   let newAlliances = [];
   let dissolvedAlliances = [];
   let existingAlliances2 = [...alliances];
@@ -541,7 +548,11 @@ const manageAlliances = (tribe) => {
 
         let allianceName;
 
-        if(customRandomAllianceNames.length > 0){
+        if(numberedAlliances){
+          let tempNum = tribeType === 0 ? numberedTribe1++ : tribeType === 1 ? numberedTribe2++ : numberedMerge++;
+          let tempName = tribeType === 0 ? tribeNames.tribe1 : tribeType === 1 ? tribeNames.tribe2 : tribeNames.merge;
+          allianceName = `${tempName} - Alliance ${tempNum}`;
+        } else if(customRandomAllianceNames.length > 0) {
           const randomIndex = Math.floor(Math.random() * customRandomAllianceNames.length);
           allianceName = customRandomAllianceNames[randomIndex];
           customRandomAllianceNames.splice(randomIndex, 1);
@@ -750,13 +761,14 @@ const manageAlliances = (tribe) => {
 
 
 
-export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames, mergeNum) => {
+export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames, mergeNum, useNumberedAlliances) => {
   let episodes = [];
   count = tsize*2;
   tribeNames = tribes;
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
   mergeAt = mergeNum;
+  numberedAlliances = useNumberedAlliances;
   customRandomAllianceNames = customAllianceNames;
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {
@@ -846,7 +858,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
           if (relationshipEvent1) updateResults(relationshipEvent1);
         }
       }
-      const alliances1 = manageAlliances(tribes[0]);
+      const alliances1 = manageAlliances(tribes[0], 0);
 
       if (alliances1.newAlliances != null) {
         if (alliances1.newAlliances.length > 0) {
@@ -883,7 +895,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
           if (relationshipEvent2) updateResults(relationshipEvent2);
         }
       }
-      const alliances2 = manageAlliances(tribes[1]);
+      const alliances2 = manageAlliances(tribes[1], 1);
 
       if (alliances2.newAlliances != null) {
         if (alliances2.newAlliances.length > 0) {
@@ -992,7 +1004,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
             if (relationshipEvent1) updateResults(relationshipEvent1);
           }
         }
-        const alliances1 = manageAlliances(tribes[0]);
+        const alliances1 = manageAlliances(tribes[0], 2);
 
         if (alliances1.newAlliances != null) {
           if (alliances1.newAlliances.length > 0) {

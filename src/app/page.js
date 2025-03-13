@@ -34,6 +34,7 @@ export default function Home() {
   const [hideSliders, setHideSliders] = useState(false);
   const [showCurrentAlliances, setShowCurrentAlliances] = useState(false);
   const [showCurrentAdvantages, setShowCurrentAdvantages] = useState(false);
+  const [useNumberedAlliances, setuseNumberedAlliances] = useState(true);
   const [showDetailedVotes, setShowDetailedVotes] = useState(false);
   const [tribeNames, setTribeNames] = useState({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
   const [advantages, setAdvantages] = useState({
@@ -168,7 +169,7 @@ export default function Home() {
 
     window.scrollTo({ top: 0 });
     setEpisodes([]);
-    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages, customAllianceNames, mergeTime);
+    simulate([...playerConfig.men, ...playerConfig.women], setEpisodes, customEvents, useOnlyCustomEvents, tribeSize, tribeNames, advantages, customAllianceNames, mergeTime, useNumberedAlliances);
     setMode("simulate");
     setCurrentEpisode(0);
   };
@@ -962,6 +963,16 @@ export default function Home() {
                 <div className="h-2"/>
                 <button type="submit" className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg">Add Alliance Name</button>
               </form>
+
+              <label className="flex items-center space-x-2 mt-6">
+                <input
+                  type="checkbox"
+                  checked={useNumberedAlliances}
+                  onChange={() => setuseNumberedAlliances(!useNumberedAlliances)}
+                  className="w-4 h-4"
+                />
+                <span className="text-white">Use basic numbered alliance names (rather than custom or random names)</span>
+              </label>
 
               <h3 className="text-lg font-bold mt-4">Custom Alliance Names</h3>
               {customAllianceNames.length === 0 ? (
