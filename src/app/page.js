@@ -422,7 +422,7 @@ export default function Home() {
                                             displayedRelationships.map(({ name, score }) => {
                                               const bgColor =
                                                 score === 5 ? "bg-green-400" :
-                                                score === 5 ? "bg-green-500" :
+                                                score === 4 ? "bg-green-500" :
                                                 score === 3 ? "bg-green-600" :
                                                 score === 2 ? "bg-green-700" :
                                                 score === 1 ? "bg-green-800" :
