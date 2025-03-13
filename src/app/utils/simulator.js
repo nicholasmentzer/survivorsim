@@ -313,7 +313,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   let tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
 
   {/*Idol Check*/}
-  if (usableAdvantages.includes("immunityIdol") && idols != null && tribe.length >= 5) {
+  if (usableAdvantages.includes("immunityIdol") && idols != null && (tribe.length >= 5 || !merged)) {
 
     let potentialIdolPlayers = tribe.filter(player => 
       Object.values(idols)
@@ -325,7 +325,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     let primaryTarget = tribe[primaryTargetIndex];
     let idolUser = null;
 
-    if (potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7) {
+    if ((potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7) || (Math.random() < 0.1)) {
       immunePlayer = primaryTarget.name;
       immuneIdolIndex = tribe.indexOf(primaryTarget);
       idolUsed = true;
@@ -341,7 +341,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
               player.name !== primaryTarget.name &&
               primaryTarget.relationships[player.name] > 1 &&
               !votedForTarget &&
-              Math.random() < (0.2 + (primaryTarget.relationships[player.name] * 0.1))
+              Math.random() < (0.2 + (primaryTarget.relationships[player.name] * 0.12))
           );
       });
 
