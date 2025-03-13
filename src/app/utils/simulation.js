@@ -236,60 +236,84 @@ const initializeRelationships = (players) => {
 
 const detectDrasticRelationships = (tribe, updateResults) => {
   let drasticEvents = [];
-  let seenPairs = new Set();
+  let seenTargets = new Set();
+  let relationshipPairs = [];
 
-  drasticEvents.push({
-    type: "relationship"
-  });
+  drasticEvents.push({ type: "relationship" });
 
+  // Collect all potential drastic relationships (-4 and -5)
   tribe.forEach(player1 => {
+    let worstTarget = null;
+    let worstScore = Infinity;
+
     tribe.forEach(player2 => {
-      let types = [
-        `${player1.name} and ${player2.name} really dislike each other!`,
-        `${player1.name} thinks ${player2.name} is a big threat`,
-        `${player1.name} wants to target ${player2.name} sooner rather than later`,
-      ];
-      if (player1 !== player2 && player1.relationships[player2.name] <= -3) {
-        let pairKey = [player1.name, player2.name].sort().join("_");
+      if (player1 !== player2) {
+        let score = player1.relationships[player2.name] || 0;
 
-        if (!seenPairs.has(pairKey)) {
-          seenPairs.add(pairKey);
-
-          drasticEvents.push({
-            type: "event",
-            message: `<span class="text-red-400">${types[Math.floor(Math.random() * types.length)]}</span>`,
-            images: [player1.image, player2.image],
-          });
+        // Only consider -4 or -5 relationships first
+        if (score <= -4 && score < worstScore && !seenTargets.has(player2.name)) {
+          worstScore = score;
+          worstTarget = player2;
         }
       }
     });
+
+    if (worstTarget) {
+      seenTargets.add(worstTarget.name); // Ensure unique targets
+      relationshipPairs.push({ player1, player2: worstTarget, score: worstScore });
+    }
   });
 
-  if(drasticEvents.length < 3){
+  // If there aren’t enough strong negative relationships, add -3 and -2
+  if (relationshipPairs.length < 2) {
     tribe.forEach(player1 => {
-      tribe.forEach(player2 => {
-        let types = [
-          `${player1.name} and ${player2.name} really dislike each other!`,
-          `${player1.name} thinks ${player2.name} is a big threat`,
-          `${player1.name} wants to target ${player2.name} sooner rather than later`,
-        ];
-        if (player1 !== player2 && player1.relationships[player2.name] <= -1) {
-          let pairKey = [player1.name, player2.name].sort().join("_");
-  
-          if (!seenPairs.has(pairKey)) {
-            seenPairs.add(pairKey);
-  
-            drasticEvents.push({
-              type: "event",
-              message: `<span class="text-red-400">${types[Math.floor(Math.random() * types.length)]}</span>`,
-              images: [player1.image, player2.image],
-            });
+      if (!relationshipPairs.some(pair => pair.player1 === player1)) {
+        let worstTarget = null;
+        let worstScore = Infinity;
+
+        tribe.forEach(player2 => {
+          if (player1 !== player2) {
+            let score = player1.relationships[player2.name] || 0;
+
+            // Consider -3 and -2 if we still need more relationships
+            if (score <= -2 && score < worstScore && !seenTargets.has(player2.name)) {
+              worstScore = score;
+              worstTarget = player2;
+            }
           }
+        });
+
+        if (worstTarget) {
+          seenTargets.add(worstTarget.name);
+          relationshipPairs.push({ player1, player2: worstTarget, score: worstScore });
         }
-      });
+      }
     });
-    drasticEvents = drasticEvents.slice(0,2);
+
+    relationshipPairs = relationshipPairs.slice(0, Math.floor(Math.random() * 3) + 2);
   }
+
+  relationshipPairs.forEach(({ player1, player2 }) => {
+    let messages = [
+      `${player1.name} wants to target ${player2.name}.`,
+      `${player1.name} sees ${player2.name} as a major threat.`,
+      `${player1.name} is actively working against ${player2.name}.`,
+      `${player1.name} has made it clear they don’t trust ${player2.name}.`,
+      `${player1.name} wants ${player2.name} out before they get too powerful.`,
+      `${player1.name} has made ${player2.name} their number one target.`,
+      `${player1.name} cannot stand being around ${player2.name}.`,
+      `${player1.name} thinks ${player2.name} is too arrogant.`,
+      `${player1.name} is determined to outplay ${player2.name}.`,
+      `${player1.name} refuses to lose to ${player2.name}.`,
+      `${player1.name} is trying to rally people against ${player2.name}.`,
+    ];
+
+    drasticEvents.push({
+      type: "event",
+      message: `<span class="text-red-400">${messages[Math.floor(Math.random() * messages.length)]}</span>`,
+      images: [player1.image, player2.image],
+    });
+  });
 
   drasticEvents.forEach(event => updateResults(event));
 };
