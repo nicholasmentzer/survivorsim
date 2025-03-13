@@ -423,15 +423,15 @@ export default function Home() {
                                               const bgColor =
                                                 score === 5 ? "bg-green-400" :
                                                 score === 4 ? "bg-green-500" :
-                                                score === 3 ? "bg-green-600" :
-                                                score === 2 ? "bg-green-700" :
-                                                score === 1 ? "bg-green-800" :
-                                                score === 0 ? "bg-gray-500" :
+                                                score === 3 ? "bg-green-700" :
+                                                score === 2 ? "bg-green-800" :
+                                                score === 1 ? "bg-green-900" :
+                                                score === 0 ? "bg-gray-500 bg-opacity-50" :
                                                 score === -5 ? "bg-red-800" :
                                                 score === -4 ? "bg-red-700" :
-                                                score === -3 ? "bg-red-600" :
-                                                score === -2 ? "bg-red-500" :
-                                                "bg-red-400";
+                                                score === -3 ? "bg-red-500" :
+                                                score === -2 ? "bg-red-400" :
+                                                "bg-red-300";
 
                                               return (
                                                 <div key={name} className={`flex justify-between px-3 py-2 rounded ${bgColor} bg-opacity-50`}>
