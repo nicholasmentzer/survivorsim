@@ -241,7 +241,6 @@ const detectDrasticRelationships = (tribe, updateResults) => {
 
   drasticEvents.push({ type: "relationship" });
 
-  // Collect all potential drastic relationships (-4 and -5)
   tribe.forEach(player1 => {
     let worstTarget = null;
     let worstScore = Infinity;
@@ -250,7 +249,6 @@ const detectDrasticRelationships = (tribe, updateResults) => {
       if (player1 !== player2) {
         let score = player1.relationships[player2.name] || 0;
 
-        // Only consider -4 or -5 relationships first
         if (score <= -4 && score < worstScore && !seenTargets.has(player2.name)) {
           worstScore = score;
           worstTarget = player2;
@@ -259,12 +257,11 @@ const detectDrasticRelationships = (tribe, updateResults) => {
     });
 
     if (worstTarget) {
-      seenTargets.add(worstTarget.name); // Ensure unique targets
+      seenTargets.add(worstTarget.name);
       relationshipPairs.push({ player1, player2: worstTarget, score: worstScore });
     }
   });
 
-  // If there aren’t enough strong negative relationships, add -3 and -2
   if (relationshipPairs.length < 2) {
     tribe.forEach(player1 => {
       if (!relationshipPairs.some(pair => pair.player1 === player1)) {
@@ -275,7 +272,6 @@ const detectDrasticRelationships = (tribe, updateResults) => {
           if (player1 !== player2) {
             let score = player1.relationships[player2.name] || 0;
 
-            // Consider -3 and -2 if we still need more relationships
             if (score <= -2 && score < worstScore && !seenTargets.has(player2.name)) {
               worstScore = score;
               worstTarget = player2;
