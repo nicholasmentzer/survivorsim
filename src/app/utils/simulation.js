@@ -226,7 +226,7 @@ const initializeRelationships = (players) => {
         if (Math.random() < baseChance) {
           relationshipValue = Math.floor(Math.random() * 3) + 1;
         } else {
-          relationshipValue = Math.floor(Math.random() * 3) - 2;
+          relationshipValue = Math.floor(Math.random() * 4) - 3;
         }
         player.relationships[other.name] = relationshipValue;
       }

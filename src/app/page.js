@@ -421,10 +421,17 @@ export default function Home() {
                                           {displayedRelationships.length > 0 ? (
                                             displayedRelationships.map(({ name, score }) => {
                                               const bgColor =
-                                                score > 2 ? "bg-green-500" :
-                                                score > 0 ? "bg-green-300" :
+                                                score === 5 ? "bg-green-400" :
+                                                score === 5 ? "bg-green-500" :
+                                                score === 3 ? "bg-green-600" :
+                                                score === 2 ? "bg-green-700" :
+                                                score === 1 ? "bg-green-800" :
                                                 score === 0 ? "bg-gray-500" :
-                                                score < -2 ? "bg-red-500" : "bg-red-300";
+                                                score === -5 ? "bg-red-800" :
+                                                score === -4 ? "bg-red-700" :
+                                                score === -3 ? "bg-red-600" :
+                                                score === -2 ? "bg-red-500" :
+                                                "bg-red-400";
 
                                               return (
                                                 <div key={name} className={`flex justify-between px-3 py-2 rounded ${bgColor} bg-opacity-50`}>
