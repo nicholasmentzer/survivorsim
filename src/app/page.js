@@ -180,6 +180,7 @@ export default function Home() {
     if(mode === "summary"){
       resetSimulation();
       finalPlacements = [];
+      setuseNumberedAlliances(true);
       setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
       setMode("configure");
     }
@@ -199,6 +200,7 @@ export default function Home() {
     }
     else if (currentEpisode === 0) {
       resetSimulation();
+      setuseNumberedAlliances(true);
       finalPlacements = [];
       setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
       setMode("configure");
@@ -321,7 +323,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();finalPlacements = [];window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
+                    onClick={() => {resetSimulation();setuseNumberedAlliances(true);finalPlacements = [];window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
                   >
                     BACK TO CONFIGURE
                   </button>
@@ -1020,7 +1022,7 @@ export default function Home() {
 
                   <button
                     className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={() => {resetSimulation();finalPlacements = [];window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
+                    onClick={() => {resetSimulation();setuseNumberedAlliances(true);finalPlacements = [];window.scrollTo({ top: 0 });setMode("configure");setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });}}
                   >
                     BACK TO CONFIGURE
                   </button>

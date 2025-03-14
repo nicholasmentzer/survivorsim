@@ -97,9 +97,9 @@ let tribeSize = 10;
 let mergeAt = 12;
 let count = 20;
 let numberedAlliances = true;
-let numberedTribe1 = 0;
-let numberedTribe2 = 0;
-let numberedMerge = 0;
+let numberedTribe1 = 1;
+let numberedTribe2 = 1;
+let numberedMerge = 1;
 
 export const resetSimulation = () => {
   tribes = [];
@@ -197,9 +197,9 @@ export const resetSimulation = () => {
   tribeSize = 10;
   mergeAt = 12;
   numberedAlliances = true;
-  numberedTribe1 = 0;
-  numberedTribe2 = 0;
-  numberedMerge = 0;
+  numberedTribe1 = 1;
+  numberedTribe2 = 1;
+  numberedMerge = 1;
 };
 
 export const removeFromAlliance = (loser) => {
