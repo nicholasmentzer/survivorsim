@@ -841,10 +841,13 @@ const handlePreMergePhase = (updateResults, customEvents) => {
     mergeTribes(updateResults);
     handlePostMergePhase(updateResults, customEvents);
   } else {
+      const relevantAlliances1 = alliances.filter(alliance =>
+        alliance.members.some(member => tribes[0].some(tribeMember => tribeMember.name === member.name))
+      );
       updateResults(
-        { type: "tribe", title: tribeNames.tribe1, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
+        { type: "tribe", title: tribeNames.tribe1, alliances: relevantAlliances1, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
           ...member,
-          relationships: { ...member.relationships }
+          relationships: { ...member.relationships },
         })) }
       );
 
@@ -880,10 +883,14 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }
 
+      const relevantAlliances2 = alliances.filter(alliance =>
+        alliance.members.some(member => tribes[1].some(tribeMember => tribeMember.name === member.name))
+      );
+
       updateResults(
-        { type: "tribe", title: tribeNames.tribe2, members: tribes[1].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
+        { type: "tribe", title: tribeNames.tribe2, alliances: relevantAlliances2, members: tribes[1].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
           ...member,
-          relationships: { ...member.relationships }
+          relationships: { ...member.relationships },
         })) }
       );
       const idolEvent2 = findIdol(tribes[1], "tribe2");
@@ -917,7 +924,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }
 
-      if (alliances2.allAlliances != null) {
+      /*if (alliances2.allAlliances != null) {
         if (alliances2.allAlliances.length > 0) {
           updateResults({
             type: "alliance",
@@ -925,7 +932,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
             alliances: alliances2.allAlliances,
           });
         }
-      }
+      }*/
 
       updateResults({
         type: "idols",
@@ -982,8 +989,11 @@ const handlePreMergePhase = (updateResults, customEvents) => {
  */
 const handlePostMergePhase = (updateResults, customEvents) => {
     const tribe = tribes[0];
+    const relevantAlliances1 = alliances.filter(alliance =>
+      alliance.members.some(member => tribes[0].some(tribeMember => tribeMember.name === member.name))
+    );
     updateResults(
-      { type: "tribe", title: tribeNames.merge, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
+      { type: "tribe", title: tribeNames.merge, alliances: alliances, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
         ...member,
         relationships: { ...member.relationships }
       })) },
@@ -1026,7 +1036,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           }
         }
     
-        if (alliances1.allAlliances != null) {
+        /*if (alliances1.allAlliances != null) {
           if (alliances1.allAlliances.length > 0) {
             updateResults({
               type: "alliance",
@@ -1034,7 +1044,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
               alliances: alliances1.allAlliances,
             });
           }
-        }
+        }*/
 
         updateResults({
           type: "idols",

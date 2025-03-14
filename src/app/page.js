@@ -46,6 +46,8 @@ export default function Home() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [selectedTribe, setSelectedTribe] = useState(null);
   const [showRelationshipsModal, setShowRelationshipsModal] = useState(false);
+  const [alliancesModalOpen, setAlliancesModalOpen] = useState(false);
+  const [currentAlliances, setCurrentAlliances] = useState([]);
 
   const [playerFilters, setPlayerFilters] = useState(() =>
     selectedTribe ? Object.fromEntries(selectedTribe.map(player => [player.name, "extreme"])) : {}
@@ -63,10 +65,20 @@ export default function Home() {
     setSelectedTribe(tribe);
     setShowRelationshipsModal(true);
   };
+
+  const openAlliancesModal = (alliances) => {
+    setCurrentAlliances(alliances);
+    setAlliancesModalOpen(true);
+  };
   
   const closeRelationshipsModal = () => {
     setShowRelationshipsModal(false);
     setSelectedTribe(null);
+  };
+
+  const closeAlliancesModal = () => {
+    setAlliancesModalOpen(false);
+    setCurrentAlliances(null);
   };
 
   useEffect(() => {
@@ -353,6 +365,13 @@ export default function Home() {
                               View Relationships
                             </button>
 
+                            <button 
+                              className="absolute top-10 left-2 bg-stone-800 text-stone-400 text-xs px-2 py-1 rounded hover:bg-stone-700 transition"
+                              onClick={() => openAlliancesModal(event.alliances)}
+                            >
+                              View Alliances
+                            </button>
+
                             <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
 
                             <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
@@ -369,6 +388,47 @@ export default function Home() {
                               ))}
                             </div>
                           </div>
+
+                          {alliancesModalOpen && (
+                            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50" onClick={closeAlliancesModal}>
+                              <div className="bg-stone-900 text-white p-6 rounded-lg shadow-lg w-[80%] max-w-2xl relative" onClick={(e) => e.stopPropagation()}>
+                                <h2 className="text-lg font-bold mb-4 text-center">Current Alliances</h2>
+
+                                {currentAlliances.length > 0 ? (
+                                  <div className="overflow-auto max-h-[60vh] space-y-4">
+                                    {currentAlliances.map((alliance, index) => (
+                                      <div key={index} className="p-4 bg-stone-800 bg-opacity-40 rounded-lg shadow-md">
+                                        <h3 className="text-lg font-bold">{alliance.name}</h3>
+                                        <p className="text-sm text-gray-300">Strength: {alliance.strength}</p>
+
+                                        <div className="grid grid-cols-5 gap-3 mt-2">
+                                          {alliance.members.map(member => (
+                                            <div key={member.name} className="text-center">
+                                              <img
+                                                src={member.image}
+                                                alt={member.name}
+                                                className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600 mx-auto"
+                                              />
+                                              <p className="text-white text-xs mt-1">{member.name}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-400 mt-4">No alliances found for this tribe.</p>
+                                )}
+
+                                <button
+                                  className="mt-6 bg-stone-600 hover:bg-stone-700 text-white px-4 py-2 rounded-lg w-full"
+                                  onClick={closeAlliancesModal}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            </div>
+                          )}
 
                           {showRelationshipsModal && selectedTribe && (
                             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50" onClick={closeRelationshipsModal}>
