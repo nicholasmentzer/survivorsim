@@ -934,16 +934,16 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }*/
 
-      updateResults({
-        type: "idols",
-        idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
-      });
-
       winner = tribalImmunity(tribes);
       tribes[winner].forEach((player) => player.teamWins++);
       loser = winner === 0 ? 1 : 0;
       updateResults({ type: "immunity", message: `${winner + 1 === 1 ? tribeNames.tribe1 : tribeNames.tribe2} wins immunity! So, ${winner + 1 === 2 ? tribeNames.tribe1 : tribeNames.tribe2} will be going to tribal council`, members: [...tribes[loser]] });
 
+      updateResults({
+        type: "idols",
+        idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
+      });
+      
       detectDrasticRelationships(tribes[loser], updateResults);
       getAllianceTargets(tribes[loser], alliances, updateResults);
 
@@ -1046,11 +1046,6 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           }
         }*/
 
-        updateResults({
-          type: "idols",
-          idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
-        });
-
         winner = individualImmunity(tribe);
         const immune = tribe[winner];
         immune.immunities++;
@@ -1058,6 +1053,11 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           type: "event",
           message: `${immune.name} wins individual immunity!`,
           images: [immune.image]
+        });
+
+        updateResults({
+          type: "idols",
+          idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
         });
 
         detectDrasticRelationships(tribes[0], updateResults);
