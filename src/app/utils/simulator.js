@@ -320,12 +320,13 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         .filter(idol => idol !== null)
         .some(idol => idol.name === player.name)
     );
+    console.log(potentialIdolPlayers);
 
     let primaryTargetIndex = parseInt(sortedVotes[0][0]);
     let primaryTarget = tribe[primaryTargetIndex];
     let idolUser = null;
 
-    if ((potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7) || (Math.random() < 0.1)) {
+    if ((potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7)) {
       immunePlayer = primaryTarget.name;
       immuneIdolIndex = tribe.indexOf(primaryTarget);
       idolUsed = true;
