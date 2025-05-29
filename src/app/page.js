@@ -11,7 +11,7 @@ import Footer from "./components/Footer";
 
 const getRandomPlayers = (players, num) => {
   const filteredPlayers = players.filter(player =>
-    ["Survivor", "Australian Survivor"].includes(player.show)
+    ["Survivor"].includes(player.show)
   );
 
   const shuffled = [...filteredPlayers].sort(() => 0.5 - Math.random());
