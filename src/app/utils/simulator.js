@@ -547,7 +547,13 @@ export const votingWinner = (finalThree, jury) => {
     finalThree[vote].voteCount++;
     
     voteDetails.push(`${juror.name} voted for ${finalThree[vote].name}`);
-    voteSummary.push(`${index + 1}${getOrdinalSuffix(index + 1)} vote: ${finalThree[vote].name}`);
+
+    voteSummary.push(`
+      <div class="flex flex-col items-center space-x-3">
+        <img src="${finalThree[vote].image}" alt="${finalThree[vote].name}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+        <p>${index + 1}${getOrdinalSuffix(index + 1)} vote: ${finalThree[vote].name}</p>
+      </div>
+    `);
   });
 
   finalThree.sort((a, b) => b.voteCount - a.voteCount);
