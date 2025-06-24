@@ -380,7 +380,7 @@ export default function Home() {
                                   <img
                                       src={member.image}
                                       alt={member.name}
-                                      className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
+                                      className="w-10 h-10 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-gray-600 flex-shrink-0 aspect-square"
                                       style={{ minWidth: "64px", minHeight: "64px", imageRendering: "high-quality" }} 
                                     />
                                   <p className="text-white text-xs mt-1">{member.name}</p>
@@ -717,13 +717,13 @@ export default function Home() {
                             ) : null}
 
                             {event.type === "voting-summary" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-4/5 sm:w-4/5 md:w-1/2">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-4/5 sm:w-4/5 md:w-1/3">
                                 {event.message.map((vote, i) => (
                                   <div key={i} className="text-xs sm:text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
                               </div>
                             : event.type === "voting" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center w-4/5 sm:w-4/5 md:w-1/2">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center w-4/5 sm:w-4/5 md:w-1/3">
                                 {event.message.map((vote, i) => {
                                   if(!vote.includes("voted for")){ return(<div key={i} className="text-xs sm:text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>); } else { 
                                     let action = "voted for";
