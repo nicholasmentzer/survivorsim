@@ -331,7 +331,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       immuneIdolIndex = tribe.indexOf(primaryTarget);
       idolUsed = true;
       idolUser = primaryTarget;
-      voteSummary.push(`<span class="font-bold text-lg">${primaryTarget.name} plays the Hidden Immunity Idol!</span>`);
+      voteSummary.push(`<span class="font-bold text-md md:text-lg">${primaryTarget.name} plays the Hidden Immunity Idol!</span>`);
     }
 
     if (!idolUsed) {
@@ -351,7 +351,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
           immuneIdolIndex = tribe.indexOf(primaryTarget);
           idolUsed = true;
           idolUser = idolHolderAlly;
-          voteSummary.push(`<span class="font-bold text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
+          voteSummary.push(`<span class="font-bold text-md md:text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
       }
   }
 
@@ -417,7 +417,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         });
         return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary, idols };
       } else {
-        voteSummary.push(`<span class="font-bold text-lg">All votes were nullified. Revote required!</span>`);
+        voteSummary.push(`<span class="font-bold text-md md:text-lg">All votes were nullified. Revote required!</span>`);
         return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols };
       }
     }
@@ -426,8 +426,8 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   }
 
   if (tiedPlayers.length > 1) {
-    voteDetails.push( `<span class="font-bold text-lg">Revote</span>`);
-    voteSummary.push( `<span class="font-bold text-lg">There is a tie! Time for a revote</span>`);
+    voteDetails.push( `<span class="font-bold text-md md:text-lg">Revote</span>`);
+    voteSummary.push( `<span class="font-bold text-md md:text-lg">There is a tie! Time for a revote</span>`);
     let revoteVotes = {};
     let revoteExportVotes = [];
     let revoteDetails = [];
@@ -465,9 +465,9 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         let eliminatedByFire = safePlayers[Math.floor(Math.random() * safePlayers.length)];
         let eliminatedIndex = eliminatedByFire;
         voteDetails.push(``);
-        voteDetails.push( `<span class="font-bold text-lg">Firemaking competition</span>`);
+        voteDetails.push( `<span class="font-bold text-md md:text-lg">Firemaking competition</span>`);
         voteSummary.push(``);
-        voteSummary.push( `<span class="font-bold text-lg">Tied again! Since it is final 4, we will have a firemaking challenge to decide who goes home.</span>`);
+        voteSummary.push( `<span class="font-bold text-md md:text-lg">Tied again! Since it is final 4, we will have a firemaking challenge to decide who goes home.</span>`);
 
         voteDetails.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
         voteSummary.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
@@ -483,9 +483,9 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         let eliminatedByRock = eligibleForRocks[Math.floor(Math.random() * eligibleForRocks.length)];
         let eliminatedIndex = tribe.indexOf(eliminatedByRock);
         voteDetails.push(``);
-        voteDetails.push( `<span class="font-bold text-lg">Rock Draw</span>`);
+        voteDetails.push( `<span class="font-bold text-md md:text-lg">Rock Draw</span>`);
         voteSummary.push(``);
-        voteSummary.push( `<span class="font-bold text-lg">Tied again! Every other non-immune player will draw rocks to decide who goes home</span>`);
+        voteSummary.push( `<span class="font-bold text-md md:text-lg">Tied again! Every other non-immune player will draw rocks to decide who goes home</span>`);
 
         voteDetails.push(`${eliminatedByRock.name} eliminated by rocks.`);
         voteSummary.push(`${eliminatedByRock.name} drew the bad rock and is eliminated!`);
@@ -500,8 +500,8 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     }
 
     if (revoteSorted.length === 0) {
-      voteDetails.push(`<span class="font-bold text-lg">Error: No valid revote occurred.</span>`);
-      voteSummary.push(`<span class="font-bold text-lg">Error: No valid revote occurred.</span>`);
+      voteDetails.push(`<span class="font-bold text-md md:text-lg">Error: No valid revote occurred.</span>`);
+      voteSummary.push(`<span class="font-bold text-md md:text-lg">Error: No valid revote occurred.</span>`);
       return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols };
     }
 
@@ -568,7 +568,7 @@ export const votingWinner = (finalThree, jury) => {
     finalThree[2].placement = 3;
 
     voteSummary.push(
-      `<span class="font-bold text-lg">${soleSurvivor.name} wins Survivor with a vote of ${finalThree[0].voteCount}-${finalThree[1].voteCount}-${finalThree[2].voteCount}!</span>`
+      `<span class="font-bold text-md md:text-lg">${soleSurvivor.name} wins Survivor with a vote of ${finalThree[0].voteCount}-${finalThree[1].voteCount}-${finalThree[2].voteCount}!</span>`
     );
     return { winner: soleSurvivor, voteDetails, voteSummary };
   }
@@ -581,7 +581,7 @@ export const votingWinner = (finalThree, jury) => {
       decidingVote.voteCount++;
 
       voteSummary.push(
-        `<span class="font-bold text-lg">It's a tie! ${thirdFinalist.name} casts the deciding vote for ${decidingVote.name}!</span>`
+        `<span class="font-bold text-md md:text-lg">It's a tie! ${thirdFinalist.name} casts the deciding vote for ${decidingVote.name}!</span>`
       );
 
       decidingVote.placement = 1;
@@ -594,7 +594,7 @@ export const votingWinner = (finalThree, jury) => {
 
   const rockWinner = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
   voteSummary.push(
-    `<span class="font-bold text-lg">All finalists are tied! ${rockWinner.name} wins Survivor by a firemaking challenge!</span>`
+    `<span class="font-bold text-md md:text-lg">All finalists are tied! ${rockWinner.name} wins Survivor by a firemaking challenge!</span>`
   );
   rockWinner.placement = 1;
   tiedPlayers.filter(p => p !== rockWinner)[0].placement = 2;
