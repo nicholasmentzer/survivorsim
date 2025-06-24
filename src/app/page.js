@@ -281,7 +281,7 @@ export default function Home() {
         </div>
       )}
       <div className="relative min-h-screen flex-col items-center justify-center w-full">
-        <article className="prose mx-auto w-full max-w-[75%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[75%] pt-12 p-6 rounded-lg">
+        <article className="prose mx-auto w-full pt-12 p-6 rounded-lg">
           <div className="flex justify-center">
             <img 
               src="/logo.png"
@@ -717,7 +717,7 @@ export default function Home() {
                             ) : null}
 
                             {event.type === "voting-summary" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-4/5 sm:w-1/2">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-4/5 sm:w-3/4 md:w-1/2">
                                 {event.message.map((vote, i) => (
                                   <div key={i} className="text-xs sm:text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
