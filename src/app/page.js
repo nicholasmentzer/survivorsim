@@ -717,13 +717,13 @@ export default function Home() {
                             ) : null}
 
                             {event.type === "voting-summary" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-4/5 sm:w-3/4 md:w-1/2">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm w-4/5 sm:w-4/5 md:w-1/2">
                                 {event.message.map((vote, i) => (
                                   <div key={i} className="text-xs sm:text-sm font-semibold py-4" dangerouslySetInnerHTML={{ __html: vote }}></div>
                                 ))}
                               </div>
                             : event.type === "voting" ?
-                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center w-4/5 sm:w-3/4 md:w-1/2">
+                              <div className="bg-stone-800 text-white px-6 py-3 rounded-lg shadow-md text-center w-4/5 sm:w-4/5 md:w-1/2">
                                 {event.message.map((vote, i) => {
                                   if(!vote.includes("voted for")){ return(<div key={i} className="text-xs sm:text-sm mb-1" dangerouslySetInnerHTML={{ __html: vote }}></div>); } else { 
                                     let action = "voted for";
