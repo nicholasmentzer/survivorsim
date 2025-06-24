@@ -372,7 +372,9 @@ export default function Home() {
                               View Alliances
                             </button>
 
-                            <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
+                            <div className="mt-16 sm:mt-0">
+                              <span className="text-xl font-bold uppercase tracking-wide">{event.title} Events</span>
+                            </div>
 
                             <div className="flex flex-wrap justify-center gap-3 mt-2 w-full">
                               {event.members?.map((member) => (
