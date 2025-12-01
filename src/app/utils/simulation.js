@@ -1085,9 +1085,9 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         const immune = tribe[winner];
         immune.immunities++;
         updateResults({
-          type: "event",
+          type: "immunity",
           message: `${immune.name} wins individual immunity!`,
-          images: [immune.image]
+          members: [immune] 
         });
 
         updateResults({
