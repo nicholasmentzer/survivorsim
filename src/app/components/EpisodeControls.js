@@ -17,8 +17,8 @@ export default function EpisodeControls({
 
   const containerClasses =
     variant === "top"
-      ? "mt-6 mb-4 flex justify-center"
-      : "mt-10 mb-16 flex justify-center";
+      ? "mt-6 mb-4 flex justify-center px-4"
+      : "mt-10 mb-16 flex justify-center px-4";
 
   // Middle button label / action
   const middleLabel = isConfigure ? "Simulate" : "Back to Configure";
@@ -40,8 +40,16 @@ export default function EpisodeControls({
 
   return (
     <div className={containerClasses}>
-      <div className="inline-flex items-center gap-3 sm:gap-4">
-        {/* Previous - hidden on configure, fixed width when visible */}
+      <div
+        className="
+          flex flex-col sm:flex-row
+          items-stretch sm:items-center
+          justify-center
+          gap-2 sm:gap-4
+          w-full max-w-sm sm:max-w-none
+        "
+      >
+        {/* Previous - hidden on configure, same width as Next on wider screens */}
         {showSideButtons && (
           <Button
             type="button"
@@ -49,7 +57,8 @@ export default function EpisodeControls({
             disabled={isPrevDisabled}
             onClick={prevEpisode}
             className={`
-              h-9 px-4 min-w-[120px]
+              h-9
+              w-full sm:w-auto sm:min-w-[120px]
               text-[10px] sm:text-xs
               tracking-[0.16em] uppercase
               rounded-full
@@ -69,7 +78,8 @@ export default function EpisodeControls({
           type="button"
           onClick={handleMiddleClick}
           className="
-            h-9 px-6
+            h-9
+            w-full sm:w-auto
             text-[10px] sm:text-xs
             font-semibold
             tracking-[0.2em] uppercase
@@ -83,14 +93,15 @@ export default function EpisodeControls({
           {middleLabel}
         </Button>
 
-        {/* Next - hidden on configure, same width as Previous */}
+        {/* Next - hidden on configure, same width as Previous on wider screens */}
         {showSideButtons && (
           <Button
             type="button"
             disabled={isNextDisabled}
             onClick={nextEpisode}
             className={`
-              h-9 px-4 min-w-[120px]
+              h-9
+              w-full sm:w-auto sm:min-w-[120px]
               text-[10px] sm:text-xs
               tracking-[0.16em] uppercase
               rounded-full
