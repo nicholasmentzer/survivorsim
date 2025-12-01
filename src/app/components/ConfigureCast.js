@@ -1,5 +1,31 @@
-// app/components/ConfigureCast.js
+"use client";
+
+import { useRef } from "react";
+
 import PlayerConfig from "./PlayerConfig";
+
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export default function ConfigureCast({
   playerConfig,
@@ -37,331 +63,609 @@ export default function ConfigureCast({
   useNumberedAlliances,
   setuseNumberedAlliances,
 }) {
+  const tribe1Label = tribeNames.tribe1 || "Tribe 1";
+  const tribe2Label = tribeNames.tribe2 || "Tribe 2";
+
+  // --- helpers for inserting Player1 / Player2 tokens ---
+  const descriptionRef = useRef(null);
+
+  const insertToken = (token) => {
+    const textarea = descriptionRef.current;
+    if (!textarea) {
+      setEventDescription((prev) =>
+        (prev || "").length ? `${prev} ${token}` : token
+      );
+      return;
+    }
+
+    const start = textarea.selectionStart ?? eventDescription.length;
+    const end = textarea.selectionEnd ?? eventDescription.length;
+    const value = eventDescription || "";
+
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const insertion = token;
+
+    const newValue =
+      before + (before && !before.endsWith(" ") ? " " : "") +
+      insertion +
+      (after && !after.startsWith(" ") ? " " : "") +
+      after;
+
+    setEventDescription(newValue);
+
+    // put cursor after inserted token
+    requestAnimationFrame(() => {
+      const newPos = before.length + insertion.length + 1;
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  };
+
+  const hasPlayer1 = eventDescription.includes("Player1");
+  const hasPlayer2 = eventDescription.includes("Player2");
+  const hasBothPlayers = hasPlayer1 && hasPlayer2;
+
   return (
-    <div id="configureDiv" className="mt-12 mx-auto max-w-5xl">
+    <div id="configureDiv" className="mt-12 mx-auto max-w-5xl px-4">
+      {/* Page heading */}
       <div className="flex flex-col justify-center items-center">
-        <h2 className="text-xl text-stone-200 font-bold mb-2">
+        <h2
+          className="
+            text-3xl sm:text-4xl text-stone-100
+            tracking-[0.24em] uppercase
+            mb-1
+          "
+          style={{ fontFamily: "Bebas Neue, system-ui, sans-serif" }}
+        >
           Configure your cast
         </h2>
+        <p className="text-[11px] tracking-[0.18em] uppercase text-stone-400">
+          Season setup · tribes · custom events
+        </p>
       </div>
 
-      {/* 3 Columns */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
-        {/* Left Column */}
-        <div className="flex flex-col items-center justify-center">
-          <input
-            type="text"
-            placeholder={"Tribe 1 Name"}
-            onChange={(e) =>
-              setTribeNames({ ...tribeNames, tribe1: e.target.value })
-            }
-            className="w-auto bg-transparent text-xl font-bold text-blue-400 text-center border-b-2 border-blue-400 focus:outline-none"
-          />
-          <div className="h-5" />
-          <PlayerConfig
-            gender="men"
-            players={playerConfig}
-            updatePlayers={updatePlayers}
-            careers={careersData}
-            regions={regionsData}
-            tribes={tribesData}
-            hideSliders={hideSliders}
-            tribeSize={tribeSize}
-          />
-        </div>
-
-        {/* Middle Column */}
-        <div className="flex flex-col items-center justify-start">
-          <input
-            type="text"
-            placeholder={"Merge Tribe Name"}
-            onChange={(e) =>
-              setTribeNames({ ...tribeNames, merge: e.target.value })
-            }
-            className="w-auto bg-transparent text-xl font-bold text-purple-400 text-center border-b-2 border-purple-400 focus:outline-none"
-          />
-
-          <div className="h-4" />
-
-          <button
-            className="bg-stone-800 text-white px-2 py-1 mb-3 rounded-lg font-bold text-sm mt-4 hover:bg-stone-900 transition"
-            onClick={randomizeAllStats}
-          >
-            Randomize Stats
-          </button>
-
-          <div className=" flex items-center mb-6">
-            <input
-              type="checkbox"
-              id="hideSliders"
-              checked={hideSliders}
-              onChange={() => setHideSliders((prev) => !prev)}
-              className="mr-2 w-4 h-4"
-            />
-            <label htmlFor="hideSliders" className="text-white text-sm">
-              Hide Stats
-            </label>
-          </div>
-
-          <div className="flex flex-col items-center">
-            <h2 className="font-bold text-white mb-2">Select Tribe Size</h2>
-
-            <input
-              type="range"
-              min="7"
-              max="15"
-              value={tribeSize}
-              onChange={(e) => setTribeSize(Number(e.target.value))}
-              className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-            />
-            <p className="text-white">{`Tribe Size: ${tribeSize} (${tribeSize * 2} Total Players)`}</p>
-          </div>
-
-          <div className="h-4" />
-          <div className="flex flex-col items-center">
-            <h2 className="font-bold text-white mb-1">{`Merge At: ${mergeTime}`}</h2>
-
-            <input
-              type="range"
-              min={tribeSize + 1}
-              max={tribeSize * 2}
-              value={mergeTime}
-              onChange={(e) => setMergeTime(Number(e.target.value))}
-              className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-            />
-          </div>
-
-          <div className="h-6" />
-          <h3 className="text-white font-bold mb-2">Select Advantages</h3>
-          <div className="flex flex-col space-y-2">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={advantages.immunityIdol}
-                onChange={() =>
-                  setAdvantages((prev) => ({
-                    ...prev,
-                    immunityIdol: !prev.immunityIdol,
-                  }))
-                }
-                className="w-4 h-4"
-              />
-              <span className="text-white">
-                Immunity Idol (one per tribe)
-              </span>
-            </label>
-            {/* Future checkboxes can be added here */}
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="flex flex-col items-center justify-center">
-          <input
-            type="text"
-            placeholder={"Tribe 2 Name"}
-            onChange={(e) =>
-              setTribeNames({ ...tribeNames, tribe2: e.target.value })
-            }
-            className="w-auto bg-transparent text-xl font-bold text-red-400 text-center border-b-2 border-red-400 focus:outline-none"
-          />
-          <div className="h-5" />
-          <PlayerConfig
-            gender="women"
-            players={playerConfig}
-            updatePlayers={updatePlayers}
-            careers={careersData}
-            regions={regionsData}
-            tribes={tribesData}
-            hideSliders={hideSliders}
-            tribeSize={tribeSize}
-          />
-        </div>
-      </div>
-
-      <div className="h-5" />
-
-      {/* Custom Events */}
-      <h2 className="text-xl font-bold mt-8">Add Custom Events</h2>
-      <form onSubmit={addCustomEvent} className="bg-stone-800 p-4 rounded-lg">
-        <label className="text-gray-300 text-sm">Description</label>
-        <input
-          type="text"
-          value={eventDescription}
-          onChange={(e) => setEventDescription(e.target.value)}
-          placeholder="Use Player1 and Player2 as placeholders (max 2 players) Example: Player1 argued with Player2."
-          className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400 text-xs sm:text-base"
-        />
-
-        <div className="h-2" />
-
-        {eventDescription.includes("Player1") &&
-        eventDescription.includes("Player2") ? (
-          <>
-            <label className="text-gray-300 text-sm">
-              Relationship Impact (only used if event has 2 players)
-            </label>
-            <select
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value)}
-              className="w-full p-2 rounded border border-gray-700 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
+      <div className="mt-6 space-y-8">
+        {/* SEASON SETTINGS */}
+        <Card className="bg-black/70 border-white/10">
+          <CardHeader className="pb-3 space-y-4">
+            <CardTitle
+              className="
+                text-center text-sm text-stone-200
+                tracking-[0.22em] uppercase
+              "
             >
-              <option value="positive">Positive</option>
-              <option value="negative">Negative</option>
-              <option value="neutral">Neutral</option>
-            </select>
-            {eventType !== "neutral" && (
-              <>
-                <div className="h-2" />
-                <label className="text-gray-300 text-sm">
-                  Impact Severity (only used if event has 2 players)
-                </label>
-                <input
-                  type="number"
-                  value={eventSeverity}
-                  onChange={(e) =>
-                    setEventSeverity(Number(e.target.value))
-                  }
-                  min="1"
-                  max="5"
-                  className="w-full p-2 rounded border border-gray-700 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
-                />
-              </>
-            )}
-          </>
-        ) : (
-          <>
-            <label className="text-gray-500 text-sm">
-              Relationship Impact (only available if event has 2 players)
-            </label>
-            <select
-              disabled
-              className="w-full p-2 rounded border border-gray-700 bg-stone-900 text-gray-500 cursor-not-allowed"
-            >
-              <option value="neutral">Neutral</option>
-            </select>
-          </>
-        )}
-        <div className="h-2" />
-        <button
-          type="submit"
-          className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
-        >
-          Add Event
-        </button>
-      </form>
+              Season Settings
+            </CardTitle>
 
-      {/* Only custom events */}
-      <div className=" flex items-center mt-6">
-        <input
-          type="checkbox"
-          id="useOnlyCustomEvents"
-          checked={useOnlyCustomEvents}
-          onChange={() => setUseOnlyCustomEvents((prev) => !prev)}
-          className="mr-2 w-4 h-4"
-        />
-        <label htmlFor="useOnlyCustomEvents" className="text-white text-sm">
-          Only use custom events (if any entered)
-        </label>
-      </div>
-
-      <h3 className="text-lg font-bold mt-4">Custom Events</h3>
-      {customEvents.length === 0 ? (
-        <p className="text-gray-400">No custom events added yet.</p>
-      ) : (
-        <ul className="text-white space-y-1">
-          <div className="mt-4 space-y-2">
-            {customEvents.map((event, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-stone-800 text-white px-4 py-2 rounded-lg shadow-md"
-              >
-                <span>
-                  {event.description} -{" "}
-                  <span
-                    className={
-                      event.type === "positive"
-                        ? "text-green-400"
-                        : "text-red-400"
-                    }
-                  >
-                    {event.type.charAt(0).toUpperCase() +
-                      event.type.slice(1)}
-                  </span>{" "}
-                  ({event.severity})
+            {/* Tribe names */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-stone-300">
+                  Tribe names
                 </span>
-                <button
-                  className="ml-4 bg-white px-2 py-1 rounded-full text-sm hover:bg-red-300"
-                  onClick={() => removeCustomEvent(index)}
-                >
-                  ❌
-                </button>
+                <span className="text-[10px] text-stone-400">
+                  Click a name below to rename the tribe.
+                </span>
               </div>
-            ))}
-          </div>
-        </ul>
-      )}
 
-      <div className="h-10" />
+              <div className="grid gap-3 md:grid-cols-3">
+                <Input
+                  type="text"
+                  placeholder="Tribe 1 name"
+                  defaultValue={tribeNames.tribe1}
+                  onChange={(e) =>
+                    setTribeNames({ ...tribeNames, tribe1: e.target.value })
+                  }
+                  className="
+                    bg-black/40 border border-blue-500/70 text-blue-200
+                    rounded-md text-center text-xs md:text-sm
+                    py-2
+                    font-semibold tracking-[0.08em]
+                    focus-visible:ring-1 focus-visible:ring-blue-400
+                    focus-visible:border-blue-400
+                  "
+                />
+                <Input
+                  type="text"
+                  placeholder="Merge tribe name"
+                  defaultValue={tribeNames.merge}
+                  onChange={(e) =>
+                    setTribeNames({ ...tribeNames, merge: e.target.value })
+                  }
+                  className="
+                    bg-black/40 border border-purple-500/70 text-purple-200
+                    rounded-md text-center text-xs md:text-sm
+                    py-2
+                    font-semibold tracking-[0.08em]
+                    focus-visible:ring-1 focus-visible:ring-purple-400
+                    focus-visible:border-purple-400
+                  "
+                />
+                <Input
+                  type="text"
+                  placeholder="Tribe 2 name"
+                  defaultValue={tribeNames.tribe2}
+                  onChange={(e) =>
+                    setTribeNames({ ...tribeNames, tribe2: e.target.value })
+                  }
+                  className="
+                    bg-black/40 border border-red-500/70 text-red-200
+                    rounded-md text-center text-xs md:text-sm
+                    py-2
+                    font-semibold tracking-[0.08em]
+                    focus-visible:ring-1 focus-visible:ring-red-400
+                    focus-visible:border-red-400
+                  "
+                />
+              </div>
+            </div>
+          </CardHeader>
 
-      {/* Custom Alliance Names */}
-      <h2 className="text-xl font-bold mt-8">Add Custom Alliance Name</h2>
-      <form
-        onSubmit={addCustomAllianceName}
-        className="bg-stone-800 p-4 rounded-lg"
-      >
-        <input
-          type="text"
-          value={customAllianceDescription}
-          onChange={(e) => setCustomAllianceDescription(e.target.value)}
-          placeholder="Custom Alliance name"
-          className="w-full p-2 rounded border border-gray-600 bg-stone-800 text-white focus:outline-none focus:border-blue-400 text-xs sm:text-base"
-        />
-
-        <div className="h-2" />
-        <button
-          type="submit"
-          className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
-        >
-          Add Alliance Name
-        </button>
-      </form>
-
-      <label className="flex items-center space-x-2 mt-6">
-        <input
-          type="checkbox"
-          checked={useNumberedAlliances}
-          onChange={() => setuseNumberedAlliances(!useNumberedAlliances)}
-          className="w-4 h-4"
-        />
-        <span className="text-white">
-          Use basic numbered alliance names (rather than custom or random
-          names)
-        </span>
-      </label>
-
-      <h3 className="text-lg font-bold mt-4">Custom Alliance Names</h3>
-      {customAllianceNames.length === 0 ? (
-        <p className="text-gray-400">No custom alliance names added yet.</p>
-      ) : (
-        <ul className="text-white space-y-1">
-          <div className="mt-4 space-y-2">
-            {customAllianceNames.map((name, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-stone-800 text-white px-4 py-2 rounded-lg shadow-md"
+          <CardContent className="space-y-4">
+            {/* randomize */}
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                Randomize all stats
+              </Label>
+              <Button
+                type="button"
+                size="sm"
+                className="text-xs tracking-wide"
+                onClick={randomizeAllStats}
               >
-                <span>{name}</span>
-                <button
-                  className="ml-4 bg-white px-2 py-1 rounded-full text-sm hover:bg-red-300"
-                  onClick={() => removeCustomName(index)}
-                >
-                  ❌
-                </button>
+                Randomize
+              </Button>
+            </div>
+
+            <Separator className="bg-white/10" />
+
+            {/* hide stats */}
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="hideSliders"
+                className="text-[11px] tracking-[0.16em] uppercase text-stone-200"
+              >
+                Hide player stats
+              </Label>
+              <Switch
+                id="hideSliders"
+                checked={hideSliders}
+                onCheckedChange={() => setHideSliders((prev) => !prev)}
+              />
+            </div>
+
+            <Separator className="bg-white/10" />
+
+            {/* tribe size */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                  Tribe size
+                </Label>
+                <span className="text-[11px] text-stone-300">
+                  {tribeSize} ({tribeSize * 2} total players)
+                </span>
               </div>
-            ))}
-          </div>
-        </ul>
-      )}
+              <Slider
+                min={7}
+                max={15}
+                step={1}
+                value={[tribeSize]}
+                onValueChange={(values) => setTribeSize(values[0])}
+              />
+            </div>
+
+            {/* merge time */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                  Merge at player count
+                </Label>
+                <span className="text-[11px] text-stone-300">{mergeTime}</span>
+              </div>
+              <Slider
+                min={tribeSize + 1}
+                max={tribeSize * 2}
+                step={1}
+                value={[mergeTime]}
+                onValueChange={(values) => setMergeTime(values[0])}
+              />
+            </div>
+
+            <Separator className="bg-white/10" />
+
+            {/* advantages */}
+            <div className="space-y-3">
+              <h3 className="text-[11px] tracking-[0.18em] uppercase text-stone-100">
+                Advantages
+              </h3>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="immunityIdol"
+                  checked={advantages.immunityIdol}
+                  onCheckedChange={() =>
+                    setAdvantages((prev) => ({
+                      ...prev,
+                      immunityIdol: !prev.immunityIdol,
+                    }))
+                  }
+                />
+                <Label
+                  htmlFor="immunityIdol"
+                  className="text-xs text-stone-100"
+                >
+                  Immunity Idol (one per tribe)
+                </Label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* PLAYER CONFIG TABS */}
+        <Tabs defaultValue="tribe1" className="w-full">
+          <Card className="bg-black/60 border-white/10">
+            <CardHeader className="pb-0">
+              <TabsList className="grid grid-cols-2 bg-black/40 border border-white/10">
+                <TabsTrigger
+                  value="tribe1"
+                  className="text-[11px] sm:text-xs tracking-[0.16em] uppercase"
+                >
+                  {tribe1Label}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="tribe2"
+                  className="text-[11px] sm:text-xs tracking-[0.16em] uppercase"
+                >
+                  {tribe2Label}
+                </TabsTrigger>
+              </TabsList>
+            </CardHeader>
+
+            <CardContent className="pt-4">
+              <TabsContent value="tribe1">
+                <PlayerConfig
+                  gender="men"
+                  players={playerConfig}
+                  updatePlayers={updatePlayers}
+                  careers={careersData}
+                  regions={regionsData}
+                  tribes={tribesData}
+                  hideSliders={hideSliders}
+                  tribeSize={tribeSize}
+                />
+              </TabsContent>
+
+              <TabsContent value="tribe2">
+                <PlayerConfig
+                  gender="women"
+                  players={playerConfig}
+                  updatePlayers={updatePlayers}
+                  careers={careersData}
+                  regions={regionsData}
+                  tribes={tribesData}
+                  hideSliders={hideSliders}
+                  tribeSize={tribeSize}
+                />
+              </TabsContent>
+            </CardContent>
+          </Card>
+        </Tabs>
+
+        {/* CUSTOM EVENTS */}
+        <Card className="bg-black/70 border-white/10">
+          <CardHeader className="pb-3 space-y-2">
+            <CardTitle className="text-sm tracking-[0.22em] uppercase text-stone-100">
+              Custom Events
+            </CardTitle>
+            <p className="text-xs text-stone-400">
+              Create your own moments. Use{" "}
+              <span className="font-mono text-stone-200">Player1</span> and{" "}
+              <span className="font-mono text-stone-200">Player2</span> tokens
+              to affect relationships between two players.
+            </p>
+          </CardHeader>
+
+          <CardContent className="space-y-5">
+            <form onSubmit={addCustomEvent} className="space-y-4">
+              {/* description + token chips */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                    Event description
+                  </Label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-stone-400 mr-1">
+                      Tokens:
+                    </span>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      className="h-6 px-2 text-[10px] font-mono"
+                      onClick={() => insertToken("Player1")}
+                    >
+                      Player1
+                    </Button>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      className="h-6 px-2 text-[10px] font-mono"
+                      onClick={() => insertToken("Player2")}
+                    >
+                      Player2
+                    </Button>
+                  </div>
+                </div>
+
+                <Textarea
+                  ref={descriptionRef}
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
+                  placeholder="Example: Player1 argued with Player2 at camp."
+                  className="bg-stone-900/70 border-stone-700 text-sm text-stone-100"
+                  rows={3}
+                />
+
+                <p className="text-[10px] text-stone-500">
+                  If the text includes both{" "}
+                  <span className="font-mono">Player1</span> and{" "}
+                  <span className="font-mono">Player2</span>, this event will
+                  modify their relationship.
+                </p>
+              </div>
+
+              <Separator className="bg-white/10" />
+
+              {/* relationship impact */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                    Relationship impact
+                  </Label>
+                  {!hasBothPlayers && (
+                    <span className="text-[10px] text-stone-500">
+                      Add both Player tokens to enable this.
+                    </span>
+                  )}
+                </div>
+
+                {hasBothPlayers ? (
+                  <>
+                    <div className="max-w-xs">
+                      <Select
+                        value={eventType}
+                        onValueChange={setEventType}
+                      >
+                        <SelectTrigger className="bg-stone-900/70 border-stone-700 text-xs text-stone-100">
+                          <SelectValue placeholder="Select impact" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-stone-900 border-stone-700 text-xs">
+                          <SelectItem value="positive">Positive</SelectItem>
+                          <SelectItem value="negative">Negative</SelectItem>
+                          <SelectItem value="neutral">Neutral</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {eventType !== "neutral" && (
+                      <div className="space-y-1 max-w-xs">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200 mb-2">
+                            Impact severity
+                          </Label>
+                          <span className="text-[11px] text-stone-300">
+                            {eventSeverity}
+                          </span>
+                        </div>
+                        <Slider
+                          min={1}
+                          max={5}
+                          step={1}
+                          value={[eventSeverity]}
+                          onValueChange={(values) =>
+                            setEventSeverity(values[0])
+                          }
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // neutral-only view
+                  <div className="max-w-xs opacity-60">
+                    <Select value="neutral" disabled>
+                      <SelectTrigger className="bg-stone-900/70 border-stone-800 text-xs text-stone-400">
+                        <SelectValue placeholder="Neutral" />
+                      </SelectTrigger>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <Button type="submit" className="text-sm">
+                  Add event
+                </Button>
+              </div>
+            </form>
+
+            {/* only custom events toggle */}
+            <Separator className="bg-white/10" />
+
+            <div className="flex items-center gap-3">
+              <Switch
+                id="useOnlyCustomEvents"
+                checked={useOnlyCustomEvents}
+                onCheckedChange={() =>
+                  setUseOnlyCustomEvents((prev) => !prev)
+                }
+              />
+              <Label
+                htmlFor="useOnlyCustomEvents"
+                className="text-xs text-stone-100"
+              >
+                Only use custom events (if any entered)
+              </Label>
+            </div>
+
+            {/* custom events list */}
+            <div className="space-y-2 pt-3">
+              <h3 className="text-[11px] tracking-[0.18em] uppercase text-stone-200">
+                Current custom events
+              </h3>
+
+              {customEvents.length === 0 ? (
+                <p className="text-xs text-stone-400">
+                  No custom events added yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {customEvents.map((event, index) => (
+                    <div
+                      key={index}
+                      className="
+                        flex items-center justify-between gap-3
+                        bg-stone-900/70 border border-white/10
+                        px-3 py-2 rounded-lg text-xs text-stone-100
+                      "
+                    >
+                      <div className="flex-1">
+                        <span>{event.description}</span>
+                        {event.numPlayers === 2 && (
+                          <>
+                            {" "}
+                            –{" "}
+                            <span
+                              className={
+                                event.type === "positive"
+                                  ? "text-emerald-300"
+                                  : event.type === "negative"
+                                  ? "text-rose-300"
+                                  : "text-stone-300"
+                              }
+                            >
+                              {event.type.charAt(0).toUpperCase() +
+                                event.type.slice(1)}
+                            </span>
+                            {event.type !== "neutral" && (
+                              <span className="text-stone-300">
+                                {" "}
+                                (severity {event.severity})
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-6 w-6 text-[11px] border-stone-500/60"
+                        onClick={() => removeCustomEvent(index)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* CUSTOM ALLIANCE NAMES (mostly your original logic, slightly styled) */}
+        <Card className="bg-black/70 border-white/10 mb-8">
+          <CardHeader className="pb-3 space-y-2">
+            <CardTitle className="text-sm tracking-[0.22em] uppercase text-stone-100">
+              Custom Alliance Names
+            </CardTitle>
+            <p className="text-xs text-stone-400">
+              Add fun, thematic names that alliances can randomly use during the
+              season.
+            </p>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <form
+              onSubmit={addCustomAllianceName}
+              className="bg-stone-900/70 p-3 rounded-lg space-y-2 border border-stone-700/80"
+            >
+              <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                Add alliance name
+              </Label>
+              <Input
+                type="text"
+                value={customAllianceDescription}
+                onChange={(e) =>
+                  setCustomAllianceDescription(e.target.value)
+                }
+                placeholder="Example: The Coconut Alliance"
+                className="bg-stone-950/80 border-stone-700 text-sm text-stone-100"
+              />
+
+              <div className="pt-1">
+                <Button type="submit" className="text-sm">
+                  Add alliance name
+                </Button>
+              </div>
+            </form>
+
+            <div className="flex items-center gap-3">
+              <Switch
+                id="useNumberedAlliances"
+                checked={useNumberedAlliances}
+                onCheckedChange={() =>
+                  setuseNumberedAlliances(!useNumberedAlliances)
+                }
+              />
+              <Label
+                htmlFor="useNumberedAlliances"
+                className="text-xs text-stone-100"
+              >
+                Use basic numbered alliance names (instead of custom/random
+                names)
+              </Label>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <h3 className="text-[11px] tracking-[0.18em] uppercase text-stone-200">
+                Current custom alliance names
+              </h3>
+
+              {customAllianceNames.length === 0 ? (
+                <p className="text-xs text-stone-400">
+                  No custom alliance names added yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {customAllianceNames.map((name, index) => (
+                    <div
+                      key={index}
+                      className="
+                        flex items-center justify-between gap-3
+                        bg-stone-900/70 border border-white/10
+                        px-3 py-2 rounded-lg text-xs text-stone-100
+                      "
+                    >
+                      <span>{name}</span>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-6 w-6 text-[11px] border-stone-500/60"
+                        onClick={() => removeCustomName(index)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

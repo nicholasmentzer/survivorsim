@@ -22,33 +22,6 @@ export default function EpisodeView({
 }) {
   return (
     <div className="text-center p-4 text-white min-h-screen w-full">
-      {/* Top nav buttons */}
-      <div className="flex justify-center items-center space-x-4 mb-6">
-        <button
-          onClick={prevEpisode}
-          className={`px-4 py-2 rounded ${
-            currentEpisode === 0 ? "bg-stone-600" : "bg-blue-500"
-          }`}
-        >
-          Previous
-        </button>
-
-        <button
-          className="bg-stone-500 text-white px-6 py-3 rounded-lg font-bold"
-          onClick={onBackToConfigure}
-        >
-          BACK TO CONFIGURE
-        </button>
-
-        <button
-          onClick={nextEpisode}
-          className={`px-4 py-2 rounded ${
-            currentEpisode === episodes.length - 1 ? "bg-stone-600" : "bg-green-500"
-          }`}
-        >
-          Next
-        </button>
-      </div>
 
       <h2 className="text-2xl font-bold mt-4">Episode {currentEpisode + 1}</h2>
 

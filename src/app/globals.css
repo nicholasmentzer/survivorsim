@@ -6,8 +6,6 @@ body {
   @apply text-white;
 }
 
-
-
 @layer base {
   :root {
 

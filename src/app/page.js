@@ -15,6 +15,7 @@ import EpisodeView from "./components/EpisodeView";
 import ConfigureCast from "./components/ConfigureCast";
 import EpisodeControls from "./components/EpisodeControls";
 import CastOverview from "./components/CastOverview";
+import { Button } from "@/components/ui/button";
 
 const getRandomPlayers = (players, num) => {
   const filteredPlayers = players.filter((player) =>
@@ -337,51 +338,63 @@ export default function Home() {
                 <img
                   src="/logo.png"
                   alt="Survivor Chains Logo"
-                  className="h-40 w-auto object-contain"
+                  className="h-24 w-auto object-contain"
                 />
               </div>
               <h4
-                className="text-2xl font-bold text-slate-300 text-center mt-4"
+                className="
+                  text-sm sm:text-base
+                  text-stone-300
+                  tracking-[0.25em]
+                  uppercase
+                  text-center
+                  mt-5
+                "
                 style={{ fontFamily: "Bebas Neue" }}
               >
-                {" "}
                 A Survivor Simulator
               </h4>
-
               <div id="interface" className="text-center mt-8 w-full">
-                {/* TOP BUTTON SETS / MAIN CONTENT */}
-                {mode === "configure" ? (
-                  <button
-                    className="bg-blue-500 text-white px-6 py-3 rounded-lg font-bold"
-                    onClick={startSimulation}
-                  >
-                    SIMULATE
-                  </button>
-                ) : mode === "summary" ? (
-                  <SummaryView finalPlacements={finalPlacements} />
-                ) : (
-                  <EpisodeView
-                    episodes={episodes}
-                    currentEpisode={currentEpisode}
-                    prevEpisode={prevEpisode}
-                    nextEpisode={nextEpisode}
-                    onBackToConfigure={handleBackToConfigure}
-                    showCurrentAlliances={showCurrentAlliances}
-                    setShowCurrentAlliances={setShowCurrentAlliances}
-                    showAdvantages={showAdvantages}
-                    setShowAdvantages={setShowAdvantages}
-                    showRelationshipsModal={showRelationshipsModal}
-                    openRelationshipsModal={openRelationshipsModal}
-                    closeRelationshipsModal={closeRelationshipsModal}
-                    alliancesModalOpen={alliancesModalOpen}
-                    openAlliancesModal={openAlliancesModal}
-                    closeAlliancesModal={closeAlliancesModal}
-                    currentAlliances={currentAlliances}
-                    selectedTribe={selectedTribe}
-                    playerFilters={playerFilters}
-                    toggleFilterMode={toggleFilterMode}
-                  />
-                )}
+                {/* TOP CONTROLS BAR */}
+                <EpisodeControls
+                  variant="top"
+                  mode={mode}
+                  startSimulation={startSimulation}
+                  prevEpisode={prevEpisode}
+                  nextEpisode={nextEpisode}
+                  currentEpisode={currentEpisode}
+                  episodesLength={episodes.length}
+                  onBackToConfigure={handleBackToConfigure}
+                />
+
+                {/* MAIN CONTENT BELOW CONTROLS */}
+                <div className="mt-6">
+                  {mode === "summary" ? (
+                    <SummaryView finalPlacements={finalPlacements} />
+                  ) : mode === "simulate" ? (
+                    <EpisodeView
+                      episodes={episodes}
+                      currentEpisode={currentEpisode}
+                      prevEpisode={prevEpisode}
+                      nextEpisode={nextEpisode}
+                      onBackToConfigure={handleBackToConfigure}
+                      showCurrentAlliances={showCurrentAlliances}
+                      setShowCurrentAlliances={setShowCurrentAlliances}
+                      showAdvantages={showAdvantages}
+                      setShowAdvantages={setShowAdvantages}
+                      showRelationshipsModal={showRelationshipsModal}
+                      openRelationshipsModal={openRelationshipsModal}
+                      closeRelationshipsModal={closeRelationshipsModal}
+                      alliancesModalOpen={alliancesModalOpen}
+                      openAlliancesModal={openAlliancesModal}
+                      closeAlliancesModal={closeAlliancesModal}
+                      currentAlliances={currentAlliances}
+                      selectedTribe={selectedTribe}
+                      playerFilters={playerFilters}
+                      toggleFilterMode={toggleFilterMode}
+                    />
+                  ) : null}
+                </div>
               </div>
             </article>
 

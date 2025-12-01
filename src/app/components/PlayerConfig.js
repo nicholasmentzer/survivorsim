@@ -2,10 +2,37 @@
 import React, { useState, useEffect } from "react";
 import playersData from "../data/players.json";
 
-const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeData, hideSliders, tribeSize }) => {
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/ui/avatar";
+
+const PlayerConfig = ({
+  gender,
+  players,
+  updatePlayers,
+  careers,
+  regions,
+  tribeData,
+  hideSliders,
+  tribeSize,
+}) => {
   const [playerData, setPlayerData] = useState(players[gender]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectModalOpen, setSelectModalOpen] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [presetModalOpen, setPresetModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [imageValid, setImageValid] = useState(true);
@@ -19,15 +46,21 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
   const presetPlayers = [...playersData.men, ...playersData.women];
 
   const assignPresetCharacter = (playerIndex, selectedName) => {
-    const selectedPreset = presetPlayers.find(preset => preset.name === selectedName);
-    
+    const selectedPreset = presetPlayers.find(
+      (preset) => preset.name === selectedName
+    );
+
     if (selectedPreset) {
       const updatedPlayers = playerData.map((player, index) =>
         index === playerIndex
-          ? { ...player, name: selectedPreset.name, image: selectedPreset.image }
+          ? {
+              ...player,
+              name: selectedPreset.name,
+              image: selectedPreset.image,
+            }
           : player
       );
-  
+
       setPlayerData(updatedPlayers);
       updatePlayers(gender, updatedPlayers);
     }
@@ -46,7 +79,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
     setSelectedPlayer(playerIndex);
     setImageUrl(playerData[playerIndex].image || "");
     setImageValid(true);
-    setModalOpen(true);
+    setImageModalOpen(true);
   };
 
   const validateImage = (url) => {
@@ -54,7 +87,7 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
       setImageValid(false);
       return;
     }
-    
+
     const img = new Image();
     img.src = url;
     img.onload = () => setImageValid(true);
@@ -64,14 +97,14 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
   const saveImage = () => {
     if (imageValid && selectedPlayer !== null) {
       updatePlayerProperty(selectedPlayer, "image", imageUrl);
-      setModalOpen(false);
+      setImageModalOpen(false);
     }
   };
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 2000000) { // 2MB limit
+      if (file.size > 2000000) {
         alert("File is too large! Please upload an image under 2MB.");
         return;
       }
@@ -92,21 +125,47 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
       "perceived threat level",
       "strategy ability",
     ];
-  
-    return (
-      <div className="flex flex-col sm:flex-row items-center justify-between space-x-2 mb-4" key={`${label}-${num}`}>
-        <label className="w-24 sm:w-40 mb-2 sm:mb-0 text-gray-300 text-[10px] sm:text-xs text-center sm:text-left">{labels[num]}</label>
-  
-        <input
-          type="range"
-          min="1"
-          max="10"
-          value={player[label]}
-          onChange={(e) => updatePlayerProperty(playerIndex, label, Number(e.target.value))}
-          className="w-3/4 sm:w-full h-1 sm:h-2 mb-2 sm:mb-0 bg-stone-500 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-[15px] [&::-webkit-slider-thumb]:w-[15px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-        />
 
-        <span className="w-8 text-sm text-gray-400 text-center">{player[label]}</span>
+    return (
+      <div
+        className="flex items-center gap-3"
+        key={`${label}-${num}-${playerIndex}`}
+      >
+        <Label
+          className="
+            w-40
+            text-[9px] sm:text-[10px]
+            leading-tight
+            uppercase tracking-[0.16em]
+            text-stone-300
+          "
+        >
+          {labels[num]}
+        </Label>
+        <div className="flex-1 flex items-center gap-2">
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={player[label]}
+            onChange={(e) =>
+              updatePlayerProperty(playerIndex, label, Number(e.target.value))
+            }
+            className={`
+              w-full h-2 bg-stone-600 rounded-lg appearance-none cursor-pointer
+              [&::-webkit-slider-thumb]:appearance-none
+              [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4
+              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
+              [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4
+              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white
+              [&::-ms-thumb]:h-4 [&::-ms-thumb]:w-4
+              [&::-ms-thumb]:rounded-full [&::-ms-thumb]:bg-white
+            `}
+          />
+          <span className="w-6 text-[11px] text-stone-200 text-center">
+            {player[label]}
+          </span>
+        </div>
       </div>
     );
   };
@@ -128,207 +187,259 @@ const PlayerConfig = ({ gender, players, updatePlayers, careers, regions, tribeD
     <>
       <div
         id="players"
-        className="grid grid-cols-2 sm:grid-cols-1 gap-6"
+        className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
       >
         {playerData.map((player, index) => (
-          <div
-              key={player.id}
-              className="player relative border border-gray-300 rounded p-4 space-y-3 w-auto sm:w-[330px] mx-auto bg-stone-900 shadow-md flex flex-col items-center"
-            >
-              {/*<div className="absolute top-2 left-2">
-                <select
-                  className="bg-stone-800 text-white text-xs px-2 py-1 rounded w-[18px]"
-                  onChange={(e) => assignPresetCharacter(index, e.target.value)}
-                  defaultValue=""
+          <Card
+            key={player.id}
+            className="bg-black/60 border-white/10 text-slate-50 flex flex-col min-w-[260px]"
+          >
+            <CardHeader className="pb-3">
+              {/* Presets on top */}
+              <div className="flex justify-end mb-1">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="
+                    h-5 px-2
+                    text-[9px] tracking-[0.16em] uppercase
+                    border-white/20 bg-white/5 hover:bg-white/10
+                  "
+                  type="button"
+                  onClick={() => {
+                    setSelectedPlayerIndex(index);
+                    setPresetModalOpen(true);
+                  }}
                 >
-                  <option value="" disabled>Select Preset</option>
-                  {presetPlayers
-                    .slice()
-                    .sort((a, b) => a.name.localeCompare(b.name)).map((preset, index) => (
-                      <option key={index} value={preset.name}>{preset.name}</option>
-                  ))}
-                </select>
-              </div>*/}
-              <button
-              onClick={() => { setSelectedPlayerIndex(index); setSelectModalOpen(true); }}
-                className="absolute top-2 left-2 bg-stone-800 text-stone-400 text-xs px-2 py-1 rounded hover:bg-stone-700"
-              >
-                Presets
-              </button>
-              <div className="relative w-16 h-16 sm:w-24 sm:h-24">
-                {/* Character Image */}
-                <img
-                  src={player.image || "/default-player.png"}
-                  alt={player.name}
-                  className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-full cursor-pointer border-2 border-gray-500"
-                  onClick={() => openImageModal(index)}
-                  style={{ imageRendering: "high-quality" }} 
-                />
-
-                {/* Edit Icon Overlay */}
-                <div 
-                  className="absolute bottom-1 right-1 bg-gray-900 bg-opacity-70 p-1 rounded-full cursor-pointer"
-                  onClick={() => openImageModal(index)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                  </svg>
-                </div>
+                  Presets
+                </Button>
               </div>
 
-              <input
-                type="text"
-                value={player.name}
-                onChange={(e) => updatePlayerProperty(index, "name", e.target.value)}
-                className="w-full text-sm sm:text-lg font-semibold text-center bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400 text-white"
-              />
+              {/* Avatar + name row */}
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  className="relative"
+                  onClick={() => openImageModal(index)}
+                >
+                  <Avatar className="w-20 h-20 md:w-24 md:h-24 border border-white/30 shadow-md">
+                    <AvatarImage
+                      src={player.image || "/default-player.png"}
+                      alt={player.name}
+                      className="object-cover"
+                      style={{ imageRendering: "high-quality" }}
+                    />
+                    <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
+                      {player.name?.[0] ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute bottom-0 right-0 mb-1 mr-1 rounded-full bg-black/80 p-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-3 w-3 text-slate-100"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                    </svg>
+                  </div>
+                </button>
 
-              {!hideSliders && (
-                <>
-                  {renderSlider(player, index, "premerge", 0)}
-                  {renderSlider(player, index, "postmerge", 1)}
-                  {renderSlider(player, index, "likeability", 2)}
-                  {renderSlider(player, index, "threat", 3)}
-                  {renderSlider(player, index, "strategicness", 4)}
-                </>
-              )}
+                <Input
+                  value={player.name}
+                  onChange={(e) =>
+                    updatePlayerProperty(index, "name", e.target.value)
+                  }
+                  className="
+                    bg-transparent border-0 border-b border-white/30 rounded-none px-0
+                    text-sm sm:text-base text-white
+                    font-semibold tracking-[0.06em]
+                    focus-visible:ring-0 focus-visible:ring-offset-0
+                    focus-visible:border-white
+                  "
+                />
+              </div>
+            </CardHeader>
 
-            </div>
+            {!hideSliders && (
+              <CardContent className="space-y-3 pt-0 pb-4">
+                {renderSlider(player, index, "premerge", 0)}
+                {renderSlider(player, index, "postmerge", 1)}
+                {renderSlider(player, index, "likeability", 2)}
+                {renderSlider(player, index, "threat", 3)}
+                {renderSlider(player, index, "strategicness", 4)}
+              </CardContent>
+            )}
+          </Card>
         ))}
       </div>
 
-      {modalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-stone-900 p-6 rounded-lg shadow-lg w-96 text-white">
-            <h2 className="text-xl font-bold text-center mb-4">Update Player Image</h2>
+      {/* IMAGE DIALOG */}
+      <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+        <DialogContent className="bg-stone-900 border border-stone-700 text-slate-50">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-center">
+              Update Player Image
+            </DialogTitle>
+          </DialogHeader>
 
-            <input
-              type="text"
+          <div className="space-y-3">
+            <Label className="text-xs text-muted-foreground">Image URL</Label>
+            <Input
               value={imageUrl}
               onChange={(e) => {
                 setImageUrl(e.target.value);
                 validateImage(e.target.value);
               }}
-              placeholder="Enter Image URL"
-              className="w-full p-2 rounded border border-gray-700 bg-stone-800 text-white focus:outline-none focus:border-blue-400"
+              placeholder="Enter image URL"
+              className="bg-stone-800 border-stone-700 text-xs"
             />
 
-            <div className="text-center my-3">
-              <span className="text-gray-400 text-sm">OR</span>
+            <div className="text-center text-[11px] text-muted-foreground">
+              OR upload a file (max 2MB)
             </div>
 
-            <input
+            <Input
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="w-full text-sm text-gray-400 border border-gray-700 rounded p-1 bg-stone-800 cursor-pointer"
+              className="bg-stone-800 border-stone-700 text-xs cursor-pointer"
             />
 
-            <div className="flex justify-center my-4">
-              {imageValid ? (
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="w-24 h-24 object-cover rounded-full border-2 border-gray-500"
-                  style={{ imageRendering: "high-quality" }} 
-                />
+            <div className="flex justify-center py-2">
+              {imageValid && imageUrl ? (
+                <Avatar className="w-24 h-24 border border-gray-500">
+                  <AvatarImage
+                    src={imageUrl}
+                    alt="Preview"
+                    className="object-cover"
+                    style={{ imageRendering: "high-quality" }}
+                  />
+                  <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
+                    ?
+                  </AvatarFallback>
+                </Avatar>
               ) : (
-                <div className="w-24 h-24 flex items-center justify-center text-red-500 border-2 border-red-500 rounded-full">
-                  Invalid Image
+                <div className="w-24 h-24 flex items-center justify-center text-red-500 border-2 border-red-500 rounded-full text-xs">
+                  {imageUrl ? "Invalid Image" : "No Image"}
                 </div>
               )}
             </div>
-
-            <div className="flex justify-between mt-4">
-              <button
-                className="px-4 py-2 bg-stone-500 text-white rounded-lg"
-                onClick={() => setModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg ${
-                  imageValid ? "bg-blue-500 hover:bg-blue-600" : "bg-stone-600 cursor-not-allowed"
-                }`}
-                onClick={saveImage}
-                disabled={!imageValid}
-              >
-                Save
-              </button>
-            </div>
           </div>
-        </div>
-      )}
 
-      {selectModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" onClick={() => setSelectModalOpen(false)}>
-          <div className="bg-stone-900 p-6 rounded-lg shadow-lg text-stone-200 max-h-[80vh] overflow-auto w-3/4 2xl:w-1/2" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-center mb-4">Select a Preset Character</h2>
-
-            {Object.keys(categorizedPlayers).sort().map((show) => (
-              <div key={show} className="mb-4">
-                <button
-                  onClick={() => toggleCategory(show)}
-                  className="flex items-center justify-center w-full text-lg font-semibold text-stone-300"
-                >
-                  {show}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-5 w-5 ml-2 transform ${expandedCategories[show] ? "rotate-180" : "rotate-0"}`}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-                </button>
-
-                {expandedCategories[show] && (
-                  <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-2 mt-2 ml-[10%] mr-[10%]" >
-                    {categorizedPlayers[show]
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((preset) => (
-                        <button
-                          key={preset.name}
-                          onClick={() => {assignPresetCharacter(selectedPlayerIndex, preset.name); setSelectModalOpen(false);}}
-                          className="relative flex items-center justify-center w-full aspect-square bg-gray-700 text-white rounded-lg overflow-hidden group"
-                          style={{
-                            maxWidth: "120px",
-                          }}
-                        >
-                          <img
-                            src={preset.image}
-                            onError={(e) => (e.target.style.display = "none")}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            alt={preset.name}
-                          />
-
-                          <div className="absolute inset-0 bg-black bg-opacity-50 group-hover:bg-opacity-30 transition-opacity duration-300"></div>
-
-                          <span className="relative z-10 text-xs font-bold text-white text-center pl-2 pr-2">
-                            {preset.name}
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            <button
-              onClick={() => setSelectModalOpen(false)}
-              className="mt-4 w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+          <DialogFooter className="flex justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setImageModalOpen(false)}
             >
               Cancel
-            </button>
-          </div>
-        </div>
-      )}
+            </Button>
+            <Button
+              type="button"
+              className="w-full"
+              disabled={!imageValid || !imageUrl}
+              onClick={saveImage}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
+      {/* PRESET DIALOG (unchanged) */}
+      <Dialog open={presetModalOpen} onOpenChange={setPresetModalOpen}>
+        <DialogContent className="bg-stone-900 border border-stone-700 text-slate-50 max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-center">
+              Select a Preset Character
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto pr-2 mt-2">
+            {Object.keys(categorizedPlayers)
+              .sort()
+              .map((show) => (
+                <div key={show} className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(show)}
+                    className="flex items-center justify-between w-full text-sm font-semibold text-slate-200 py-2"
+                  >
+                    <span>{show}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-4 w-4 transition-transform ${
+                        expandedCategories[show] ? "rotate-180" : ""
+                      }`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+
+                  <Separator className="bg-white/10" />
+
+                  {expandedCategories[show] && (
+                    <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-3">
+                      {categorizedPlayers[show]
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((preset) => (
+                          <button
+                            key={preset.name}
+                            type="button"
+                            onClick={() => {
+                              assignPresetCharacter(
+                                selectedPlayerIndex,
+                                preset.name
+                              );
+                              setPresetModalOpen(false);
+                            }}
+                            className="relative flex items-end justify-center aspect-square rounded-lg overflow-hidden bg-stone-800 text-[11px] font-semibold group"
+                          >
+                            <img
+                              src={preset.image}
+                              onError={(e) =>
+                                (e.target.style.display = "none")
+                              }
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                              alt={preset.name}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                            <span className="relative z-10 px-1 text-center">
+                              {preset.name}
+                            </span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setPresetModalOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

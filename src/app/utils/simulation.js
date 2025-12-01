@@ -410,18 +410,53 @@ const generateRelationshipEvent = (tribe, customEvents) => {
     "Player1 and Player2 had a passive-aggressive conversation."
   ];
 
-  if (customEvents.length > 0 && (useOnlyCustomEvents || Math.random() < 0.5)) {
+  const haveCustoms = customEvents && customEvents.length > 0;
+
+  if (haveCustoms && useOnlyCustomEvents) {
     const randomCustomEvent = customEvents[Math.floor(Math.random() * customEvents.length)];
     eventType = randomCustomEvent.type;
     severity = randomCustomEvent.severity;
     message = randomCustomEvent.description;
     numPlayers = randomCustomEvent.numPlayers;
   } else {
-    eventType = Math.random() > 0.5 ? "positive" : "negative";
-    severity = Math.floor(Math.random() * 5) + 1;
-    const eventList = eventType === "positive" ? positiveEvents : negativeEvents;
-    message = eventList[Math.floor(Math.random() * eventList.length)];
-    numPlayers = 2;
+    const genericPool = [
+      ...positiveEvents.map((text) => ({
+        kind: "generic",
+        eventType: "positive",
+        text,
+      })),
+      ...negativeEvents.map((text) => ({
+        kind: "generic",
+        eventType: "negative",
+        text,
+      })),
+    ];
+
+    let pool = genericPool;
+    if (haveCustoms) {
+      pool = pool.concat(
+        customEvents.map((ce) => ({
+          kind: "custom",
+          eventType: ce.type,
+          custom: ce,
+        }))
+      );
+    }
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+
+    if (chosen.kind === "custom") {
+      const ce = chosen.custom;
+      eventType = ce.type;
+      severity = ce.severity;
+      message = ce.description;
+      numPlayers = ce.numPlayers;
+    } else {
+      eventType = chosen.eventType;
+      severity = Math.floor(Math.random() * 5) + 1;
+      message = chosen.text;
+      numPlayers = 2;
+    }
   }
 
   if (numPlayers === 2 && eventType !== "neutral") {
