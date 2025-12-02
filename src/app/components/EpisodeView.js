@@ -538,31 +538,31 @@ export default function EpisodeView({
                           ))}
                         </CardContent>
                       </Card>
-                                        ) : event.type === "voting" ? (
+                    ) : event.type === "voting" ? (
                       // Detailed voting breakdown (who voted for whom)
                       <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
                         <CardContent className="pt-3 pb-3">
                           {(() => {
                             const stripTags = (html) =>
-                              typeof html === "string"
-                                ? html.replace(/<[^>]+>/g, "").trim()
-                                : "";
+                              typeof html === "string" ? html.replace(/<[^>]+>/g, "").trim() : "";
 
                             const extraLines = [];
                             const structuredVotes = [];
 
                             (event.message || []).forEach((vote) => {
-                              if (
-                                typeof vote !== "string" ||
-                                !vote.includes("voted for")
-                              ) {
-                                // Intro / flavor lines
+                              if (typeof vote !== "string") return;
+
+                              const hasVoted = vote.includes("voted for");
+                              const hasRevoted = vote.includes("revoted for");
+
+                              if (!hasVoted && !hasRevoted) {
+                                // Intro / flavor / rocks / revote explanation lines
                                 extraLines.push(vote);
                                 return;
                               }
 
                               let action = "voted for";
-                              if (vote.includes("revoted for")) {
+                              if (hasRevoted) {
                                 action = "revoted for";
                               }
 
@@ -578,9 +578,7 @@ export default function EpisodeView({
                               }
 
                               const voter = stripTags(voterRaw);
-                              const target = stripTags(
-                                (targetRaw || "").replace(/\.$/, "")
-                              );
+                              const target = stripTags((targetRaw || "").replace(/\.$/, ""));
 
                               if (!voter || !target) return;
 
@@ -588,74 +586,88 @@ export default function EpisodeView({
                                 voter,
                                 target,
                                 allianceText,
+                                action, // "voted for" or "revoted for"
                               });
                             });
 
-                            // Build "votes by target"
+                            // If we have no structured votes (e.g. rocks only), fall back to simple layout
+                            if (!structuredVotes.length) {
+                              return (
+                                <div className="space-y-1">
+                                  {(event.message || []).map((line, i) => (
+                                    <div
+                                      key={i}
+                                      className="text-xs sm:text-sm mb-1 text-center"
+                                      dangerouslySetInnerHTML={{ __html: line }}
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
+
+                            // --- Build "votes by target" (track action per voter) ---
                             const votesByTarget = {};
-                            structuredVotes.forEach(
-                              ({ voter, target, allianceText }) => {
-                                if (!votesByTarget[target]) {
-                                  votesByTarget[target] = {
-                                    voters: [],
-                                    alliances: new Set(),
-                                  };
-                                }
-                                votesByTarget[target].voters.push({
-                                  voter,
-                                  allianceText,
-                                });
-                                if (allianceText) {
-                                  votesByTarget[target].alliances.add(
-                                    allianceText
-                                  );
-                                }
+                            structuredVotes.forEach(({ voter, target, allianceText, action }) => {
+                              if (!votesByTarget[target]) {
+                                votesByTarget[target] = {
+                                  voters: [],          // [{ voter, allianceText, action }]
+                                  alliances: new Set()
+                                };
                               }
-                            );
+                              votesByTarget[target].voters.push({ voter, allianceText, action });
+                              if (allianceText) {
+                                votesByTarget[target].alliances.add(allianceText);
+                              }
+                            });
 
-                            // Build "votes by alliance"
+                            // --- Build "votes by alliance" and track switches on revote ---
                             const votesByAlliance = {};
-                            structuredVotes.forEach(
-                              ({ voter, target, allianceText }) => {
-                                if (!allianceText) return;
-                                if (!votesByAlliance[allianceText]) {
-                                  votesByAlliance[allianceText] = {
-                                    voters: new Set(),
-                                    targetCounts: {},
-                                  };
-                                }
-                                votesByAlliance[allianceText].voters.add(voter);
-                                votesByAlliance[allianceText].targetCounts[
-                                  target
-                                ] =
-                                  (votesByAlliance[allianceText].targetCounts[
-                                    target
-                                  ] || 0) + 1;
-                              }
-                            );
+                            structuredVotes.forEach(({ voter, target, allianceText, action }) => {
+                              if (!allianceText) return;
 
-                            const targetEntries = Object.entries(
-                              votesByTarget
-                            ).sort(
-                              (a, b) =>
-                                b[1].voters.length - a[1].voters.length
+                              if (!votesByAlliance[allianceText]) {
+                                votesByAlliance[allianceText] = {
+                                  voters: new Set(),
+                                  targetCounts: {},
+                                  revoteInfo: {} // voter -> { normalTargets:Set, revoteTargets:Set }
+                                };
+                              }
+
+                              const bloc = votesByAlliance[allianceText];
+                              bloc.voters.add(voter);
+                              bloc.targetCounts[target] =
+                                (bloc.targetCounts[target] || 0) + 1;
+
+                              if (!bloc.revoteInfo[voter]) {
+                                bloc.revoteInfo[voter] = {
+                                  normalTargets: new Set(),
+                                  revoteTargets: new Set()
+                                };
+                              }
+
+                              const info = bloc.revoteInfo[voter];
+                              if (action === "revoted for") {
+                                info.revoteTargets.add(target);
+                              } else {
+                                info.normalTargets.add(target);
+                              }
+                            });
+
+                            const targetEntries = Object.entries(votesByTarget).sort(
+                              (a, b) => b[1].voters.length - a[1].voters.length
                             );
-                            const allianceEntries = Object.entries(
-                              votesByAlliance
-                            );
+                            const allianceEntries = Object.entries(votesByAlliance);
 
                             return (
                               <div className="space-y-3">
-                                {/* Optional preamble lines */}
+                                {/* Optional preamble lines (revote / rocks text etc.) */}
                                 {extraLines.length > 0 && (
                                   <div className="space-y-1 mb-2">
                                     {extraLines.map((line, i) => (
                                       <div
                                         key={i}
                                         className="text-xs sm:text-sm mb-1 text-center"
-                                        dangerouslySetInnerHTML={{
-                                          __html: line,
-                                        }}
+                                        dangerouslySetInnerHTML={{ __html: line }}
                                       />
                                     ))}
                                   </div>
@@ -667,49 +679,48 @@ export default function EpisodeView({
                                     <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
                                       Votes by target
                                     </p>
-                                    {targetEntries.map(
-                                      ([target, { voters, alliances }]) => {
-                                        const allianceNames =
-                                          Array.from(alliances);
+                                    {targetEntries.map(([target, { voters, alliances }]) => {
+                                      const allianceNames = Array.from(alliances);
 
-                                        return (
-                                          <div
-                                            key={target}
-                                            className="rounded-lg bg-stone-900/75 border border-white/10 px-3 py-2 space-y-1"
-                                          >
-                                            <div className="flex justify-between gap-2">
-                                              <span className="text-sm font-semibold text-rose-100">
-                                                {target}
-                                              </span>
-                                              <span className="text-[11px] text-stone-300">
-                                                {voters.length} vote
-                                                {voters.length !== 1 && "s"}
-                                              </span>
-                                            </div>
-
-                                            <p className="text-xs text-stone-200">
-                                              <span className="text-stone-400">
-                                                Voters:
-                                              </span>{" "}
-                                              {voters
-                                                .map(({ voter, allianceText }) =>
-                                                  allianceText
-                                                    ? `${voter}`
-                                                    : voter
-                                                )
-                                                .join(", ")}
-                                            </p>
-
-                                            {allianceNames.length > 0 && (
-                                              <p className="text-[11px] text-emerald-300">
-                                                Bloc:{" "}
-                                                {allianceNames.join(", ")}
-                                              </p>
-                                            )}
+                                      return (
+                                        <div
+                                          key={target}
+                                          className="rounded-lg bg-stone-900/75 border border-white/10 px-3 py-2 space-y-1"
+                                        >
+                                          <div className="flex justify-between gap-2">
+                                            <span className="text-sm font-semibold text-rose-100">
+                                              {target}
+                                            </span>
+                                            <span className="text-[11px] text-stone-300">
+                                              {voters.length} vote{voters.length !== 1 && "s"}
+                                            </span>
                                           </div>
-                                        );
-                                      }
-                                    )}
+
+                                          <p className="text-xs text-stone-200">
+                                            <span className="text-stone-400">Voters:</span>{" "}
+                                            {voters.map(({ voter, action }, idx) => (
+                                              <span
+                                                key={voter + "-" + idx}
+                                                className={
+                                                  action === "revoted for"
+                                                    ? "text-amber-300"
+                                                    : "text-stone-200"
+                                                }
+                                              >
+                                                {idx > 0 && ", "}
+                                                {voter}
+                                              </span>
+                                            ))}
+                                          </p>
+
+                                          {allianceNames.length > 0 && (
+                                            <p className="text-[11px] text-emerald-300">
+                                              Bloc: {allianceNames.join(", ")}
+                                            </p>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
 
                                   {/* Alliance blocs */}
@@ -718,11 +729,29 @@ export default function EpisodeView({
                                       <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
                                         Alliance blocs
                                       </p>
-                                      {allianceEntries.map(
-                                        ([
-                                          allianceName,
-                                          { voters, targetCounts },
-                                        ]) => (
+                                      {allianceEntries.map(([allianceName, bloc]) => {
+                                        const { voters, targetCounts, revoteInfo } = bloc;
+
+                                        // find voters who switched on revote
+                                        const switches = Object.entries(revoteInfo || {})
+                                          .filter(([voter, info]) => {
+                                            const normalSize = info.normalTargets.size;
+                                            const revoteSize = info.revoteTargets.size;
+                                            // switched if they have at least one revote target
+                                            // AND either had a different normal target, or multiple revote targets
+                                            return (
+                                              revoteSize > 0 &&
+                                              (normalSize > 0 || revoteSize > 1)
+                                            );
+                                          })
+                                          .map(([voter, info]) => {
+                                            const revTargets = Array.from(
+                                              info.revoteTargets
+                                            ).join(", ");
+                                            return `${voter} → ${revTargets}`;
+                                          });
+
+                                        return (
                                           <div
                                             key={allianceName}
                                             className="rounded-lg bg-stone-900/75 border border-emerald-500/40 px-3 py-2 space-y-1"
@@ -732,63 +761,112 @@ export default function EpisodeView({
                                             </span>
 
                                             <p className="text-xs text-stone-200">
-                                              <span className="text-stone-400">
-                                                Voters:
-                                              </span>{" "}
+                                              <span className="text-stone-400">Voters:</span>{" "}
                                               {Array.from(voters).join(", ")}
                                             </p>
 
                                             <p className="text-xs text-stone-200">
-                                              <span className="text-stone-400">
-                                                Targets:
-                                              </span>{" "}
+                                              <span className="text-stone-400">Targets:</span>{" "}
                                               {Object.entries(targetCounts)
-                                                .map(
-                                                  ([target, count]) =>
-                                                    `${target} ×${count}`
-                                                )
+                                                .map(([target, count]) => `${target} ×${count}`)
                                                 .join(", ")}
                                             </p>
+
+                                            {switches.length > 0 && (
+                                              <p className="text-xs text-amber-200">
+                                                <span className="text-amber-300 font-semibold">
+                                                  Switches:
+                                                </span>{" "}
+                                                {switches.join(", ")}
+                                              </p>
+                                            )}
                                           </div>
-                                        )
-                                      )}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
+
                                 {/* Individual vote list */}
-                                  {structuredVotes.length > 0 && (
-                                    <div className="pt-2 space-y-1">
-                                      <div className="h-px bg-white/10 my-2" />
-                                      <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1 text-center">
-                                        Individual votes
-                                      </p>
-                                      <div className="space-y-1">
-                                        {structuredVotes.map(
-                                          (
-                                            { voter, target, allianceText },
-                                            i
-                                          ) => (
-                                            <div
-                                              key={`${voter}-${target}-${i}`}
-                                              className="rounded-lg bg-stone-900/70 border border-white/5 px-3 py-1.5 text-xs sm:text-sm"
-                                            >
-                                              <div className="flex items-center justify-between gap-2">
-                                                <span className="font-semibold text-blue-200 truncate">
-                                                  {voter}
-                                                </span>
-                                                <span className="text-gray-400">
-                                                  →
-                                                </span>
-                                                <span className="font-semibold text-rose-200 truncate">
-                                                  {target}
-                                                </span>
+                                {structuredVotes.length > 0 &&
+                                  (() => {
+                                    // Group original + revote by voter
+                                    const votesByVoter = {};
+                                    const voterOrder = [];
+
+                                    structuredVotes.forEach(({ voter, target, allianceText, action }) => {
+                                      if (!votesByVoter[voter]) {
+                                        votesByVoter[voter] = {
+                                          normalTargets: [],
+                                          revoteTargets: [],
+                                          allianceText: allianceText || "",
+                                        };
+                                        voterOrder.push(voter);
+                                      }
+
+                                      if (allianceText && !votesByVoter[voter].allianceText) {
+                                        votesByVoter[voter].allianceText = allianceText;
+                                      }
+
+                                      if (action === "revoted for") {
+                                        votesByVoter[voter].revoteTargets.push(target);
+                                      } else {
+                                        votesByVoter[voter].normalTargets.push(target);
+                                      }
+                                    });
+
+                                    return (
+                                      <div className="pt-2 space-y-1">
+                                        <div className="h-px bg-white/10 my-2" />
+                                        <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1 text-center">
+                                          Individual votes
+                                        </p>
+                                        <div className="space-y-1">
+                                          {voterOrder.map((voter) => {
+                                            const info = votesByVoter[voter];
+                                            const hasRevote = info.revoteTargets.length > 0;
+
+                                            // Final target shown on main row (revote target if it exists, otherwise first normal)
+                                            const finalTarget =
+                                              (hasRevote && info.revoteTargets[info.revoteTargets.length - 1]) ||
+                                              info.normalTargets[0] ||
+                                              "";
+
+                                            return (
+                                              <div
+                                                key={voter}
+                                                className="rounded-lg bg-stone-900/70 border border-white/5 px-3 py-1.5 text-xs sm:text-sm"
+                                              >
+                                                <div className="flex items-center justify-between gap-2">
+                                                  <span className="font-semibold text-blue-200 truncate">
+                                                    {voter}
+                                                  </span>
+                                                  <span className="text-gray-400">→</span>
+                                                  <span className="font-semibold text-rose-200 truncate">
+                                                    {finalTarget}
+                                                  </span>
+                                                </div>
+
+                                                {hasRevote && (
+                                                  <p className="text-[10px] text-amber-200 mt-1">
+                                                    <span className="text-amber-300 font-semibold">
+                                                      Round 1:
+                                                    </span>{" "}
+                                                    {info.normalTargets.join(", ") || "—"}{" "}
+                                                    <span className="mx-1">·</span>
+                                                    <span className="text-amber-300 font-semibold">
+                                                      Revote:
+                                                    </span>{" "}
+                                                    {info.revoteTargets.join(", ")}
+                                                  </p>
+                                                )}
                                               </div>
-                                            </div>
-                                          )
-                                        )}
+                                            );
+                                          })}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
+                                    );
+                                  })()}
                               </div>
                             );
                           })()}
