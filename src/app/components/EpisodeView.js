@@ -538,59 +538,260 @@ export default function EpisodeView({
                           ))}
                         </CardContent>
                       </Card>
-                    ) : event.type === "voting" ? (
+                                        ) : event.type === "voting" ? (
                       // Detailed voting breakdown (who voted for whom)
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-1/2">
+                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
                         <CardContent className="pt-3 pb-3">
-                          {event.message.map((vote, i) => {
-                            if (!vote.includes("voted for")) {
-                              return (
-                                <div
-                                  key={i}
-                                  className="text-xs sm:text-sm mb-1 text-center"
-                                  dangerouslySetInnerHTML={{ __html: vote }}
-                                />
+                          {(() => {
+                            const stripTags = (html) =>
+                              typeof html === "string"
+                                ? html.replace(/<[^>]+>/g, "").trim()
+                                : "";
+
+                            const extraLines = [];
+                            const structuredVotes = [];
+
+                            (event.message || []).forEach((vote) => {
+                              if (
+                                typeof vote !== "string" ||
+                                !vote.includes("voted for")
+                              ) {
+                                // Intro / flavor lines
+                                extraLines.push(vote);
+                                return;
+                              }
+
+                              let action = "voted for";
+                              if (vote.includes("revoted for")) {
+                                action = "revoted for";
+                              }
+
+                              const voteParts = vote.split(` ${action} `);
+                              const voterRaw = voteParts[0] || "";
+                              let targetRaw = voteParts[1] || "";
+
+                              let allianceText = "";
+                              if (targetRaw.includes(" with ")) {
+                                const parts = targetRaw.split(" with ");
+                                targetRaw = parts[0];
+                                allianceText = stripTags(parts[1] || "");
+                              }
+
+                              const voter = stripTags(voterRaw);
+                              const target = stripTags(
+                                (targetRaw || "").replace(/\.$/, "")
                               );
-                            }
 
-                            let action = "voted for";
-                            if (vote.includes("revoted for")) {
-                              action = "revoted for";
-                            }
+                              if (!voter || !target) return;
 
-                            const voteParts = vote.split(` ${action} `);
-                            const voter = voteParts[0];
-                            let target = voteParts[1] || "";
+                              structuredVotes.push({
+                                voter,
+                                target,
+                                allianceText,
+                              });
+                            });
 
-                            let allianceText = "";
-                            if (target.includes(" with ")) {
-                              const targetParts = target.split(" with ");
-                              target = targetParts[0];
-                              allianceText = ` with ${targetParts[1]}`;
-                            }
+                            // Build "votes by target"
+                            const votesByTarget = {};
+                            structuredVotes.forEach(
+                              ({ voter, target, allianceText }) => {
+                                if (!votesByTarget[target]) {
+                                  votesByTarget[target] = {
+                                    voters: [],
+                                    alliances: new Set(),
+                                  };
+                                }
+                                votesByTarget[target].voters.push({
+                                  voter,
+                                  allianceText,
+                                });
+                                if (allianceText) {
+                                  votesByTarget[target].alliances.add(
+                                    allianceText
+                                  );
+                                }
+                              }
+                            );
+
+                            // Build "votes by alliance"
+                            const votesByAlliance = {};
+                            structuredVotes.forEach(
+                              ({ voter, target, allianceText }) => {
+                                if (!allianceText) return;
+                                if (!votesByAlliance[allianceText]) {
+                                  votesByAlliance[allianceText] = {
+                                    voters: new Set(),
+                                    targetCounts: {},
+                                  };
+                                }
+                                votesByAlliance[allianceText].voters.add(voter);
+                                votesByAlliance[allianceText].targetCounts[
+                                  target
+                                ] =
+                                  (votesByAlliance[allianceText].targetCounts[
+                                    target
+                                  ] || 0) + 1;
+                              }
+                            );
+
+                            const targetEntries = Object.entries(
+                              votesByTarget
+                            ).sort(
+                              (a, b) =>
+                                b[1].voters.length - a[1].voters.length
+                            );
+                            const allianceEntries = Object.entries(
+                              votesByAlliance
+                            );
 
                             return (
-                              <div
-                                key={i}
-                                className="grid grid-cols-3 gap-2 px-2 py-1 text-xs sm:text-sm items-center"
-                              >
-                                <span className="font-semibold text-blue-300 text-left truncate">
-                                  {voter}
-                                </span>
-                                <span className="text-gray-400 text-center">
-                                  →
-                                </span>
-                                <span className="font-semibold text-rose-300 text-right truncate">
-                                  {target}
-                                </span>
-                                {allianceText && (
-                                  <span className="col-span-3 text-[11px] text-gray-400 italic text-center">
-                                    {allianceText}
-                                  </span>
+                              <div className="space-y-3">
+                                {/* Optional preamble lines */}
+                                {extraLines.length > 0 && (
+                                  <div className="space-y-1 mb-2">
+                                    {extraLines.map((line, i) => (
+                                      <div
+                                        key={i}
+                                        className="text-xs sm:text-sm mb-1 text-center"
+                                        dangerouslySetInnerHTML={{
+                                          __html: line,
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
                                 )}
+
+                                <div className="grid gap-3 md:grid-cols-2">
+                                  {/* Votes by target */}
+                                  <div className="space-y-2">
+                                    <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
+                                      Votes by target
+                                    </p>
+                                    {targetEntries.map(
+                                      ([target, { voters, alliances }]) => {
+                                        const allianceNames =
+                                          Array.from(alliances);
+
+                                        return (
+                                          <div
+                                            key={target}
+                                            className="rounded-lg bg-stone-900/75 border border-white/10 px-3 py-2 space-y-1"
+                                          >
+                                            <div className="flex justify-between gap-2">
+                                              <span className="text-sm font-semibold text-rose-100">
+                                                {target}
+                                              </span>
+                                              <span className="text-[11px] text-stone-300">
+                                                {voters.length} vote
+                                                {voters.length !== 1 && "s"}
+                                              </span>
+                                            </div>
+
+                                            <p className="text-xs text-stone-200">
+                                              <span className="text-stone-400">
+                                                Voters:
+                                              </span>{" "}
+                                              {voters
+                                                .map(({ voter, allianceText }) =>
+                                                  allianceText
+                                                    ? `${voter}`
+                                                    : voter
+                                                )
+                                                .join(", ")}
+                                            </p>
+
+                                            {allianceNames.length > 0 && (
+                                              <p className="text-[11px] text-emerald-300">
+                                                Bloc:{" "}
+                                                {allianceNames.join(", ")}
+                                              </p>
+                                            )}
+                                          </div>
+                                        );
+                                      }
+                                    )}
+                                  </div>
+
+                                  {/* Alliance blocs */}
+                                  {allianceEntries.length > 0 && (
+                                    <div className="space-y-2">
+                                      <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
+                                        Alliance blocs
+                                      </p>
+                                      {allianceEntries.map(
+                                        ([
+                                          allianceName,
+                                          { voters, targetCounts },
+                                        ]) => (
+                                          <div
+                                            key={allianceName}
+                                            className="rounded-lg bg-stone-900/75 border border-emerald-500/40 px-3 py-2 space-y-1"
+                                          >
+                                            <span className="inline-flex items-center rounded-full bg-emerald-500/20 text-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                                              {allianceName}
+                                            </span>
+
+                                            <p className="text-xs text-stone-200">
+                                              <span className="text-stone-400">
+                                                Voters:
+                                              </span>{" "}
+                                              {Array.from(voters).join(", ")}
+                                            </p>
+
+                                            <p className="text-xs text-stone-200">
+                                              <span className="text-stone-400">
+                                                Targets:
+                                              </span>{" "}
+                                              {Object.entries(targetCounts)
+                                                .map(
+                                                  ([target, count]) =>
+                                                    `${target} ×${count}`
+                                                )
+                                                .join(", ")}
+                                            </p>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Individual vote list */}
+                                  {structuredVotes.length > 0 && (
+                                    <div className="pt-2 space-y-1">
+                                      <div className="h-px bg-white/10 my-2" />
+                                      <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1 text-center">
+                                        Individual votes
+                                      </p>
+                                      <div className="space-y-1">
+                                        {structuredVotes.map(
+                                          (
+                                            { voter, target, allianceText },
+                                            i
+                                          ) => (
+                                            <div
+                                              key={`${voter}-${target}-${i}`}
+                                              className="rounded-lg bg-stone-900/70 border border-white/5 px-3 py-1.5 text-xs sm:text-sm"
+                                            >
+                                              <div className="flex items-center justify-between gap-2">
+                                                <span className="font-semibold text-blue-200 truncate">
+                                                  {voter}
+                                                </span>
+                                                <span className="text-gray-400">
+                                                  →
+                                                </span>
+                                                <span className="font-semibold text-rose-200 truncate">
+                                                  {target}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                               </div>
                             );
-                          })}
+                          })()}
                         </CardContent>
                       </Card>
                     ) : event.type === "event" && event.numPlayers === 2 ? (
