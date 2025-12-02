@@ -605,6 +605,45 @@ export default function EpisodeView({
                               );
                             }
 
+                            // Heuristic: infer alliance membership for voters who share a target
+                            // with an obvious alliance bloc but are missing allianceText.
+                            const votesGroupedByTarget = {};
+
+                            structuredVotes.forEach((vote) => {
+                              if (!votesGroupedByTarget[vote.target]) {
+                                votesGroupedByTarget[vote.target] = [];
+                              }
+                              votesGroupedByTarget[vote.target].push(vote);
+                            });
+
+                            Object.values(votesGroupedByTarget).forEach((group) => {
+                              // Count how many times each alliance label appears for this target
+                              const allianceCounts = {};
+                              group.forEach((v) => {
+                                if (v.allianceText) {
+                                  allianceCounts[v.allianceText] =
+                                    (allianceCounts[v.allianceText] || 0) + 1;
+                                }
+                              });
+
+                              const entries = Object.entries(allianceCounts);
+                              if (!entries.length) return;
+
+                              // Take the "dominant" alliance for this target
+                              entries.sort((a, b) => b[1] - a[1]);
+                              const [dominantAlliance, dominantCount] = entries[0];
+
+                              // Only infer if at least 2 votes are clearly labeled for this alliance,
+                              // to avoid accidentally grouping random same-target votes.
+                              if (dominantCount >= 2) {
+                                group.forEach((v) => {
+                                  if (!v.allianceText) {
+                                    v.allianceText = dominantAlliance;
+                                  }
+                                });
+                              }
+                            });
+
                             // --- Build "votes by target" (track action per voter) ---
                             const votesByTarget = {};
                             structuredVotes.forEach(({ voter, target, allianceText, action }) => {
