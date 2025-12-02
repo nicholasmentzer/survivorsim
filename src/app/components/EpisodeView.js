@@ -504,7 +504,7 @@ export default function EpisodeView({
                 {event.type !== "relationship" && (
                   <div className="flex flex-col items-center space-y-3">
                     {/* Optional images above the text */}
-                    {event.images ? (
+                    {event.images && !(event.type === "event" && event.numPlayers === 2) ? (
                       <div className="flex gap-4">
                         {event.images.map((image, i) => (
                           <Avatar
@@ -595,16 +595,112 @@ export default function EpisodeView({
                       </Card>
                     ) : event.type === "event" && event.numPlayers === 2 ? (
                       // Relationship events with effect text
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5">
-                        <CardContent className="pt-3 pb-3">
-                          {event.message.map((element, i) => (
-                            <div key={i} className="mb-2 last:mb-0">
-                              <div
-                                className="text-xs sm:text-sm font-semibold text-center"
-                                dangerouslySetInnerHTML={{ __html: element }}
-                              />
-                            </div>
-                          ))}
+                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                        <CardContent className="py-3 px-4">
+                          {(() => {
+                            const msgs = Array.isArray(event.message)
+                              ? event.message
+                              : [event.message];
+
+                            const [headline, ...rest] = msgs;
+                            const secondaryHtml = rest.join("<br />");
+
+                            // Compress "relationship + + + +" / "relationship - - -" into "+3"/"-3"
+                            const plainSecondary = secondaryHtml
+                              .replace(/<[^>]+>/g, "") // strip HTML tags
+                              .toLowerCase();
+
+                            const plusCount = (plainSecondary.match(/\+/g) || []).length;
+                            const minusCount = (plainSecondary.match(/-/g) || []).length;
+
+                            let chipValue = null;
+                            let chipNet = 0;
+
+                            if (plusCount || minusCount) {
+                              const net = plusCount - minusCount;
+                              chipNet = net;
+                              if (net !== 0) {
+                                const sign = net > 0 ? "+" : "";
+                                chipValue = `${sign}${net}`; // e.g. "+4" / "-2"
+                              }
+                            }
+
+                            const chipColorClasses =
+                              chipNet > 0
+                                ? "bg-emerald-900/40 border-emerald-400/60 text-emerald-200"
+                                : "bg-rose-900/40 border-rose-400/60 text-rose-200";
+
+                            return (
+                              <div className="flex flex-col gap-2">
+                                {/* main row: avatars + text + chip */}
+                                <div className="flex items-center gap-3 w-full">
+                                  {/* overlapping avatars */}
+                                  {event.images && event.images.length >= 2 && (
+                                    <div className="flex -space-x-3">
+                                      {event.images.slice(0, 2).map((image, i) => (
+                                        <Avatar
+                                          key={i}
+                                          className="w-12 h-12 sm:w-14 sm:h-14 border border-white/40 shadow-md bg-black/40"
+                                        >
+                                          <AvatarImage
+                                            src={image}
+                                            alt="Relationship event"
+                                            className="object-cover"
+                                            style={{ imageRendering: "high-quality" }}
+                                          />
+                                          <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
+                                            ?
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* headline text with more breathing room */}
+                                  <div className="flex-1 min-w-0">
+                                    <div
+                                      className="
+                                        text-xs sm:text-sm font-semibold
+                                        leading-snug text-center sm:text-left
+                                      "
+                                      dangerouslySetInnerHTML={{ __html: headline }}
+                                    />
+                                  </div>
+
+                                  {/* chip on the right for larger screens */}
+                                  {chipValue && (
+                                    <span
+                                      className={`
+                                        hidden sm:inline-flex items-center justify-center
+                                        rounded-full px-3 py-1
+                                        text-[11px] font-semibold tracking-[0.16em]
+                                        whitespace-nowrap
+                                        ${chipColorClasses}
+                                      `}
+                                    >
+                                      {chipValue}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* chip below on mobile */}
+                                {chipValue && (
+                                  <div className="sm:hidden flex justify-center">
+                                    <span
+                                      className={`
+                                        inline-flex items-center justify-center
+                                        rounded-full px-3 py-1
+                                        text-[11px] font-semibold tracking-[0.16em]
+                                        ${chipColorClasses}
+                                      `}
+                                    >
+                                      {chipValue}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </CardContent>
                       </Card>
                     ) : (
