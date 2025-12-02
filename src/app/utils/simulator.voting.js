@@ -187,7 +187,6 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         .filter(idol => idol !== null)
         .some(idol => idol.name === player.name)
     );
-    console.log(potentialIdolPlayers);
 
     let primaryTargetIndex = parseInt(sortedVotes[0][0]);
     let primaryTarget = tribe[primaryTargetIndex];
