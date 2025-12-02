@@ -315,48 +315,11 @@ export default function EpisodeView({
                             : "No advantages in play this episode"}
                         </p>
                       </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 hover:bg-white/5"
-                        onClick={() => setShowAdvantages((prev) => !prev)}
-                      >
-                        {showAdvantages ? (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-5 h-5 text-blue-400"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="18 15 12 9 6 15"></polyline>
-                          </svg>
-                        ) : (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-5 h-5 text-blue-400"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        )}
-                      </Button>
                     </div>
                   </CardHeader>
 
                   <CardContent className="pt-1 pb-4">
-                    {showAdvantages ? (
-                      hasIdols ? (
+                     {hasIdols ? (
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           {activeIdols.map(([tribeKey, player]) => (
                             <div
@@ -412,11 +375,7 @@ export default function EpisodeView({
                           No idols or other advantages are currently in play.
                         </div>
                       )
-                    ) : (
-                      <p className="text-xs text-stone-400 mt-1">
-                        Advantages hidden. Tap the arrow to reveal.
-                      </p>
-                    )}
+                    }
                   </CardContent>
                 </Card>
               );
