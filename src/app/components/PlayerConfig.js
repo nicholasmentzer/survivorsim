@@ -21,16 +21,16 @@ import {
 } from "@/components/ui/avatar";
 
 const PlayerConfig = ({
-  gender,
+  tribeId,
   players,
-  updatePlayers,
+  setPlayers,
   careers,
   regions,
   tribeData,
   hideSliders,
   tribeSize,
 }) => {
-  const [playerData, setPlayerData] = useState(players[gender]);
+  const [playerData, setPlayerData] = useState([]);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [presetModalOpen, setPresetModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -40,8 +40,9 @@ const PlayerConfig = ({
   const [expandedCategories, setExpandedCategories] = useState({});
 
   useEffect(() => {
-    setPlayerData(players[gender].slice(0, tribeSize));
-  }, [players, tribeSize, gender]);
+    const tribePlayers = (players || []).filter((p) => p.tribeId === tribeId);
+    setPlayerData(tribePlayers.slice(0, tribeSize));
+  }, [players, tribeSize, tribeId]);
 
   const presetPlayers = [...playersData.men, ...playersData.women];
 
@@ -62,7 +63,12 @@ const PlayerConfig = ({
       );
 
       setPlayerData(updatedPlayers);
-      updatePlayers(gender, updatedPlayers);
+      setPlayers((prev) => {
+        const updatedById = new Map(updatedPlayers.map((p) => [p.id, p]));
+        return (prev || []).map((p) =>
+          p.tribeId === tribeId && updatedById.has(p.id) ? updatedById.get(p.id) : p
+        );
+      });
     }
   };
 
@@ -72,7 +78,12 @@ const PlayerConfig = ({
     );
 
     setPlayerData(updatedPlayers);
-    updatePlayers(gender, updatedPlayers);
+    setPlayers((prev) => {
+      const updatedById = new Map(updatedPlayers.map((p) => [p.id, p]));
+      return (prev || []).map((p) =>
+        p.tribeId === tribeId && updatedById.has(p.id) ? updatedById.get(p.id) : p
+      );
+    });
   };
 
   const openImageModal = (playerIndex) => {

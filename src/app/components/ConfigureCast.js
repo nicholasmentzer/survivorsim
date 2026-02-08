@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import PlayerConfig from "./PlayerConfig";
 
@@ -28,43 +28,117 @@ import {
 } from "@/components/ui/select";
 
 export default function ConfigureCast({
-  playerConfig,
-  updatePlayers,
+  players = [],
+  setPlayers = () => {},
   careersData,
   regionsData,
   tribesData,
-  hideSliders,
-  setHideSliders,
-  tribeSize,
-  setTribeSize,
-  mergeTime,
-  setMergeTime,
-  advantages,
-  setAdvantages,
-  tribeNames,
-  setTribeNames,
-  randomizeAllStats,
-  customEvents,
-  eventDescription,
-  setEventDescription,
-  eventType,
-  setEventType,
-  eventSeverity,
-  setEventSeverity,
-  addCustomEvent,
-  useOnlyCustomEvents,
-  setUseOnlyCustomEvents,
-  removeCustomEvent,
-  customAllianceDescription,
-  setCustomAllianceDescription,
-  addCustomAllianceName,
-  customAllianceNames,
-  removeCustomName,
-  useNumberedAlliances,
-  setuseNumberedAlliances,
+  hideSliders = false,
+  setHideSliders = () => {},
+  tribeSize = 10,
+  setTribeSize = () => {},
+  numTribes = 2,
+  setNumTribes = () => {},
+  mergeTime = 12,
+  setMergeTime = () => {},
+  swapEnabled = false,
+  setSwapEnabled = () => {},
+  swapTime = null,
+  setSwapTime = () => {},
+  advantages = { immunityIdol: true },
+  setAdvantages = () => {},
+  tribeNames = {},
+  setTribeNames = () => {},
+  randomizeAllStats = () => {},
+  customEvents = [],
+  eventDescription = "",
+  setEventDescription = () => {},
+  eventType = "neutral",
+  setEventType = () => {},
+  eventSeverity = 1,
+  setEventSeverity = () => {},
+  addCustomEvent = (e) => e?.preventDefault?.(),
+  useOnlyCustomEvents = false,
+  setUseOnlyCustomEvents = () => {},
+  removeCustomEvent = () => {},
 }) {
-  const tribe1Label = tribeNames.tribe1 || "Tribe 1";
-  const tribe2Label = tribeNames.tribe2 || "Tribe 2";
+  const [numTribesDraft, setNumTribesDraft] = useState(numTribes);
+  const [tribeSizeDraft, setTribeSizeDraft] = useState(tribeSize);
+  const [mergeTimeDraft, setMergeTimeDraft] = useState(mergeTime);
+  const [swapTimeDraft, setSwapTimeDraft] = useState(swapTime ?? 0);
+
+  useEffect(() => setNumTribesDraft(numTribes), [numTribes]);
+  useEffect(() => setTribeSizeDraft(tribeSize), [tribeSize]);
+  useEffect(() => setMergeTimeDraft(mergeTime), [mergeTime]);
+  useEffect(() => setSwapTimeDraft(Number.isFinite(swapTime) ? swapTime : 0), [swapTime]);
+
+  const totalPlayersDraft = tribeSizeDraft * numTribesDraft;
+  const minMergeAtDraft = numTribesDraft <= 1
+    ? totalPlayersDraft
+    : Math.min(totalPlayersDraft - 1, tribeSizeDraft * (numTribesDraft - 1) + 2);
+  const maxMergeAtDraft = numTribesDraft <= 1
+    ? totalPlayersDraft
+    : Math.max(1, totalPlayersDraft - 1);
+
+  const minSwapSafetyDraft = numTribesDraft <= 1
+    ? null
+    : Math.min(totalPlayersDraft - 1, tribeSizeDraft * (numTribesDraft - 1) + 2);
+
+  const minMergeAtAfterSwapDraft =
+    swapEnabled && numTribesDraft > 1 && Number.isFinite(swapTimeDraft)
+      ? (swapTimeDraft - Math.floor(swapTimeDraft / numTribesDraft) + 2)
+      : null;
+
+  const effectiveMinMergeAtDraft =
+    numTribesDraft <= 1
+      ? totalPlayersDraft
+      : Math.max(
+          2,
+          Math.min(
+            minMergeAtDraft,
+            Number.isFinite(minMergeAtAfterSwapDraft) ? minMergeAtAfterSwapDraft : minMergeAtDraft
+          )
+        );
+
+  const effectiveMaxMergeAtDraft =
+    swapEnabled && Number.isFinite(swapTimeDraft) && numTribesDraft > 1
+      ? Math.min(maxMergeAtDraft, swapTimeDraft - 1)
+      : maxMergeAtDraft;
+
+  const mergePotentialMin = numTribesDraft <= 1 ? totalPlayersDraft : numTribesDraft * 2;
+  const mergePotentialMax = numTribesDraft <= 1 ? totalPlayersDraft : Math.max(1, totalPlayersDraft - 1);
+
+  const minSwapAtDraft = numTribesDraft <= 1
+    ? null
+    : Math.max(Math.min(totalPlayersDraft - 1, mergeTimeDraft + 1), minSwapSafetyDraft);
+  const maxSwapAtDraft = numTribesDraft <= 1 ? null : totalPlayersDraft - 1;
+  const hasSwapRange =
+    numTribesDraft > 1 &&
+    Number.isFinite(minSwapAtDraft) &&
+    Number.isFinite(maxSwapAtDraft) &&
+    minSwapAtDraft <= maxSwapAtDraft;
+
+  const swapPotentialMin = numTribesDraft <= 1 ? totalPlayersDraft : numTribesDraft * 2;
+  const swapPotentialMax = Math.max(1, totalPlayersDraft - 1);
+
+  useEffect(() => {
+    // If the merge/tribe settings remove the swap window, disable swap.
+    if (!hasSwapRange && swapEnabled) {
+      setSwapEnabled(false);
+      setSwapTime(null);
+    }
+    // Keep the draft slider value within bounds as they change.
+    if (hasSwapRange) {
+      setSwapTimeDraft((prev) => {
+        const base = Number.isFinite(swapTime) ? swapTime : prev;
+        return Math.max(minSwapAtDraft, Math.min(base, maxSwapAtDraft));
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSwapRange, minSwapAtDraft, maxSwapAtDraft, mergeTimeDraft, tribeSizeDraft, numTribesDraft]);
+
+  const tribeKeys = Array.from({ length: numTribes }, (_, i) => `tribe${i + 1}`);
+  const getTribeLabel = (tribeKey, fallback) => tribeNames?.[tribeKey] || fallback;
 
   // --- helpers for inserting Player1 / Player2 tokens ---
   const descriptionRef = useRef(null);
@@ -102,8 +176,8 @@ export default function ConfigureCast({
     });
   };
 
-  const hasPlayer1 = eventDescription.includes("Player1");
-  const hasPlayer2 = eventDescription.includes("Player2");
+  const hasPlayer1 = (eventDescription || "").includes("Player1");
+  const hasPlayer2 = (eventDescription || "").includes("Player2");
   const hasBothPlayers = hasPlayer1 && hasPlayer2;
 
   return (
@@ -138,37 +212,60 @@ export default function ConfigureCast({
               Season Settings
             </CardTitle>
 
+            {/* Tribe count */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-[11px] uppercase tracking-[0.18em] text-stone-300">
+                  Starting tribes
+                </Label>
+                <span className="text-[11px] text-stone-300">{numTribes}</span>
+              </div>
+              <Slider
+                min={1}
+                max={3}
+                step={1}
+                value={[numTribesDraft]}
+                onValueChange={(values) => setNumTribesDraft(values[0])}
+                onValueCommit={(values) => setNumTribes(values[0])}
+              />
+            </div>
+
             {/* Tribe names */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] uppercase tracking-[0.18em] text-stone-300">
-                  Tribe names
+                  {numTribesDraft <= 1 ? "Merge tribe name" : "Tribe names"}
                 </span>
                 <span className="text-[10px] text-stone-400">
-                  Click a name below to rename the tribe.
+                  {numTribesDraft <= 1 ? "Rename your tribe." : "Click a name below to rename the tribe."}
                 </span>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {numTribesDraft > 1
+                  ? tribeKeys.map((tribeKey, idx) => (
+                      <Input
+                        key={tribeKey}
+                        type="text"
+                        placeholder={`Tribe ${idx + 1} name`}
+                        defaultValue={getTribeLabel(tribeKey, `Tribe ${idx + 1}`)}
+                        onChange={(e) =>
+                          setTribeNames({ ...tribeNames, [tribeKey]: e.target.value })
+                        }
+                        className="
+                          bg-black/40 border border-white/20 text-stone-100
+                          rounded-md text-center text-xs md:text-sm
+                          py-2
+                          font-semibold tracking-[0.08em]
+                          focus-visible:ring-1 focus-visible:ring-blue-400
+                          focus-visible:border-blue-400
+                        "
+                      />
+                    ))
+                  : null}
                 <Input
                   type="text"
-                  placeholder="Tribe 1 name"
-                  defaultValue={tribeNames.tribe1}
-                  onChange={(e) =>
-                    setTribeNames({ ...tribeNames, tribe1: e.target.value })
-                  }
-                  className="
-                    bg-black/40 border border-blue-500/70 text-blue-200
-                    rounded-md text-center text-xs md:text-sm
-                    py-2
-                    font-semibold tracking-[0.08em]
-                    focus-visible:ring-1 focus-visible:ring-blue-400
-                    focus-visible:border-blue-400
-                  "
-                />
-                <Input
-                  type="text"
-                  placeholder="Merge tribe name"
+                  placeholder={numTribesDraft <= 1 ? "Tribe name" : "Merge tribe name"}
                   defaultValue={tribeNames.merge}
                   onChange={(e) =>
                     setTribeNames({ ...tribeNames, merge: e.target.value })
@@ -182,61 +279,11 @@ export default function ConfigureCast({
                     focus-visible:border-purple-400
                   "
                 />
-                <Input
-                  type="text"
-                  placeholder="Tribe 2 name"
-                  defaultValue={tribeNames.tribe2}
-                  onChange={(e) =>
-                    setTribeNames({ ...tribeNames, tribe2: e.target.value })
-                  }
-                  className="
-                    bg-black/40 border border-red-500/70 text-red-200
-                    rounded-md text-center text-xs md:text-sm
-                    py-2
-                    font-semibold tracking-[0.08em]
-                    focus-visible:ring-1 focus-visible:ring-red-400
-                    focus-visible:border-red-400
-                  "
-                />
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* randomize */}
-            <div className="flex items-center justify-between">
-              <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
-                Randomize all stats
-              </Label>
-              <Button
-                type="button"
-                size="sm"
-                className="text-xs tracking-wide"
-                onClick={randomizeAllStats}
-              >
-                Randomize
-              </Button>
-            </div>
-
-            <Separator className="bg-white/10" />
-
-            {/* hide stats */}
-            <div className="flex items-center justify-between">
-              <Label
-                htmlFor="hideSliders"
-                className="text-[11px] tracking-[0.16em] uppercase text-stone-200"
-              >
-                Hide player stats
-              </Label>
-              <Switch
-                id="hideSliders"
-                checked={hideSliders}
-                onCheckedChange={() => setHideSliders((prev) => !prev)}
-              />
-            </div>
-
-            <Separator className="bg-white/10" />
-
             {/* tribe size */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -244,34 +291,134 @@ export default function ConfigureCast({
                   Tribe size
                 </Label>
                 <span className="text-[11px] text-stone-300">
-                  {tribeSize} ({tribeSize * 2} total players)
+                  {tribeSizeDraft} ({tribeSizeDraft * numTribesDraft} total players)
                 </span>
               </div>
               <Slider
-                min={7}
-                max={15}
+                min={numTribesDraft >= 3 ? 6 : 7}
+                max={numTribesDraft <= 1 ? 24 : 15}
                 step={1}
-                value={[tribeSize]}
-                onValueChange={(values) => setTribeSize(values[0])}
+                value={[tribeSizeDraft]}
+                onValueChange={(values) => setTribeSizeDraft(values[0])}
+                onValueCommit={(values) => setTribeSize(values[0])}
               />
             </div>
 
             {/* merge time */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
-                  Merge at player count
-                </Label>
-                <span className="text-[11px] text-stone-300">{mergeTime}</span>
+            {numTribesDraft > 1 ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                      Merge at player count
+                    </Label>
+                    <span className="text-[11px] text-stone-300">{mergeTimeDraft}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-stone-400">
+                    <span>
+                    </span>
+                    <span>
+                      Allowed: {effectiveMinMergeAtDraft}–{effectiveMaxMergeAtDraft}
+                    </span>
+                  </div>
+                  <Slider
+                    min={mergePotentialMin}
+                    max={mergePotentialMax}
+                    step={1}
+                    value={[mergeTimeDraft]}
+                    onValueChange={(values) => {
+                      const raw = values[0];
+                      const clamped = Math.max(
+                        effectiveMinMergeAtDraft,
+                        Math.min(raw, effectiveMaxMergeAtDraft)
+                      );
+                      setMergeTimeDraft(clamped);
+                    }}
+                    onValueCommit={(values) => {
+                      const raw = values[0];
+                      const clamped = Math.max(
+                        effectiveMinMergeAtDraft,
+                        Math.min(raw, effectiveMaxMergeAtDraft)
+                      );
+                      setMergeTimeDraft(clamped);
+                      setMergeTime(clamped);
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                      Tribe swap
+                    </Label>
+                    <Switch
+                      checked={swapEnabled}
+                      disabled={!hasSwapRange}
+                      onCheckedChange={(checked) => {
+                        setSwapEnabled(checked);
+                        if (!checked) setSwapTime(null);
+                        if (checked && hasSwapRange) {
+                          const proposed = Number.isFinite(swapTime)
+                            ? swapTime
+                            : (Number.isFinite(swapTimeDraft) ? swapTimeDraft : maxSwapAtDraft);
+                          const clamped = Math.max(minSwapAtDraft, Math.min(proposed, maxSwapAtDraft));
+                          setSwapTimeDraft(clamped);
+                          setSwapTime(clamped);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {swapEnabled && hasSwapRange ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                          Swap at player count
+                        </Label>
+                        <span className="text-[11px] text-stone-300">{swapTimeDraft}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-stone-400">
+                        <span>
+                        </span>
+                        <span>
+                          Allowed: {minSwapAtDraft}–{maxSwapAtDraft}
+                        </span>
+                      </div>
+                      <Slider
+                        min={swapPotentialMin}
+                        max={swapPotentialMax}
+                        step={1}
+                        value={[swapTimeDraft]}
+                        onValueChange={(values) => {
+                          const raw = values[0];
+                          const clamped = Math.max(
+                            minSwapAtDraft,
+                            Math.min(raw, maxSwapAtDraft)
+                          );
+                          setSwapTimeDraft(clamped);
+                        }}
+                        onValueCommit={(values) => {
+                          const raw = values[0];
+                          const clamped = Math.max(
+                            minSwapAtDraft,
+                            Math.min(raw, maxSwapAtDraft)
+                          );
+                          setSwapTimeDraft(clamped);
+                          setSwapTime(clamped);
+                        }}
+                      />
+                      <p className="text-[11px] text-stone-400">
+                        Swap happens once, before the merge.
+                      </p>
+                    </>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <div className="text-[11px] text-stone-400">
+                Single-tribe season: no swap or merge settings.
               </div>
-              <Slider
-                min={tribeSize + 1}
-                max={tribeSize * 2}
-                step={1}
-                value={[mergeTime]}
-                onValueChange={(values) => setMergeTime(values[0])}
-              />
-            </div>
+            )}
 
             <Separator className="bg-white/10" />
 
@@ -306,48 +453,69 @@ export default function ConfigureCast({
         <Tabs defaultValue="tribe1" className="w-full">
           <Card className="bg-black/60 border-white/10">
             <CardHeader className="pb-0">
-              <TabsList className="grid grid-cols-2 bg-black/40 border border-white/10">
-                <TabsTrigger
-                  value="tribe1"
-                  className="text-[11px] sm:text-xs tracking-[0.16em] uppercase"
-                >
-                  {tribe1Label}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="tribe2"
-                  className="text-[11px] sm:text-xs tracking-[0.16em] uppercase"
-                >
-                  {tribe2Label}
-                </TabsTrigger>
+              <TabsList
+                className="grid bg-black/40 border border-white/10"
+                style={{ gridTemplateColumns: `repeat(${numTribes}, minmax(0, 1fr))` }}
+              >
+                {tribeKeys.map((tribeKey, idx) => (
+                  <TabsTrigger
+                    key={tribeKey}
+                    value={tribeKey}
+                    className="text-[11px] sm:text-xs tracking-[0.16em] uppercase"
+                  >
+                    {numTribes === 1
+                      ? (tribeNames?.merge || "Merge")
+                      : getTribeLabel(tribeKey, `Tribe ${idx + 1}`)}
+                  </TabsTrigger>
+                ))}
               </TabsList>
+
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center justify-between sm:justify-start gap-3">
+                  <Label
+                    htmlFor="hideSliders"
+                    className="text-[11px] tracking-[0.16em] uppercase text-stone-200"
+                  >
+                    Hide player stats
+                  </Label>
+                  <Switch
+                    id="hideSliders"
+                    checked={hideSliders}
+                    onCheckedChange={() => setHideSliders((prev) => !prev)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
+                    Randomize all stats
+                  </Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="text-xs tracking-wide"
+                    onClick={randomizeAllStats}
+                  >
+                    Randomize
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
 
             <CardContent className="pt-4">
-              <TabsContent value="tribe1">
-                <PlayerConfig
-                  gender="men"
-                  players={playerConfig}
-                  updatePlayers={updatePlayers}
-                  careers={careersData}
-                  regions={regionsData}
-                  tribes={tribesData}
-                  hideSliders={hideSliders}
-                  tribeSize={tribeSize}
-                />
-              </TabsContent>
-
-              <TabsContent value="tribe2">
-                <PlayerConfig
-                  gender="women"
-                  players={playerConfig}
-                  updatePlayers={updatePlayers}
-                  careers={careersData}
-                  regions={regionsData}
-                  tribes={tribesData}
-                  hideSliders={hideSliders}
-                  tribeSize={tribeSize}
-                />
-              </TabsContent>
+              {tribeKeys.map((tribeKey, idx) => (
+                <TabsContent key={tribeKey} value={tribeKey}>
+                  <PlayerConfig
+                    tribeId={idx + 1}
+                    players={players}
+                    setPlayers={setPlayers}
+                    careers={careersData}
+                    regions={regionsData}
+                    tribes={tribesData}
+                    hideSliders={hideSliders}
+                    tribeSize={tribeSize}
+                  />
+                </TabsContent>
+              ))}
             </CardContent>
           </Card>
         </Tabs>
@@ -574,97 +742,7 @@ export default function ConfigureCast({
           </CardContent>
         </Card>
 
-        {/* CUSTOM ALLIANCE NAMES (mostly your original logic, slightly styled) */}
-        <Card className="bg-black/70 border-white/10 mb-8">
-          <CardHeader className="pb-3 space-y-2">
-            <CardTitle className="text-sm tracking-[0.22em] uppercase text-stone-100">
-              Custom Alliance Names
-            </CardTitle>
-            <p className="text-xs text-stone-400">
-              Add fun, thematic names that alliances can randomly use during the
-              season.
-            </p>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <form
-              onSubmit={addCustomAllianceName}
-              className="bg-stone-900/70 p-3 rounded-lg space-y-2 border border-stone-700/80"
-            >
-              <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
-                Add alliance name
-              </Label>
-              <Input
-                type="text"
-                value={customAllianceDescription}
-                onChange={(e) =>
-                  setCustomAllianceDescription(e.target.value)
-                }
-                placeholder="Example: The Coconut Alliance"
-                className="bg-stone-950/80 border-stone-700 text-sm text-stone-100"
-              />
-
-              <div className="pt-1">
-                <Button type="submit" className="text-sm">
-                  Add alliance name
-                </Button>
-              </div>
-            </form>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="useNumberedAlliances"
-                checked={useNumberedAlliances}
-                onCheckedChange={() =>
-                  setuseNumberedAlliances(!useNumberedAlliances)
-                }
-              />
-              <Label
-                htmlFor="useNumberedAlliances"
-                className="text-xs text-stone-100"
-              >
-                Use basic numbered alliance names (instead of custom/random
-                names)
-              </Label>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <h3 className="text-[11px] tracking-[0.18em] uppercase text-stone-200">
-                Current custom alliance names
-              </h3>
-
-              {customAllianceNames.length === 0 ? (
-                <p className="text-xs text-stone-400">
-                  No custom alliance names added yet.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {customAllianceNames.map((name, index) => (
-                    <div
-                      key={index}
-                      className="
-                        flex items-center justify-between gap-3
-                        bg-stone-900/70 border border-white/10
-                        px-3 py-2 rounded-lg text-xs text-stone-100
-                      "
-                    >
-                      <span>{name}</span>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="h-6 w-6 text-[11px] border-stone-500/60"
-                        onClick={() => removeCustomName(index)}
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
     </div>
   );

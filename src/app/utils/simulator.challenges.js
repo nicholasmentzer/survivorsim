@@ -12,21 +12,45 @@ export const individualImmunity = (tribe) => {
 
 /** Pre-merge tribal immunity between two tribes */
 export const tribalImmunity = (tribes) => {
-  const total = Math.min(tribes[0].length, tribes[1].length);
-
-  tribes[0].sort((a, b) => b.premerge - a.premerge);
-  tribes[1].sort((a, b) => b.premerge - a.premerge);
-
-  let score0 = 0;
-  let score1 = 0;
-  for (let i = 0; i < total; i++) {
-    score0 += tribes[0][i].premerge;
-    score1 += tribes[1][i].premerge;
+  if (!tribes || tribes.length < 2) {
+    return { winnerIndex: 0, loserIndex: 0, winnerIndices: [0] };
   }
 
-  const choices = [];
-  for (let i = 0; i < score0; i++) choices.push(0);
-  for (let i = 0; i < score1; i++) choices.push(1);
+  const minLen = Math.min(...tribes.map((t) => (t || []).length));
+  const scores = tribes.map((tribe) => {
+    const sorted = [...(tribe || [])].sort((a, b) => (b.premerge ?? 0) - (a.premerge ?? 0));
+    let score = 0;
+    for (let i = 0; i < minLen; i++) score += sorted[i]?.premerge ?? 0;
+    return Math.max(1, score);
+  });
 
-  return choices[getRandomInt(choices.length)];
+  const weightedPick = (weights) => {
+    const total = weights.reduce((sum, w) => sum + Math.max(0, w), 0);
+    if (total <= 0) return 0;
+    let r = getRandomInt(total);
+    for (let i = 0; i < weights.length; i++) {
+      r -= Math.max(0, weights[i]);
+      if (r < 0) return i;
+    }
+    return 0;
+  };
+
+  const maxScore = Math.max(...scores);
+
+  // Pick the losing tribe with weights biased toward lower scores.
+  const loserWeights = scores.map((s) => Math.max(1, maxScore + 1 - s));
+  const loserIndex = weightedPick(loserWeights);
+
+  // Everyone except the loser is a "winner" (typical multi-tribe format).
+  const winnerIndices = tribes
+    .map((_, i) => i)
+    .filter((i) => i !== loserIndex);
+
+  // Keep a single winnerIndex for legacy callers (best-scoring non-loser).
+  const bestWinnerIndex = winnerIndices.reduce((bestIdx, i) =>
+    scores[i] > scores[bestIdx] ? i : bestIdx,
+    winnerIndices[0] ?? 0
+  );
+
+  return { winnerIndex: bestWinnerIndex, loserIndex, winnerIndices };
 };

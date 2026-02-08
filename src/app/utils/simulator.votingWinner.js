@@ -8,23 +8,96 @@ export const votingWinner = (finalThree, jury) => {
   const choices = [];
   const voteDetails = [];
   const voteSummary = [];
+
+  const getSuspenseRevealOrder = (counts) => {
+    const remaining = (counts || []).map((c) => Math.max(0, Number(c) || 0));
+    const revealed = remaining.map(() => 0);
+    const order = [];
+
+    const spread = (arr) => {
+      if (!arr.length) return 0;
+      let min = arr[0];
+      let max = arr[0];
+      for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < min) min = arr[i];
+        if (arr[i] > max) max = arr[i];
+      }
+      return max - min;
+    };
+
+    let lastPick = null;
+
+    while (remaining.some((c) => c > 0)) {
+      const candidates = remaining
+        .map((c, i) => ({ i, c }))
+        .filter((x) => x.c > 0);
+
+      if (candidates.length === 1) {
+        const i = candidates[0].i;
+        order.push(i);
+        remaining[i]--;
+        revealed[i]++;
+        lastPick = i;
+        continue;
+      }
+
+      let best = null;
+      for (const { i } of candidates) {
+        const nextRevealed = [...revealed];
+        nextRevealed[i]++;
+
+        // Keep the running tally tight to build suspense.
+        const baseScore = spread(nextRevealed);
+
+        // Mildly discourage repeats if other candidates exist.
+        const repeatPenalty = i === lastPick ? 0.25 : 0;
+
+        // Prefer choosing from candidates with more remaining votes (prevents
+        // draining a smaller pile too early and keeps back-and-forth going).
+        const remainingBias = -(remaining[i] * 0.001);
+
+        const score = baseScore + repeatPenalty + remainingBias;
+
+        if (!best || score < best.score) {
+          best = { i, score };
+        }
+      }
+
+      order.push(best.i);
+      remaining[best.i]--;
+      revealed[best.i]++;
+      lastPick = best.i;
+    }
+
+    return order;
+  };
   
-  finalThree.forEach((player, i) => {
+  const finalists = [...(finalThree || [])];
+  const jurors = [...(jury || [])];
+
+  finalists.forEach((player, i) => {
     player.voteCount = 0;
     for (let n = 0; n < player.likeability; n++) choices.push(i);
     for (let n = 0; n < player.strategicness; n++) choices.push(i);
   });
 
-  jury.forEach((juror, index) => {
+  jurors.forEach((juror) => {
     const vote = choices[getRandomInt(choices.length)];
-    finalThree[vote].voteCount++;
+    finalists[vote].voteCount++;
     
-    voteDetails.push(`${juror.name} voted for ${finalThree[vote].name}`);
+    voteDetails.push(`${juror.name} voted for ${finalists[vote].name}`);
+  });
 
+  // Reveal votes in a suspenseful order (back-and-forth between finalists).
+  const countsAfterJury = finalists.map((p) => p.voteCount || 0);
+  const revealOrder = getSuspenseRevealOrder(countsAfterJury);
+  revealOrder.forEach((finalistIndex, revealIndex) => {
+    const finalist = finalists[finalistIndex];
+    const n = revealIndex + 1;
     voteSummary.push(`
-      <div class="flex flex-col items-center space-x-3">
-        <img src="${finalThree[vote].image}" alt="${finalThree[vote].name}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
-        <p>${index + 1}${getOrdinalSuffix(index + 1)} vote: ${finalThree[vote].name}</p>
+      <div class="flex flex-col items-center gap-2">
+        <img src="${finalist.image}" alt="${finalist.name}" class="mb-1 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+        <p>${n}${getOrdinalSuffix(n)} vote: ${finalist.name}</p>
       </div>
     `);
   });

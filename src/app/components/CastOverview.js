@@ -16,28 +16,34 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
 // Displays a compact, read-only overview of the current cast.
-// Expects the same playerConfig shape you use elsewhere:
-//   { men: Player[], women: Player[] }
-// and tribeNames: { tribe1, tribe2 }.
-const CastOverview = ({ playerConfig, tribeNames }) => {
-  // If we don't have players yet, don't render the section at all.
-  if (!playerConfig) return null;
+// Expects:
+//   players: Player[] (each with { tribeId: number })
+//   tribeNames: { tribe1..tribeN, merge }
+const CastOverview = ({ players, tribeNames, numTribes = 2 }) => {
+  if (!players || !players.length) return null;
 
-  // Simple configuration for each tribe we want to show.
-  // This defines which key in playerConfig to read and
-  // what label / color styling to use for that group.
-  const tribes = [
-    {
-      key: "men",
-      label: tribeNames?.tribe1 || "Tribe 1",
-      badgeClass: "bg-blue-500/20 text-blue-300 border-blue-500/40",
-    },
-    {
-      key: "women",
-      label: tribeNames?.tribe2 || "Tribe 2",
-      badgeClass: "bg-rose-500/20 text-rose-300 border-rose-500/40",
-    },
+  const palette = [
+    "bg-amber-500/20 text-amber-200 border-amber-500/40",
+    "bg-violet-500/20 text-violet-200 border-violet-500/40",
+    "bg-teal-500/20 text-teal-200 border-teal-500/40",
+    "bg-sky-500/20 text-sky-200 border-sky-500/40",
+    "bg-rose-500/20 text-rose-200 border-rose-500/40",
+    "bg-stone-500/15 text-stone-200 border-stone-500/35",
   ];
+
+  const tribeBlocks = Array.from({ length: numTribes }, (_, i) => {
+    const tribeId = i + 1;
+    const tribeKey = `tribe${tribeId}`;
+    return {
+      tribeId,
+      tribeKey,
+      label:
+        numTribes === 1
+          ? (tribeNames?.merge || "Merge")
+          : (tribeNames?.[tribeKey] || `Tribe ${tribeId}`),
+      badgeClass: palette[i % palette.length],
+    };
+  });
 
   return (
     // Overall container that keeps the section centered on the page
@@ -50,14 +56,14 @@ const CastOverview = ({ playerConfig, tribeNames }) => {
           </CardTitle>
         </CardHeader>
 
-        {/* One "block" per tribe (men/women) */}
+        {/* One block per tribe */}
         <CardContent className="space-y-6 pt-2 pb-4">
-          {tribes.map(({ key, label, badgeClass }, tribeIndex) => {
-            const tribePlayers = playerConfig[key] || [];
+          {tribeBlocks.map(({ tribeId, tribeKey, label, badgeClass }, tribeIndex) => {
+            const tribePlayers = (players || []).filter((p) => p.tribeId === tribeId);
             if (!tribePlayers.length) return null;
 
             return (
-              <div key={key} className="space-y-3">
+              <div key={tribeKey} className="space-y-3">
                 {/* Tribe heading (badge + decorative separators) */}
                 <div className="flex items-center justify-center gap-2">
                   <Separator className="hidden sm:block w-10 bg-white/20" />
@@ -120,8 +126,8 @@ const CastOverview = ({ playerConfig, tribeNames }) => {
                   </div>
                 </div>
 
-                {/* Light divider between the first and second tribe blocks */}
-                {tribeIndex === 0 && (
+                {/* Light divider between tribe blocks */}
+                {tribeIndex !== tribeBlocks.length - 1 && (
                   <div className="pt-1">
                     <Separator className="mx-auto max-w-xs bg-white/10" />
                   </div>

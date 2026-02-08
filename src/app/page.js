@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 
-import { populateTribes, simulate, resetSimulation } from "./utils/simulation";
+import { simulate, resetSimulation } from "./utils/simulation";
 import playersData from "./data/players.json";
 import careersData from "./data/careers.json";
 import regionsData from "./data/regions.json";
@@ -17,13 +17,161 @@ import EpisodeControls from "./components/EpisodeControls";
 import CastOverview from "./components/CastOverview";
 import { Button } from "@/components/ui/button";
 
-const getRandomPlayers = (players, num) => {
-  const filteredPlayers = players.filter((player) =>
+const DEFAULT_MAX_TRIBES = 3;
+
+const getDefaultTribeSize = (n) => {
+  if (n === 1) return 18;
+  if (n === 2) return 10;
+  return 8; // 3 tribes (Season 50 default)
+};
+
+const DEFAULT_S50_TRIBES = {
+  tribe1: [
+    "Colby Donaldson",
+    "Stephenie Lagrossa Kendrick",
+    "Aubry Bracco",
+    "Angelina Keeley",
+    "Q Burdette",
+    "Genevieve Mushaluk",
+    "Kyle Fraser",
+    "Rizo Velovic",
+  ],
+  tribe2: [
+    "Cirie Fields",
+    "Ozzy Lusth",
+    "Coach Wade",
+    "Rick Devens",
+    "Christian Hubicki",
+    "Emily Flippen",
+    "Joe Hunter",
+    "Savannah Louie",
+  ],
+  tribe3: [
+    "Jonathan Young",
+    "Charlie Davis",
+    "Tiffany Nicole Ervin",
+    "Mike White",
+    "Chrissy Hofbeck",
+    "Kamilla Karthigesu",
+    "Jenna Lewis",
+    "Dee Valladares",
+  ],
+};
+
+const buildDefaultSeason50Cast = (pool) => {
+  const byName = new Map((pool || []).map((p) => [p?.name, p]));
+  const out = [];
+  let idx = 0;
+  for (const tribeId of [1, 2, 3]) {
+    const key = `tribe${tribeId}`;
+    const names = DEFAULT_S50_TRIBES[key] || [];
+    for (const name of names) {
+      const base = byName.get(name);
+      if (!base) return null;
+      out.push({
+        ...base,
+        id: `default-s50-${tribeId}-${idx}-${base.name}`,
+        tribeId,
+        originalTribeId: tribeId,
+      });
+      idx++;
+    }
+  }
+
+  // Ensure uniqueness + expected size.
+  if (out.length !== 24) return null;
+  const seen = new Set();
+  for (const p of out) {
+    if (!p?.name || seen.has(p.name)) return null;
+    seen.add(p.name);
+  }
+  return out;
+};
+
+const getDefaultMergeAt = (totalPlayers, n) => {
+  if (n <= 1) return totalPlayers; // effectively "merged" from the start
+  // Safety: ensure merge can't be so late that one tribe could hit 2 players.
+  // Worst-case: one tribe loses every round until merge.
+  // After k eliminations, totalRemaining = totalPlayers - k.
+  // Merge happens at totalRemaining = mergeAt => k = totalPlayers - mergeAt.
+  // That tribe would have size = tribeSize - k. Require >= 3.
+  // => mergeAt >= totalPlayers - (tribeSize - 3) = tribeSize*(n-1) + 3.
+  // We can’t compute tribeSize from totalPlayers alone safely, so this is only a default.
+  return Math.max(n * 2 + 1, Math.round(totalPlayers * 0.6));
+};
+
+const getMinSafeMergeAt = (tribeSize, n, totalPlayers) => {
+  if (n <= 1) return totalPlayers;
+  // Safety (worst-case: one tribe loses every round until merge):
+  // Require no tribe can reach 1 member pre-merge => min tribe size is 2.
+  // mergeAt >= tribeSize*(n-1) + 2
+  return Math.min(totalPlayers - 1, tribeSize * (n - 1) + 2);
+};
+
+const getMinSafeMergeAtAfterSwap = (swapAt, n) => {
+  if (!Number.isFinite(swapAt) || n <= 1) return null;
+  const minTribeAfterSwap = Math.floor(swapAt / n);
+  // After swap, if one tribe loses every time until merge, require it stays >=2.
+  // k = swapAt - mergeAt <= minTribeAfterSwap - 2
+  // => mergeAt >= swapAt - (minTribeAfterSwap - 2)
+  return swapAt - minTribeAfterSwap + 2;
+};
+
+const getMergeBounds = (tribeSize, n, swapEnabled, swapAt) => {
+  const totalPlayers = tribeSize * n;
+  if (n <= 1) return { min: totalPlayers, max: totalPlayers };
+
+  const baseMin = getMinSafeMergeAt(tribeSize, n, totalPlayers);
+  const swapMin = swapEnabled
+    ? getMinSafeMergeAtAfterSwap(swapAt, n)
+    : null;
+  const min = Math.max(2, Math.min(baseMin, Number.isFinite(swapMin) ? swapMin : baseMin));
+
+  const baseMax = Math.max(1, totalPlayers - 1);
+  const max = swapEnabled && Number.isFinite(swapAt)
+    ? Math.min(baseMax, swapAt - 1)
+    : baseMax;
+
+  return {
+    min,
+    max,
+  };
+};
+
+const getSwapBounds = (tribeSize, n, mergeAt) => {
+  const totalPlayers = tribeSize * n;
+  if (n <= 1) return { min: null, max: null };
+  const max = Math.max(mergeAt + 1, totalPlayers - 1);
+  const min = Math.min(totalPlayers - 1, mergeAt + 1);
+  return { min, max };
+};
+
+const getDefaultSwapAt = (tribeSize, n, mergeAt) => {
+  if (n <= 1) return null;
+  const totalPlayers = tribeSize * n;
+  // Default: about 20% of the game in, but always before merge.
+  const proposed = totalPlayers - Math.max(2, Math.floor(totalPlayers * 0.2));
+  return Math.max(mergeAt + 1, Math.min(proposed, totalPlayers - 1));
+};
+
+const makeDefaultTribeNames = (numTribes) => {
+  const names = { merge: "Merge Tribe" };
+  for (let i = 1; i <= numTribes; i++) {
+    names[`tribe${i}`] = `Tribe ${i}`;
+  }
+  return names;
+};
+
+const getRandomPlayersFromPool = (players, num) => {
+  const filteredPlayers = (players || []).filter((player) =>
     ["Survivor"].includes(player.show)
   );
-
   const shuffled = [...filteredPlayers].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, num);
+  const picked = shuffled.slice(0, Math.min(num, shuffled.length));
+  while (picked.length < num && filteredPlayers.length > 0) {
+    picked.push(filteredPlayers[Math.floor(Math.random() * filteredPlayers.length)]);
+  }
+  return picked;
 };
 
 export let finalPlacements = [];
@@ -31,36 +179,35 @@ export let finalPlacements = [];
 export default function Home() {
   const [status, setStatus] = useState("Configure your cast.");
   const [mode, setMode] = useState("configure");
-  const [tribes, setTribes] = useState([]);
-  const [playerConfig, setPlayerConfig] = useState(null);
+  const [numTribes, setNumTribes] = useState(3);
+  const [players, setPlayers] = useState([]);
   const [customEvents, setCustomEvents] = useState([]);
-  const [customAllianceNames, setCustomAllianceNames] = useState("");
   const [eventDescription, setEventDescription] = useState("");
-  const [customAllianceDescription, setCustomAllianceDescription] =
-    useState("");
   const [eventType, setEventType] = useState("positive");
   const [eventSeverity, setEventSeverity] = useState(1);
   const [hideSliders, setHideSliders] = useState(false);
   const [showCurrentAlliances, setShowCurrentAlliances] = useState(false);
   const [showCurrentAdvantages, setShowCurrentAdvantages] = useState(false);
-  const [useNumberedAlliances, setuseNumberedAlliances] = useState(true);
   const [showDetailedVotes, setShowDetailedVotes] = useState(false);
-  const [tribeNames, setTribeNames] = useState({
-    tribe1: "Tribe 1",
-    tribe2: "Tribe 2",
-    merge: "Merge Tribe",
-  });
+  const [tribeNames, setTribeNames] = useState(() => makeDefaultTribeNames(3));
   const [advantages, setAdvantages] = useState({
     immunityIdol: true,
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
-  const [tribeSize, setTribeSize] = useState(10);
-  const [mergeTime, setMergeTime] = useState(12);
+  const [tribeSize, setTribeSize] = useState(8);
+  const [mergeTime, setMergeTime] = useState(18);
+  const [swapEnabled, setSwapEnabled] = useState(false);
+  const [swapTime, setSwapTime] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [selectedTribe, setSelectedTribe] = useState(null);
   const [showRelationshipsModal, setShowRelationshipsModal] = useState(false);
   const [alliancesModalOpen, setAlliancesModalOpen] = useState(false);
   const [currentAlliances, setCurrentAlliances] = useState([]);
+  const [alliancesModalContext, setAlliancesModalContext] = useState(null);
+
+  // Alliance naming is now handled during the simulation UI (not during setup).
+  // Keyed by sorted member names (stable across the precomputed episode list).
+  const [allianceNameOverrides, setAllianceNameOverrides] = useState({});
 
   const [playerFilters, setPlayerFilters] = useState(() =>
     selectedTribe
@@ -85,8 +232,13 @@ export default function Home() {
     setShowRelationshipsModal(true);
   };
 
-  const openAlliancesModal = (alliances) => {
+  const openAlliancesModal = (alliances, tribeMembers = null, context = null) => {
     setCurrentAlliances(alliances);
+    setAlliancesModalContext({
+      tribeMemberNames: (tribeMembers || []).map((m) => m?.name).filter(Boolean),
+      swapOccurred: !!context?.swapOccurred,
+      currentTribeId: Number.isFinite(context?.currentTribeId) ? context.currentTribeId : null,
+    });
     setAlliancesModalOpen(true);
   };
 
@@ -98,6 +250,7 @@ export default function Home() {
   const closeAlliancesModal = () => {
     setAlliancesModalOpen(false);
     setCurrentAlliances(null);
+    setAlliancesModalContext(null);
   };
 
   useEffect(() => {
@@ -134,54 +287,120 @@ export default function Home() {
     setEventDescription("");
   };
 
-  const addCustomAllianceName = (e) => {
-    e.preventDefault();
-    setCustomAllianceNames([...customAllianceNames, customAllianceDescription]);
-    setCustomAllianceDescription("");
-  };
-
   const randomizeAllStats = () => {
-    setPlayerConfig((prevConfig) => {
-      const randomizeStats = (players) => {
-        return players.map((player) => ({
-          ...player,
-          premerge: Math.floor(Math.random() * 10) + 1,
-          postmerge: Math.floor(Math.random() * 10) + 1,
-          likeability: Math.floor(Math.random() * 10) + 1,
-          threat: Math.floor(Math.random() * 10) + 1,
-          strategicness: Math.floor(Math.random() * 10) + 1,
-        }));
-      };
-
-      return {
-        men: randomizeStats(prevConfig.men),
-        women: randomizeStats(prevConfig.women),
-      };
-    });
+    setPlayers((prev) =>
+      (prev || []).map((player) => ({
+        ...player,
+        premerge: Math.floor(Math.random() * 10) + 1,
+        postmerge: Math.floor(Math.random() * 10) + 1,
+        likeability: Math.floor(Math.random() * 10) + 1,
+        threat: Math.floor(Math.random() * 10) + 1,
+        strategicness: Math.floor(Math.random() * 10) + 1,
+      }))
+    );
   };
 
   const removeCustomEvent = (index) => {
     setCustomEvents((prevEvents) => prevEvents.filter((_, i) => i !== index));
   };
 
-  const removeCustomName = (index) => {
-    setCustomAllianceNames((prevNames) =>
-      prevNames.filter((_, i) => i !== index)
-    );
-  };
+  useEffect(() => {
+    const { min, max } = getMergeBounds(tribeSize, numTribes, swapEnabled, swapTime);
+    setMergeTime((prev) => Math.max(min, Math.min(prev, max)));
+  }, [tribeSize, numTribes, swapEnabled, swapTime]);
 
   useEffect(() => {
-    setMergeTime((prev) =>
-      Math.max(tribeSize + 1, Math.min(prev, tribeSize * 2))
-    );
-  }, [tribeSize]);
+    // Keep swap settings valid as merge/size/tribe-count changes.
+    if (numTribes <= 1) {
+      if (swapEnabled) setSwapEnabled(false);
+      if (swapTime !== null) setSwapTime(null);
+      return;
+    }
+    if (!swapEnabled) return;
 
-  useEffect(() => {
-    setPlayerConfig({
-      men: getRandomPlayers(playersData.men, tribeSize),
-      women: getRandomPlayers(playersData.women, tribeSize),
+    const totalPlayers = tribeSize * numTribes;
+    const minSwap = mergeTime + 1;
+    const maxSwap = totalPlayers - 1;
+
+    // Also require swap happens early enough that no original tribe can reach 2 members.
+    const minSwapBySafety = Math.min(totalPlayers - 1, tribeSize * (numTribes - 1) + 2);
+    const effectiveMinSwap = Math.max(minSwap, minSwapBySafety);
+
+    // No valid swap window if merge is already at/after total-1.
+    if (effectiveMinSwap > maxSwap) {
+      setSwapEnabled(false);
+      setSwapTime(null);
+      return;
+    }
+
+    setSwapTime((prev) => {
+      const base = Number.isFinite(prev)
+        ? prev
+        : getDefaultSwapAt(tribeSize, numTribes, mergeTime);
+      return Math.max(effectiveMinSwap, Math.min(base, maxSwap));
     });
-  }, [tribeSize]);
+  }, [swapEnabled, tribeSize, numTribes, mergeTime]);
+
+  // When tribe count changes, reset tribe size + merge defaults to sensible scaled values.
+  useEffect(() => {
+    const clampedNumTribes = Math.max(1, Math.min(DEFAULT_MAX_TRIBES, numTribes));
+    if (clampedNumTribes !== numTribes) {
+      setNumTribes(clampedNumTribes);
+      return;
+    }
+
+    const nextTribeSize = getDefaultTribeSize(clampedNumTribes);
+    setTribeSize(nextTribeSize);
+
+    const totalPlayers = nextTribeSize * clampedNumTribes;
+    const bounds = getMergeBounds(nextTribeSize, clampedNumTribes, false, null);
+    const proposed = Math.max(bounds.min, getDefaultMergeAt(totalPlayers, clampedNumTribes));
+    setMergeTime(Math.min(bounds.max, proposed));
+
+    if (clampedNumTribes <= 1) {
+      setSwapEnabled(false);
+      setSwapTime(null);
+    } else {
+      // Keep swap disabled by default, but prime a sensible value.
+      setSwapTime(getDefaultSwapAt(nextTribeSize, clampedNumTribes, Math.min(bounds.max, proposed)));
+    }
+  }, [numTribes]);
+
+  useEffect(() => {
+    const clampedNumTribes = Math.max(1, Math.min(DEFAULT_MAX_TRIBES, numTribes));
+    if (clampedNumTribes !== numTribes) setNumTribes(clampedNumTribes);
+
+    setTribeNames((prev) => {
+      const next = makeDefaultTribeNames(clampedNumTribes);
+      Object.keys(next).forEach((k) => {
+        if (prev?.[k]) next[k] = prev[k];
+      });
+      if (prev?.merge) next.merge = prev.merge;
+      return next;
+    });
+
+    const pool = [...playersData.men, ...playersData.women];
+    const wantsDefaultS50 = clampedNumTribes === 3 && tribeSize === 8;
+    if (wantsDefaultS50) {
+      const defaultCast = buildDefaultSeason50Cast(pool);
+      if (defaultCast) {
+        setPlayers(defaultCast);
+        return;
+      }
+    }
+
+    const totalPlayers = tribeSize * clampedNumTribes;
+    const picked = getRandomPlayersFromPool(pool, totalPlayers).map((p, idx) => {
+      const tribeId = Math.floor(idx / tribeSize) + 1;
+      return {
+        ...p,
+        id: `${Date.now()}-${idx}-${p.name}`,
+        tribeId,
+        originalTribeId: tribeId,
+      };
+    });
+    setPlayers(picked);
+  }, [tribeSize, numTribes]);
 
   const [results, setResults] = useState([]);
   const [episodes, setEpisodes] = useState([]);
@@ -191,10 +410,8 @@ export default function Home() {
   const startSimulation = () => {
     resetSimulation();
     finalPlacements = [];
-    const allNames = [
-      ...playerConfig.men.map((p) => p.name),
-      ...playerConfig.women.map((p) => p.name),
-    ];
+    setAllianceNameOverrides({});
+    const allNames = (players || []).map((p) => p.name);
 
     const nameSet = new Set();
     const duplicates = allNames.filter((name) => {
@@ -215,16 +432,16 @@ export default function Home() {
     window.scrollTo({ top: 0 });
     setEpisodes([]);
     simulate(
-      [...playerConfig.men, ...playerConfig.women],
+      players,
       setEpisodes,
       customEvents,
       useOnlyCustomEvents,
       tribeSize,
       tribeNames,
       advantages,
-      customAllianceNames,
+      swapEnabled ? swapTime : null,
       mergeTime,
-      useNumberedAlliances
+      numTribes
     );
     setMode("simulate");
     setCurrentEpisode(0);
@@ -232,11 +449,11 @@ export default function Home() {
 
   const handleBackToConfigure = () => {
     resetSimulation();
-    setuseNumberedAlliances(true);
     finalPlacements = [];
+    setAllianceNameOverrides({});
     window.scrollTo({ top: 0 });
     setMode("configure");
-    setTribeNames({ tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" });
+    setTribeNames(makeDefaultTribeNames(numTribes));
   };
 
   const nextEpisode = () => {
@@ -245,12 +462,7 @@ export default function Home() {
     if (mode === "summary") {
       resetSimulation();
       finalPlacements = [];
-      setuseNumberedAlliances(true);
-      setTribeNames({
-        tribe1: "Tribe 1",
-        tribe2: "Tribe 2",
-        merge: "Merge Tribe",
-      });
+      setTribeNames(makeDefaultTribeNames(numTribes));
       setMode("configure");
     } else if (currentEpisode === episodes.length - 1) {
       setMode("summary");
@@ -267,13 +479,8 @@ export default function Home() {
       setMode("simulate");
     } else if (currentEpisode === 0) {
       resetSimulation();
-      setuseNumberedAlliances(true);
       finalPlacements = [];
-      setTribeNames({
-        tribe1: "Tribe 1",
-        tribe2: "Tribe 2",
-        merge: "Merge Tribe",
-      });
+      setTribeNames(makeDefaultTribeNames(numTribes));
       setMode("configure");
     } else {
       setCurrentEpisode((prev) => Math.max(prev - 1, 0));
@@ -281,14 +488,11 @@ export default function Home() {
     window.scrollTo({ top: 0 });
   };
 
-  const updatePlayers = (gender, updatedPlayers) => {
-    setPlayerConfig((prevConfig) => ({
-      ...prevConfig,
-      [gender]: updatedPlayers,
-    }));
-  };
-
-  if (!playerConfig) {
+  const totalPlayersExpected = tribeSize * numTribes;
+  // Avoid replacing the whole page with a temporary loading view when tribe settings
+  // change (it causes a visible flicker + scroll jump). Only show this on true initial
+  // bootstrapping when we have no players at all.
+  if (!players || players.length === 0) {
     return <p className="text-center text-white">Loading players...</p>;
   }
 
@@ -389,6 +593,9 @@ export default function Home() {
                       openAlliancesModal={openAlliancesModal}
                       closeAlliancesModal={closeAlliancesModal}
                       currentAlliances={currentAlliances}
+                      alliancesModalContext={alliancesModalContext}
+                      allianceNameOverrides={allianceNameOverrides}
+                      setAllianceNameOverrides={setAllianceNameOverrides}
                       selectedTribe={selectedTribe}
                       playerFilters={playerFilters}
                       toggleFilterMode={toggleFilterMode}
@@ -399,13 +606,13 @@ export default function Home() {
             </article>
 
             {mode === "configure" && (
-              <CastOverview playerConfig={playerConfig} tribeNames={tribeNames} />
+              <CastOverview players={players} tribeNames={tribeNames} numTribes={numTribes} />
             )}
 
             {mode === "configure" && (
               <ConfigureCast
-                playerConfig={playerConfig}
-                updatePlayers={updatePlayers}
+                players={players}
+                setPlayers={setPlayers}
                 careersData={careersData}
                 regionsData={regionsData}
                 tribesData={tribesData}
@@ -413,8 +620,14 @@ export default function Home() {
                 setHideSliders={setHideSliders}
                 tribeSize={tribeSize}
                 setTribeSize={setTribeSize}
+                numTribes={numTribes}
+                setNumTribes={setNumTribes}
                 mergeTime={mergeTime}
                 setMergeTime={setMergeTime}
+                swapEnabled={swapEnabled}
+                setSwapEnabled={setSwapEnabled}
+                swapTime={swapTime}
+                setSwapTime={setSwapTime}
                 advantages={advantages}
                 setAdvantages={setAdvantages}
                 tribeNames={tribeNames}
@@ -431,13 +644,6 @@ export default function Home() {
                 useOnlyCustomEvents={useOnlyCustomEvents}
                 setUseOnlyCustomEvents={setUseOnlyCustomEvents}
                 removeCustomEvent={removeCustomEvent}
-                customAllianceDescription={customAllianceDescription}
-                setCustomAllianceDescription={setCustomAllianceDescription}
-                addCustomAllianceName={addCustomAllianceName}
-                customAllianceNames={customAllianceNames}
-                removeCustomName={removeCustomName}
-                useNumberedAlliances={useNumberedAlliances}
-                setuseNumberedAlliances={setuseNumberedAlliances}
               />
             )}
 

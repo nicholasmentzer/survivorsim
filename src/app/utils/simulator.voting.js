@@ -12,12 +12,41 @@ import {
  *  { voteIndex, sortedVotes, voteDetails, voteSummary, idols }
  */
 export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages, idols) => {
+  const eligibleIndices = (tribe || [])
+    .map((player, index) => ({ player, index }))
+    .filter(({ player, index }) => !!player && index !== immuneIndex);
+
+  // If there's nobody eligible to receive votes, bail out safely.
+  if (eligibleIndices.length === 0) {
+    return {
+      voteIndex: undefined,
+      sortedVotes: [],
+      voteDetails: [],
+      voteSummary: ["<span class=\"font-bold text-lg\">It's time to vote!</span>", "No eligible players to vote."],
+      idols,
+    };
+  }
+
   const votes = {};
   const exportVotes = [];
   const voteDetails = [];
   const voteSummary = [];
   voteDetails.push(`<span class="font-bold text-lg">Vote Summary</span>`);
   voteSummary.push(`<span class="font-bold text-lg">It's time to vote!</span>`);
+
+  let printedAllianceDissolutionHeader = false;
+  const reportAllianceDissolutions = (dissolved) => {
+    const list = (dissolved || []).filter(Boolean);
+    if (!list.length) return;
+    if (!printedAllianceDissolutionHeader) {
+      voteDetails.push("");
+      voteDetails.push(`<span class="font-bold text-md md:text-lg">Alliances</span>`);
+      printedAllianceDissolutionHeader = true;
+    }
+    list.forEach((a) => {
+      if (a?.name) voteDetails.push(`${a.name} dissolved.`);
+    });
+  };
 
   //voteDetails.push(...getAllianceTargets(tribe, alliances2));
 
@@ -119,7 +148,9 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         if (weightedTargets.length > 0) {
           targetIndex = weightedTargets[Math.floor(Math.random() * weightedTargets.length)];
         } else {
-          const potentialFlips = tribe.filter(p => !alliances2.some(a => a.members.includes(p)) && p !== immuneIndex);
+          const potentialFlips = tribe.filter((p) =>
+            !alliances2.some((a) => a.members.includes(p)) && tribe.indexOf(p) !== immuneIndex
+          );
           if (potentialFlips.length > 0) {
             targetIndex = tribe.findIndex(p => p.name === potentialFlips[Math.floor(Math.random() * potentialFlips.length)].name);
             if (targetIndex === -1 || tribe[targetIndex] === voter) {
@@ -156,11 +187,26 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
             choices.push(i);
           }
         });
-  
-        targetIndex = choices[Math.floor(Math.random() * choices.length)];
-        while(tribe[targetIndex] === voter){
+
+        if (choices.length > 0) {
           targetIndex = choices[Math.floor(Math.random() * choices.length)];
+          while (tribe[targetIndex] === voter && choices.length > 1) {
+            targetIndex = choices[Math.floor(Math.random() * choices.length)];
+          }
+        } else {
+          // Absolute fallback: pick any non-self, non-immune player.
+          const fallbackCandidates = eligibleIndices
+            .map(({ index }) => index)
+            .filter((i) => i !== voterIndex);
+          if (fallbackCandidates.length > 0) {
+            targetIndex = fallbackCandidates[Math.floor(Math.random() * fallbackCandidates.length)];
+          }
         }
+      }
+
+      if (targetIndex === undefined || !tribe[targetIndex]) {
+        // If we still failed to pick a target, skip this vote safely.
+        return;
       }
 
       votes[targetIndex] = (votes[targetIndex] || 0) + 1;
@@ -172,9 +218,30 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
   let sortedVotes = Object.entries(votes).sort((a, b) => b[1] - a[1]);
 
+  // If voting failed to produce any votes (edge cases), force a valid outcome.
+  if (sortedVotes.length === 0) {
+    const fallbackIndex = eligibleIndices[0]?.index;
+    if (fallbackIndex === undefined) {
+      return {
+        voteIndex: undefined,
+        sortedVotes: [],
+        voteDetails,
+        voteSummary: [...voteSummary, "No votes could be cast."],
+        idols,
+      };
+    }
+
+    sortedVotes = [[String(fallbackIndex), 1]];
+    voteDetails.push("No valid votes were generated; a default elimination was chosen.");
+    exportVotes.push({ target: tribe[fallbackIndex]?.name, voter: "(default)" });
+  }
+
   let idolUsed = false;
   let immunePlayer = null;
   let immuneIdolIndex = null;
+  let idolUser = null;
+  let idolPlayTarget = null;
+  let idolWasMisplayed = false;
 
   let highestVoteCount = sortedVotes[0][1];
   let tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
@@ -190,34 +257,34 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
     let primaryTargetIndex = parseInt(sortedVotes[0][0]);
     let primaryTarget = tribe[primaryTargetIndex];
-    let idolUser = null;
 
-    if ((potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.7)) {
-      immunePlayer = primaryTarget.name;
-      immuneIdolIndex = tribe.indexOf(primaryTarget);
+    if ((potentialIdolPlayers.includes(primaryTarget) && Math.random() < 0.8)) {
       idolUsed = true;
       idolUser = primaryTarget;
-      voteSummary.push(`<span class="font-bold text-md md:text-lg">${primaryTarget.name} plays the Hidden Immunity Idol!</span>`);
+      idolPlayTarget = primaryTarget;
     }
 
     if (!idolUsed) {
       let idolHolderAlly = potentialIdolPlayers.find(player => {
           let votedForTarget = exportVotes.some(vote => vote.voter === player.name && vote.target === primaryTarget.name);
 
-          return (
+              const probability = Math.min(
+                0.97,
+                0.3 + (primaryTarget.relationships[player.name] * 0.15)
+              );
+
+            return (
               player.name !== primaryTarget.name &&
               primaryTarget.relationships[player.name] > 1 &&
               !votedForTarget &&
-              Math.random() < (0.2 + (primaryTarget.relationships[player.name] * 0.12))
+              Math.random() < probability
           );
       });
 
       if (idolHolderAlly) {
-          immunePlayer = primaryTarget.name;
-          immuneIdolIndex = tribe.indexOf(primaryTarget);
           idolUsed = true;
           idolUser = idolHolderAlly;
-          voteSummary.push(`<span class="font-bold text-md md:text-lg">${idolHolderAlly.name} plays the Hidden Immunity Idol on ${primaryTarget.name}!</span>`);
+          idolPlayTarget = primaryTarget;
       }
   }
 
@@ -247,11 +314,51 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     highestVoteCount = sortedVotes[0][1];
     tiedPlayers = sortedVotes.filter(([_, count]) => count === highestVoteCount);
 
+    // Small chance of an incorrect idol play (fun surprise): the idol is played,
+    // but on the wrong person, so it doesn't negate the main target's votes.
+    if (idolUsed && idolUser && idolPlayTarget) {
+      const topNames = new Set(
+        (tiedPlayers || [])
+          .map(([idx]) => tribe[parseInt(idx)]?.name)
+          .filter(Boolean)
+      );
+
+      const misplayCandidates = (tribe || []).filter(
+        (p) => p && !topNames.has(p.name)
+      );
+
+      // Chance applies only when an idol is already being played.
+      const MISPLAY_CHANCE = 0.12;
+      if (misplayCandidates.length > 0 && Math.random() < MISPLAY_CHANCE) {
+        idolWasMisplayed = true;
+
+        // Misplay can be on self or another non-top-vote player.
+        let wrongTarget = null;
+        if (idolUser?.name && !topNames.has(idolUser.name) && Math.random() < 0.5) {
+          wrongTarget = idolUser;
+        } else {
+          wrongTarget = misplayCandidates[Math.floor(Math.random() * misplayCandidates.length)];
+        }
+
+        idolPlayTarget = wrongTarget;
+      }
+
+      immunePlayer = idolPlayTarget?.name || null;
+      immuneIdolIndex = idolPlayTarget ? tribe.indexOf(idolPlayTarget) : null;
+
+      const playText = idolUser?.name === immunePlayer
+        ? `${idolUser.name} plays the Hidden Immunity Idol!`
+        : `${idolUser.name} plays the Hidden Immunity Idol on ${immunePlayer}!`;
+
+      voteSummary.push(`<span class="font-bold text-md md:text-lg">${playText}</span>`);
+    }
+
     voteSummary.push(...generateVotingSummaryWithIdol([...exportVotes], immunePlayer, tribe));
     
     let newSortedVotes;
 
     if (idolUsed && idolUser) {
+      idolUser.hasIdol = false;
       Object.keys(idols).forEach(key => {
         if (idols[key] && idols[key].name === idolUser.name) {
             idols[key] = null;
@@ -269,15 +376,17 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
       newSortedVotes = Object.entries(newVotesCount).map(([key, value]) => [parseInt(key), value])
             .sort((a, b) => b[1] - a[1]); 
-      highestVoteCount = newSortedVotes[0][1];
 
       if (newSortedVotes.length > 1 && newSortedVotes[0][1] === newSortedVotes[1][1]) {
+        highestVoteCount = newSortedVotes[0][1];
         tiedPlayers = newSortedVotes.filter(([_, count]) => count === highestVoteCount);
       } else if (newSortedVotes.length > 0) {
         const [loserIndex] = newSortedVotes[0];
-        removeFromAlliance(tribe[loserIndex]);
+        const allianceRemoval = removeFromAlliance(tribe[loserIndex]);
+        reportAllianceDissolutions(allianceRemoval?.dissolvedAlliances);
         Object.keys(idols).forEach(key => {
           if (idols[key] && idols[key].name === tribe[loserIndex].name) {
+              tribe[loserIndex].hasIdol = false;
               idols[key] = null;
           }
         });
@@ -321,6 +430,21 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
     let revoteSorted = Object.entries(revoteVotes).sort((a, b) => b[1] - a[1]);
 
+    if (revoteSorted.length === 0) {
+      // Edge case: no revotes could be cast; force an outcome among tied players.
+      const fallbackIndex = tiedIndexes[0];
+      if (fallbackIndex === undefined) {
+        return { voteIndex: undefined, sortedVotes: [], voteDetails, voteSummary, idols };
+      }
+      return {
+        voteIndex: parseInt(fallbackIndex),
+        sortedVotes: generateFormattedVotes([[parseInt(fallbackIndex), 1]]),
+        voteDetails,
+        voteSummary: [...voteSummary, "No revote ballots were cast; a default elimination was chosen."],
+        idols,
+      };
+    }
+
     let highestVoteCount = revoteSorted[0][1];
     let safePlayers = revoteSorted
       .filter(([_, count]) => count === highestVoteCount)
@@ -337,7 +461,8 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
         voteDetails.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
         voteSummary.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
-        removeFromAlliance(tribe[eliminatedIndex]);
+        const allianceRemoval = removeFromAlliance(tribe[eliminatedIndex]);
+        reportAllianceDissolutions(allianceRemoval?.dissolvedAlliances);
         return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
       }
     } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
@@ -355,9 +480,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
         voteDetails.push(`${eliminatedByRock.name} eliminated by rocks.`);
         voteSummary.push(`${eliminatedByRock.name} drew the bad rock and is eliminated!`);
-        removeFromAlliance(tribe[eliminatedIndex]);
+        const allianceRemoval = removeFromAlliance(tribe[eliminatedIndex]);
+        reportAllianceDissolutions(allianceRemoval?.dissolvedAlliances);
         Object.keys(idols).forEach(key => {
           if (idols[key] && idols[key].name === tribe[eliminatedIndex].name) {
+              tribe[eliminatedIndex].hasIdol = false;
               idols[key] = null;
           }
         });
@@ -372,9 +499,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     }
 
     let revoteLoser = parseInt(revoteSorted[0][0]);
-    removeFromAlliance(tribe[revoteLoser]);
+    const allianceRemoval = removeFromAlliance(tribe[revoteLoser]);
+    reportAllianceDissolutions(allianceRemoval?.dissolvedAlliances);
     Object.keys(idols).forEach(key => {
       if (idols[key] && idols[key].name === tribe[revoteLoser].name) {
+          tribe[revoteLoser].hasIdol = false;
           idols[key] = null;
       }
     });
@@ -385,6 +514,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   removeFromAlliance(tribe[loser]);
   Object.keys(idols).forEach(key => {
     if (idols[key] && idols[key].name === tribe[loser].name) {
+        tribe[loser].hasIdol = false;
         idols[key] = null;
     }
   });

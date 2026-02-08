@@ -138,7 +138,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/tiffanynicoleervin.png"
+         "image":"/castphotos/tiffanynicoleervin.jpg"
       },
       {
          "id":31,
@@ -264,7 +264,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/angelinakeeley.webp"
+         "image":"/castphotos/angelinakeeley.jpg"
       },
       {
          "id":40,
@@ -376,7 +376,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/colbydonaldson.webp"
+         "image":"/castphotos/colbydonaldson.jpg"
       },
       {
          "id":52,
@@ -390,7 +390,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/ozzylusth.png"
+         "image":"/castphotos/ozzylusth.jpg"
       },
       {
          "id":53,
@@ -404,7 +404,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/coachwade.webp"
+         "image":"/castphotos/coachwade.jpg"
       },
       {
          "id":54,
@@ -418,7 +418,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/rickdevens.webp"
+         "image":"/castphotos/rickdevens.jpg"
       },
       {
          "id":55,
@@ -699,6 +699,20 @@
          "career":0,
          "show": "Australian Survivor",
          "image":"/castphotos/violajokudu.webp"
+      },
+      {
+         "id":93,
+         "name":"Rizo Velovic",
+         "premerge":5,
+         "postmerge":5,
+         "likeability":5,
+         "threat":5,
+         "strategicness":5,
+         "tribe":1,
+         "region":0,
+         "career":0,
+         "show": "Survivor",
+         "image":"/castphotos/rizovelovic.jpg"
       }
    ],
    "men":[
@@ -965,7 +979,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/qburdette.png"
+         "image":"/castphotos/qburdette.jpg"
       },
       {
          "id":30,
@@ -1049,11 +1063,11 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/jennalewis.jpg"
+         "image":"/castphotos/jennalewisdaugherty.jpg"
       },
       {
          "id":60,
-         "name":"Stephenie Lagrossa",
+         "name":"Stephenie Lagrossa Kendrick",
          "premerge":5,
          "postmerge":5,
          "likeability":5,
@@ -1063,7 +1077,7 @@
          "region":0,
          "career":0,
          "show": "Survivor",
-         "image":"/castphotos/stephenielagrossa.jpg"
+         "image":"/castphotos/stephenielagrossakendrick.jpg"
       },
       {
          "id":61,
@@ -1288,6 +1302,20 @@
          "career":0,
          "show": "Australian Survivor",
          "image":"/castphotos/lizparnov.jpg"
+      },
+      {
+         "id":94,
+         "name":"Savannah Louie",
+         "premerge":5,
+         "postmerge":5,
+         "likeability":5,
+         "threat":5,
+         "strategicness":5,
+         "tribe":1,
+         "region":0,
+         "career":0,
+         "show": "Survivor",
+         "image":"/castphotos/savannahlouie.jpg"
       }
    ]
 }

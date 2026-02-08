@@ -22,6 +22,7 @@ import {
   AvatarFallback,
 } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 export default function EpisodeView({
   episodes,
@@ -40,17 +41,270 @@ export default function EpisodeView({
   openAlliancesModal,
   closeAlliancesModal,
   currentAlliances,
+  alliancesModalContext,
+  allianceNameOverrides = {},
+  setAllianceNameOverrides = () => {},
   selectedTribe,
-  playerFilters,
-  toggleFilterMode,
 }) {
   const currentEvents = episodes[currentEpisode] || [];
 
-  const renderMemberAvatar = (member, size = "md") => {
+  const [renameEditorsOpen, setRenameEditorsOpen] = React.useState({});
+
+  const getAllianceKey = React.useCallback((alliance) => {
+    if (alliance?.id) return `id:${alliance.id}`;
+    const names = (alliance?.members || [])
+      .map((m) => m?.name)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    return names.length ? names.join("|") : "";
+  }, []);
+
+  const getAllianceDisplayName = React.useCallback(
+    (alliance) => {
+      const key = getAllianceKey(alliance);
+      const override = key ? allianceNameOverrides?.[key] : null;
+      return (override && override.trim()) || alliance?.name || "Alliance";
+    },
+    [allianceNameOverrides, getAllianceKey]
+  );
+
+  const setAllianceOverrideName = React.useCallback(
+    (alliance, nextNameRaw) => {
+      const key = getAllianceKey(alliance);
+      if (!key) return;
+      const nextName = (nextNameRaw || "").trim();
+      setAllianceNameOverrides((prev) => {
+        const next = { ...(prev || {}) };
+        if (!nextName) delete next[key];
+        else next[key] = nextName;
+        return next;
+      });
+    },
+    [getAllianceKey, setAllianceNameOverrides]
+  );
+
+  const displayEvents = React.useMemo(() => {
+    const isLegacyPersonalTargetEvent = (evt) => {
+      if (!evt || evt.type !== "event") return false;
+      if (!Array.isArray(evt.images) || evt.images.length !== 2) return false;
+      if (evt.numPlayers === 2) return false; // relationship events w/ effect text
+      return typeof evt.message === "string" && evt.message.includes("text-red-400");
+    };
+
+    const normalized = [];
+    for (let i = 0; i < currentEvents.length; i++) {
+      const event = currentEvents[i];
+
+      // Group relationship targets + alliance targets into one compact section.
+      if (event?.type === "relationship") {
+        const personalTargets = [];
+        const allianceTargets = [];
+
+        let j = i + 1;
+        while (j < currentEvents.length) {
+          const next = currentEvents[j];
+
+          if (next?.type === "target") {
+            personalTargets.push(next);
+            j++;
+            continue;
+          }
+
+          if (isLegacyPersonalTargetEvent(next)) {
+            personalTargets.push({
+              type: "target",
+              legacy: true,
+              messageHtml: next.message,
+              images: next.images,
+            });
+            j++;
+            continue;
+          }
+
+          if (next?.type === "allianceTarget") {
+            allianceTargets.push(next);
+            j++;
+            continue;
+          }
+
+          break;
+        }
+
+        normalized.push({
+          type: "targetsSection",
+          personalTargets,
+          allianceTargets,
+        });
+
+        i = j - 1;
+        continue;
+      }
+
+      normalized.push(event);
+    }
+
+    return normalized;
+  }, [currentEvents]);
+
+  const idolsDisplayMeta = React.useMemo(() => {
+    const idolsIndex = displayEvents.findIndex((evt) => evt?.type === "idols");
+    const tribalIndex = displayEvents.findIndex(
+      (evt) => evt?.type === "voting-summary"
+    );
+    return {
+      idolsIndex,
+      tribalIndex,
+      idolsEvent: idolsIndex >= 0 ? displayEvents[idolsIndex] : null,
+    };
+  }, [displayEvents]);
+
+  const isIdolFindEvent = React.useCallback((evt) => {
+    return (
+      evt?.type === "event" &&
+      typeof evt?.message === "string" &&
+      evt.message.includes("found a Hidden Immunity Idol")
+    );
+  }, []);
+
+  const renderCurrentAdvantagesCard = (evt, { compact = false } = {}) => {
+    const idols = evt?.idols || {};
+    const activeIdols = Object.entries(idols).filter(([, player]) => !!player);
+    const hasIdols = activeIdols.length > 0;
+
+    return (
+      <Card
+        className={
+          compact
+            ? "bg-black/60 border-white/10 backdrop-blur-md max-w-3xl mx-auto"
+            : "bg-black/60 border-white/10 backdrop-blur-md"
+        }
+      >
+        <CardHeader className={compact ? "py-2" : "pb-2"}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-left">
+              <p className="text-[10px] tracking-[0.18em] uppercase text-stone-400">
+                Advantages
+              </p>
+              <CardTitle
+                className={
+                  compact
+                    ? "text-base sm:text-lg text-stone-50 tracking-[0.12em] uppercase"
+                    : "text-lg sm:text-xl text-stone-50 tracking-[0.12em] uppercase"
+                }
+              >
+                Current Advantages
+              </CardTitle>
+              <p className="text-[10px] text-stone-400 mt-0.5">
+                {hasIdols
+                  ? `${activeIdols.length} advantage${
+                      activeIdols.length > 1 ? "s" : ""
+                    } in play`
+                  : "No advantages in play this episode"}
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className={compact ? "pt-0 pb-3" : "pt-1 pb-4"}>
+          {hasIdols ? (
+            <div className={compact ? "mt-2 grid gap-2 sm:grid-cols-2" : "mt-3 grid gap-3 sm:grid-cols-2"}>
+              {activeIdols.map(([tribeKey, player]) => (
+                <div
+                  key={tribeKey}
+                  className={
+                    compact
+                      ? "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-2.5 py-2 shadow"
+                      : "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-3 py-3 shadow-md"
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Do not change icon/image sizing */}
+                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-white/30 shadow">
+                      <AvatarImage
+                        src={player.image}
+                        alt={player.name}
+                        className="object-cover"
+                        style={{ imageRendering: "high-quality" }}
+                      />
+                      <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
+                        {player.name?.[0] ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <p className={compact ? "text-xs font-semibold text-stone-50" : "text-xs sm:text-sm font-semibold text-stone-50"}>
+                      {player.name}
+                    </p>
+                  </div>
+
+                  <span
+                    className={
+                      compact
+                        ? "inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/40 uppercase tracking-[0.14em]"
+                        : "inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/40 uppercase tracking-[0.14em]"
+                    }
+                  >
+                    Hidden Immunity Idol
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={
+                compact
+                  ? "mt-2 rounded-lg border border-dashed border-stone-600 bg-stone-900/40 px-3 py-4 text-center text-xs text-stone-400"
+                  : "mt-3 rounded-lg border border-dashed border-stone-600 bg-stone-900/40 px-4 py-6 text-center text-xs sm:text-sm text-stone-400"
+              }
+            >
+              No idols or other advantages are currently in play.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const originRingPalette = [
+    "ring-amber-200/75",
+    "ring-violet-300/75",
+    "ring-teal-300/75",
+    "ring-sky-300/75",
+    "ring-rose-300/75",
+    "ring-stone-200/75",
+  ];
+
+  const getOriginRingClass = (member) => {
+    const originId = member?.originalTribeId ?? member?.tribeId;
+    if (!Number.isFinite(originId) || originId <= 0) return "";
+    return originRingPalette[(originId - 1) % originRingPalette.length];
+  };
+
+  const tribeTitlePalette = [
+    "text-amber-200",
+    "text-violet-300",
+    "text-teal-300",
+    "text-sky-300",
+    "text-rose-300",
+    "text-stone-200",
+  ];
+
+  const getTribeTitleClass = (tribeId) => {
+    if (!Number.isFinite(tribeId) || tribeId <= 0) return "text-stone-50";
+    return tribeTitlePalette[(tribeId - 1) % tribeTitlePalette.length];
+  };
+
+  const renderMemberAvatar = (member, size = "md", opts = {}) => {
     const sizeClasses =
       size === "lg"
         ? "w-16 h-16 sm:w-20 sm:h-20"
         : "w-10 h-10 sm:w-14 sm:h-14";
+    const isOffTribe = !!opts?.offTribe;
+
+    const originRingClass = getOriginRingClass(member);
+    const offTribeAvatarClass = isOffTribe
+      ? "opacity-55 grayscale scale-90"
+      : "";
+    const offTribeNameClass = isOffTribe ? "text-stone-400" : "text-stone-100";
 
     return (
       <div
@@ -58,7 +312,7 @@ export default function EpisodeView({
         className="flex flex-col items-center text-center w-20"
       >
         <Avatar
-          className={`${sizeClasses} border border-white/30 shadow-md`}
+          className={`${sizeClasses} border border-white/25 shadow-md ring-1 ${originRingClass} ${offTribeAvatarClass} transition-transform`}
         >
           <AvatarImage
             src={member.image}
@@ -70,7 +324,7 @@ export default function EpisodeView({
             {member.name?.[0] ?? "?"}
           </AvatarFallback>
         </Avatar>
-        <p className="text-[10px] sm:text-xs mt-1 text-stone-100 text-center leading-tight max-w-[5rem]"
+        <p className={`text-[10px] sm:text-xs mt-1 ${offTribeNameClass} text-center leading-tight max-w-[5rem]`}
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -82,6 +336,34 @@ export default function EpisodeView({
         </p>
       </div>
     );
+  };
+
+  const getRelationshipBgClass = (score) => {
+    // Relationship grid readability:
+    // - 5s and 4s should pop (high contrast + ring)
+    // - 3s slightly more emphasized, but less than 4/5
+    // Return a full class string (bg + text + border + optional ring).
+    return score === 5
+      ? "bg-emerald-500/95 text-white border-white/30 ring-2 ring-white/70 ring-inset font-extrabold shadow-md"
+      : score === 4
+      ? "bg-emerald-600/90 text-white border-white/20 ring-1 ring-white/40 ring-inset"
+      : score === 3
+      ? "bg-emerald-700/85 text-white border-white/10"
+      : score === 2
+      ? "bg-emerald-800/85 text-white border-white/10"
+      : score === 1
+      ? "bg-emerald-900/85 text-white border-white/10"
+      : score === 0
+      ? "bg-gray-600/65 text-white border-white/10"
+      : score === -5
+      ? "bg-rose-500/95 text-white border-white/30 ring-2 ring-white/70 ring-inset font-extrabold shadow-md"
+      : score === -4
+      ? "bg-rose-600/90 text-white border-white/20 ring-1 ring-white/40 ring-inset"
+      : score === -3
+      ? "bg-rose-700/85 text-white border-white/10"
+      : score === -2
+      ? "bg-rose-800/85 text-white border-white/10"
+      : "bg-rose-900/85 text-white border-white/10";
   };
 
   return (
@@ -104,9 +386,221 @@ export default function EpisodeView({
         </div>
 
         <div className="space-y-8 pb-10">
-          {currentEvents.map((event, index) => {
+          {displayEvents.map((event, index) => {
+            // --- Condensed targets section (personal + alliance targets) ---
+            if (event.type === "targetsSection") {
+              const personalTargets = event.personalTargets || [];
+              const allianceTargets = event.allianceTargets || [];
+
+              const escapeHtml = (input) => {
+                if (typeof input !== "string") return "";
+                return input
+                  .replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/\"/g, "&quot;")
+                  .replace(/'/g, "&#39;");
+              };
+
+              const highlightNamesHtml = (message, actorName, targetName) => {
+                const msgEsc = escapeHtml(message || "");
+                const actorEsc = escapeHtml(actorName || "");
+                const targetEsc = escapeHtml(targetName || "");
+
+                // Replace longer name first to avoid partial overlaps.
+                const pairs = [
+                  // Match alliance target styling.
+                  { value: actorEsc, cls: "text-blue-300 font-bold" },
+                  { value: targetEsc, cls: "text-rose-200 font-bold" },
+                ].filter((p) => p.value);
+                pairs.sort((a, b) => b.value.length - a.value.length);
+
+                let out = msgEsc;
+                for (const p of pairs) {
+                  out = out.split(p.value).join(`<span class=\"${p.cls}\">${p.value}</span>`);
+                }
+                return out;
+              };
+
+              const renderMiniAvatar = (image, alt) => (
+                <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border border-white/25 bg-black/30">
+                  <AvatarImage
+                    src={image}
+                    alt={alt}
+                    className="object-cover"
+                    style={{ imageRendering: "high-quality" }}
+                  />
+                  <AvatarFallback className="bg-stone-700 text-[10px] text-stone-100">
+                    ?
+                  </AvatarFallback>
+                </Avatar>
+              );
+
+              return (
+                <Card
+                  key={index}
+                  className="bg-black/60 border-white/10 backdrop-blur-md max-w-5xl mx-auto"
+                >
+                  <CardContent className="py-3 px-3 sm:px-4">
+                    <div className="text-center mb-2">
+                      <p className="text-[11px] tracking-[0.18em] uppercase text-stone-400">
+                        Strategy
+                      </p>
+                      <h3
+                        className="text-lg sm:text-xl text-stone-50 tracking-[0.16em] uppercase"
+                        style={{ fontFamily: "Bebas Neue, system-ui, sans-serif" }}
+                      >
+                        Targets
+                      </h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <p className="text-[10px] tracking-[0.16em] uppercase text-stone-400 text-center md:text-left">
+                          Personal
+                        </p>
+
+                        {personalTargets.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {personalTargets.map((t, tIdx) => {
+                              const actorName = t?.actor?.name;
+                              const targetName = t?.target?.name;
+                              const actorImage = t?.actor?.image ?? (Array.isArray(t?.images) ? t.images[0] : null);
+                              const targetImage = t?.target?.image ?? (Array.isArray(t?.images) ? t.images[1] : null);
+
+                              return (
+                                <div
+                                  key={`${index}-p-${tIdx}`}
+                                  className="rounded-lg border border-rose-400/15 bg-stone-900/55 px-3 py-2"
+                                >
+                                  <div className="flex items-center justify-center gap-2">
+                                    {actorImage ? renderMiniAvatar(actorImage, actorName || "Player") : null}
+                                    <span className="text-stone-500">→</span>
+                                    {targetImage ? renderMiniAvatar(targetImage, targetName || "Target") : null}
+                                  </div>
+
+                                  <div className="mt-2">
+                                    {t?.legacy ? (
+                                      <div
+                                        className="text-xs text-stone-300 leading-snug mt-1 text-center"
+                                        dangerouslySetInnerHTML={{ __html: t.messageHtml }}
+                                      />
+                                    ) : (
+                                      <div
+                                        className="text-sm font-semibold text-stone-400 leading-snug mt-2 text-center"
+                                        dangerouslySetInnerHTML={{
+                                          __html: highlightNamesHtml(
+                                            t?.message || "",
+                                            actorName || "",
+                                            targetName || ""
+                                          ),
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-stone-400 text-center md:text-left">
+                            No major personal targets surfaced.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-[10px] tracking-[0.16em] uppercase text-stone-400 text-center md:text-left">
+                          Alliances
+                        </p>
+
+                        {allianceTargets.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {allianceTargets.map((a, aIdx) => {
+                              const members = a?.alliance?.members || [];
+                              const allianceName = getAllianceDisplayName(a?.alliance);
+                              const targetName = a?.target?.name;
+                              const targetImage = a?.target?.image;
+                              const driverName = a?.driver?.name;
+
+                              const attributionText = driverName
+                                ? `led by ${driverName}`
+                                : "";
+
+                              return (
+                                <div
+                                  key={`${index}-a-${aIdx}`}
+                                  className="rounded-lg border border-blue-400/15 bg-stone-900/45 px-3 py-2"
+                                >
+                                  {/* alliance members first (main visual focus) */}
+                                  <div className="flex flex-wrap justify-center gap-1.5">
+                                    {members.map((m) => (
+                                      <Avatar
+                                        key={m?.name}
+                                        className="w-12 h-12 sm:w-14 sm:h-14 border border-white/20 bg-black/30"
+                                      >
+                                        <AvatarImage
+                                          src={m?.image}
+                                          alt={m?.name}
+                                          className="object-cover"
+                                          style={{ imageRendering: "high-quality" }}
+                                        />
+                                        <AvatarFallback className="bg-stone-700 text-[10px] text-stone-100">
+                                          {m?.name?.[0] ?? "?"}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    ))}
+                                  </div>
+
+                                  <div className="h-px bg-white/5 my-2" />
+
+                                  <div className="mt-2">
+                                    <div className="text-sm font-semibold leading-snug text-center">
+                                      <span className="text-blue-300">{allianceName}</span>{" "}
+                                      <span className="text-stone-400">wants to target</span>{" "}
+                                      <span className="text-rose-200">{targetName || "someone"}</span>
+                                    </div>
+                                    {attributionText && (
+                                      <p className="text-xs text-stone-300 leading-snug mt-1 text-center">
+                                        {attributionText}
+                                      </p>
+                                    )}
+
+                                    {targetImage && (
+                                      <div className="mt-3 flex items-center justify-center">
+                                        <div className="flex flex-col items-center">
+                                          <span className="text-[10px] tracking-[0.14em] uppercase text-stone-400">
+                                            Target
+                                          </span>
+                                          <div className="mt-1 rounded-full ring-2 ring-rose-400/30">
+                                            {renderMiniAvatar(targetImage, targetName || "Target")}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-stone-400 text-center md:text-left">
+                            No alliance targeting plans.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+
             // --- Tribe block (camp / tribe status) ---
             if (event.type === "tribe") {
+              const swapOccurred = !!event.swapOccurred;
+              const tribeTitleClass = getTribeTitleClass(event.currentTribeId);
+              const membersForModal = event.membersAfter || event.members;
+              const alliancesForModal = event.alliancesAfter || event.alliances;
               return (
                 <Card
                   key={index}
@@ -125,7 +619,7 @@ export default function EpisodeView({
                             tracking-[0.12em] uppercase
                           "
                         >
-                          {event.title} Events
+                          <span className={tribeTitleClass}>{event.title}</span> Events
                         </CardTitle>
                       </div>
 
@@ -139,7 +633,7 @@ export default function EpisodeView({
                             text-[10px] tracking-[0.14em] uppercase
                             border-white/20 bg-white/5 hover:bg-white/10
                           "
-                          onClick={() => openRelationshipsModal(event.members)}
+                          onClick={() => openRelationshipsModal(membersForModal)}
                         >
                           View Relationships
                         </Button>
@@ -152,7 +646,13 @@ export default function EpisodeView({
                             text-[10px] tracking-[0.14em] uppercase
                             border-white/20 bg-white/5 hover:bg-white/10
                           "
-                          onClick={() => openAlliancesModal(event.alliances)}
+                          onClick={() =>
+                            openAlliancesModal(
+                              alliancesForModal,
+                              membersForModal,
+                              { swapOccurred, currentTribeId: event.currentTribeId }
+                            )
+                          }
                         >
                           View Alliances
                         </Button>
@@ -164,7 +664,7 @@ export default function EpisodeView({
                     <Separator className="bg-white/10 mb-3" />
                     <div className="flex flex-wrap justify-center gap-3">
                       {event.members?.map((member) =>
-                        renderMemberAvatar(member, "lg")
+                        renderMemberAvatar(member, "lg", { swapOccurred })
                       )}
                     </div>
                   </CardContent>
@@ -175,11 +675,14 @@ export default function EpisodeView({
             // --- Alliance blocks (current alliances / new alliances) ---
             if (event.type === "alliance") {
               const isCurrent = event.title === "Current Alliances";
+              const shouldNarrow = !isCurrent;
 
               return (
                 <Card
                   key={index}
-                  className="bg-black/60 border-white/10 backdrop-blur-md"
+                  className={`bg-black/60 border-white/10 backdrop-blur-md${
+                    shouldNarrow ? " max-w-4xl mx-auto" : ""
+                  }`}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
@@ -248,7 +751,9 @@ export default function EpisodeView({
                     ) : null}
 
                     {(isCurrent ? showCurrentAlliances : true) &&
-                      event.alliances.map((alliance, i) => (
+                      (event.alliances || [])
+                        .filter((a) => (a?.members || []).length >= 2)
+                        .map((alliance, i) => (
                         <div
                           key={i}
                           className="
@@ -260,7 +765,7 @@ export default function EpisodeView({
                           <div className="flex items-baseline justify-between gap-2">
                             <div></div>
                             <h4 className="text-sm sm:text-base font-semibold text-stone-50">
-                              {alliance.name}
+                              {getAllianceDisplayName(alliance)}
                             </h4>
                             <span className="text-[11px] text-stone-300">
                               Strength: {alliance.strength}
@@ -281,130 +786,64 @@ export default function EpisodeView({
 
             // --- Idols / advantages summary ---
             if (event.type === "idols") {
-              const idols = event.idols || {};
-              const activeIdols = Object.entries(idols).filter(
-                ([, player]) => !!player
-              );
-              const hasIdols = activeIdols.length > 0;
-
+              // Render advantages right before Tribal Council instead of here.
+              if (idolsDisplayMeta.tribalIndex !== -1) return null;
               return (
-                <Card
-                  key={index}
-                  className="bg-black/60 border-white/10 backdrop-blur-md"
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-left">
-                        <p className="text-[11px] tracking-[0.18em] uppercase text-stone-400">
-                          Advantages
-                        </p>
-                        <CardTitle
-                          className="
-                            text-lg sm:text-xl
-                            text-stone-50
-                            tracking-[0.12em] uppercase
-                          "
-                        >
-                          Current Advantages
-                        </CardTitle>
-                        <p className="text-[11px] text-stone-400 mt-1">
-                          {hasIdols
-                            ? `${activeIdols.length} advantage${
-                                activeIdols.length > 1 ? "s" : ""
-                              } in play`
-                            : "No advantages in play this episode"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="pt-1 pb-4">
-                     {hasIdols ? (
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {activeIdols.map(([tribeKey, player]) => (
-                            <div
-                              key={tribeKey}
-                              className="
-                                flex items-center justify-between gap-3
-                                rounded-lg border border-white/10
-                                bg-stone-900/70 px-3 py-3
-                                shadow-md
-                              "
-                            >
-                              <div className="flex items-center gap-3">
-                                <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-white/30 shadow">
-                                  <AvatarImage
-                                    src={player.image}
-                                    alt={player.name}
-                                    className="object-cover"
-                                    style={{ imageRendering: "high-quality" }}
-                                  />
-                                  <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
-                                    {player.name?.[0] ?? "?"}
-                                  </AvatarFallback>
-                                </Avatar>
-
-                                <p className="text-xs sm:text-sm font-semibold text-stone-50">
-                                  {player.name}
-                                </p>
-                              </div>
-
-                              <span
-                                className="
-                                  inline-flex items-center justify-center
-                                  rounded-full px-3 py-1
-                                  text-[10px] sm:text-xs font-semibold
-                                  bg-amber-500/15 text-amber-200
-                                  border border-amber-400/40
-                                  uppercase tracking-[0.14em]
-                                "
-                              >
-                                Hidden Immunity Idol
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div
-                          className="
-                            mt-3 rounded-lg border border-dashed border-stone-600
-                            bg-stone-900/40 px-4 py-6
-                            text-center text-xs sm:text-sm text-stone-400
-                          "
-                        >
-                          No idols or other advantages are currently in play.
-                        </div>
-                      )
-                    }
-                  </CardContent>
-                </Card>
+                <div key={index}>
+                  {renderCurrentAdvantagesCard(event, { compact: true })}
+                </div>
               );
             }
 
             // --- Alliance target planning ---
             if (event.type === "allianceTarget") {
+              const members = event?.alliance?.members || [];
+              const allianceName = getAllianceDisplayName(event?.alliance);
+              const targetName = event?.target?.name;
+              const driverName = event?.driver?.name;
+
               return (
                 <Card
                   key={index}
-                  className="bg-black/60 border-white/10 backdrop-blur-md max-w-3xl mx-auto"
+                  className="bg-black/60 border-white/10 backdrop-blur-md max-w-5xl mx-auto"
                 >
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex flex-wrap justify-center gap-3 mb-3">
-                      {event.alliance.members.map((member) =>
-                        renderMemberAvatar(member, "md")
-                      )}
-                    </div>
-                    <div
-                      className={`
-                        bg-stone-900/80 text-white
-                        px-4 sm:px-6 pt-4 pb-4
-                        rounded-lg shadow-md
-                        text-xs sm:text-sm font-semibold text-center
-                      `}
-                    >
-                      <div
-                        dangerouslySetInnerHTML={{ __html: event.message }}
-                      />
+                  <CardContent className="py-3 px-3 sm:px-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex -space-x-2 shrink-0">
+                          {members.map((m) => (
+                            <Avatar
+                              key={m?.name}
+                              className="w-10 h-10 sm:w-11 sm:h-11 border border-white/25 bg-black/30"
+                            >
+                              <AvatarImage
+                                src={m?.image}
+                                alt={m?.name}
+                                className="object-cover"
+                                style={{ imageRendering: "high-quality" }}
+                              />
+                              <AvatarFallback className="bg-stone-700 text-[10px] text-stone-100">
+                                {m?.name?.[0] ?? "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-sm sm:text-base font-semibold text-blue-300 truncate">
+                              {allianceName}
+                            </span>
+                            <span className="text-stone-500">→</span>
+                            <span className="text-sm sm:text-base font-semibold text-rose-200 truncate">
+                              {targetName || "someone"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-300 leading-snug mt-0.5">
+                            Wants to target{driverName ? ` (led by ${driverName})` : ""}.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -468,6 +907,16 @@ export default function EpisodeView({
             return (
               <div key={index} className="space-y-3">
                 {/* Section headers for certain event types */}
+                {event.type === "voting-summary" &&
+                  index === idolsDisplayMeta.tribalIndex &&
+                  idolsDisplayMeta.idolsEvent && (
+                    <div className="-mb-1">
+                      {renderCurrentAdvantagesCard(idolsDisplayMeta.idolsEvent, {
+                        compact: true,
+                      })}
+                    </div>
+                  )}
+
                 {event.type === "voting-summary" && (
                   <div className="text-center mt-6">
                     <p className="text-[11px] tracking-[0.18em] uppercase text-stone-400">
@@ -504,7 +953,9 @@ export default function EpisodeView({
                 {event.type !== "relationship" && (
                   <div className="flex flex-col items-center space-y-3">
                     {/* Optional images above the text */}
-                    {event.images && !(event.type === "event" && event.numPlayers === 2) ? (
+                    {event.images &&
+                    !(event.type === "event" && event.numPlayers === 2) &&
+                    !isIdolFindEvent(event) ? (
                       <div className="flex gap-4">
                         {event.images.map((image, i) => (
                           <Avatar
@@ -659,43 +1110,9 @@ export default function EpisodeView({
                               }
                             });
 
-                            // --- Build "votes by alliance" and track switches on revote ---
-                            const votesByAlliance = {};
-                            structuredVotes.forEach(({ voter, target, allianceText, action }) => {
-                              if (!allianceText) return;
-
-                              if (!votesByAlliance[allianceText]) {
-                                votesByAlliance[allianceText] = {
-                                  voters: new Set(),
-                                  targetCounts: {},
-                                  revoteInfo: {} // voter -> { normalTargets:Set, revoteTargets:Set }
-                                };
-                              }
-
-                              const bloc = votesByAlliance[allianceText];
-                              bloc.voters.add(voter);
-                              bloc.targetCounts[target] =
-                                (bloc.targetCounts[target] || 0) + 1;
-
-                              if (!bloc.revoteInfo[voter]) {
-                                bloc.revoteInfo[voter] = {
-                                  normalTargets: new Set(),
-                                  revoteTargets: new Set()
-                                };
-                              }
-
-                              const info = bloc.revoteInfo[voter];
-                              if (action === "revoted for") {
-                                info.revoteTargets.add(target);
-                              } else {
-                                info.normalTargets.add(target);
-                              }
-                            });
-
                             const targetEntries = Object.entries(votesByTarget).sort(
                               (a, b) => b[1].voters.length - a[1].voters.length
                             );
-                            const allianceEntries = Object.entries(votesByAlliance);
 
                             return (
                               <div className="space-y-3">
@@ -712,7 +1129,7 @@ export default function EpisodeView({
                                   </div>
                                 )}
 
-                                <div className="grid gap-3 md:grid-cols-2">
+                                <div className="grid gap-3">
                                   {/* Votes by target */}
                                   <div className="space-y-2">
                                     <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
@@ -754,76 +1171,13 @@ export default function EpisodeView({
 
                                           {allianceNames.length > 0 && (
                                             <p className="text-[11px] text-emerald-300">
-                                              Bloc: {allianceNames.join(", ")}
+                                              {allianceNames.join(", ")}
                                             </p>
                                           )}
                                         </div>
                                       );
                                     })}
                                   </div>
-
-                                  {/* Alliance blocs */}
-                                  {allianceEntries.length > 0 && (
-                                    <div className="space-y-2">
-                                      <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
-                                        Alliance blocs
-                                      </p>
-                                      {allianceEntries.map(([allianceName, bloc]) => {
-                                        const { voters, targetCounts, revoteInfo } = bloc;
-
-                                        // find voters who switched on revote
-                                        const switches = Object.entries(revoteInfo || {})
-                                          .filter(([voter, info]) => {
-                                            const normalSize = info.normalTargets.size;
-                                            const revoteSize = info.revoteTargets.size;
-                                            // switched if they have at least one revote target
-                                            // AND either had a different normal target, or multiple revote targets
-                                            return (
-                                              revoteSize > 0 &&
-                                              (normalSize > 0 || revoteSize > 1)
-                                            );
-                                          })
-                                          .map(([voter, info]) => {
-                                            const revTargets = Array.from(
-                                              info.revoteTargets
-                                            ).join(", ");
-                                            return `${voter} → ${revTargets}`;
-                                          });
-
-                                        return (
-                                          <div
-                                            key={allianceName}
-                                            className="rounded-lg bg-stone-900/75 border border-emerald-500/40 px-3 py-2 space-y-1"
-                                          >
-                                            <span className="inline-flex items-center rounded-full bg-emerald-500/20 text-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
-                                              {allianceName}
-                                            </span>
-
-                                            <p className="text-xs text-stone-200">
-                                              <span className="text-stone-400">Voters:</span>{" "}
-                                              {Array.from(voters).join(", ")}
-                                            </p>
-
-                                            <p className="text-xs text-stone-200">
-                                              <span className="text-stone-400">Targets:</span>{" "}
-                                              {Object.entries(targetCounts)
-                                                .map(([target, count]) => `${target} ×${count}`)
-                                                .join(", ")}
-                                            </p>
-
-                                            {switches.length > 0 && (
-                                              <p className="text-xs text-amber-200">
-                                                <span className="text-amber-300 font-semibold">
-                                                  Switches:
-                                                </span>{" "}
-                                                {switches.join(", ")}
-                                              </p>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
                                 </div>
 
                                 {/* Individual vote list */}
@@ -1021,6 +1375,34 @@ export default function EpisodeView({
                           })()}
                         </CardContent>
                       </Card>
+                    ) : isIdolFindEvent(event) ? (
+                      // Idol find event (match Advantages styling)
+                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                        <CardContent className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            {event.images?.[0] ? (
+                              <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border border-white/30 shadow-md shrink-0 bg-black/40 ring-2 ring-amber-400/20">
+                                <AvatarImage
+                                  src={event.images[0]}
+                                  alt="Advantage finder"
+                                  className="object-cover"
+                                  style={{ imageRendering: "high-quality" }}
+                                />
+                                <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
+                                  ?
+                                </AvatarFallback>
+                              </Avatar>
+                            ) : null}
+
+                            <div className="flex-1 min-w-0">
+                              <div
+                                className="rounded-lg bg-amber-500/10 border border-amber-400/20 px-3 py-2 text-xs sm:text-sm font-semibold leading-snug text-center"
+                                dangerouslySetInnerHTML={{ __html: event.message }}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ) : (
                       // Generic text event
                       <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5">
@@ -1049,52 +1431,86 @@ export default function EpisodeView({
           if (!open) closeAlliancesModal();
         }}
       >
-        <DialogContent className="bg-stone-950 border-white/10 text-stone-50 max-w-2xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="bg-stone-950 border-white/10 text-stone-50 max-w-2xl sm:max-w-3xl lg:max-w-4xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-semibold tracking-[0.12em] uppercase">
               Current Alliances
             </DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto max-h-[60vh] pr-1 space-y-4">
-            {currentAlliances && currentAlliances.length > 0 ? (
-              currentAlliances.map((alliance, index) => (
-                <div
-                  key={index}
-                  className="p-4 bg-stone-900/80 rounded-lg border border-white/10"
-                >
-                  <div className="flex items-baseline justify-between gap-2 mb-2">
-                    <h3 className="text-sm sm:text-base font-semibold">
-                      {alliance.name}
-                    </h3>
-                    <span className="text-[11px] text-stone-300">
-                      Strength: {alliance.strength}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-3 mt-1">
-                    {alliance.members.map((member) => (
-                      <div
-                        key={member.name}
-                        className="flex flex-col items-center text-center w-20"
+          <div className="overflow-y-auto max-h-[70vh] pr-1 space-y-4">
+            {currentAlliances && currentAlliances.filter((a) => (a?.members || []).length >= 2).length > 0 ? (
+              (() => {
+                const tribeMemberNameSet = new Set(
+                  (alliancesModalContext?.tribeMemberNames || []).filter(Boolean)
+                );
+                const swapOccurred = !!alliancesModalContext?.swapOccurred;
+
+                return currentAlliances
+                  .filter((a) => (a?.members || []).length >= 2)
+                  .map((alliance, index) => {
+                    const allianceKey = getAllianceKey(alliance);
+                    const renameOpen = !!renameEditorsOpen?.[allianceKey];
+
+                    return (
+                  <div
+                    key={index}
+                    className="p-4 bg-stone-900/80 rounded-lg border border-white/10"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <h3 className="text-sm sm:text-base font-semibold truncate">
+                          {getAllianceDisplayName(alliance)}
+                        </h3>
+                        <span className="text-[11px] text-stone-300">
+                          Strength: {alliance.strength}
+                        </span>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] tracking-[0.12em] uppercase border-white/15 bg-white/5 hover:bg-white/10"
+                        onClick={() =>
+                          setRenameEditorsOpen((prev) => ({
+                            ...(prev || {}),
+                            [allianceKey]: !prev?.[allianceKey],
+                          }))
+                        }
                       >
-                        <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border border-white/30 shadow-md">
-                          <AvatarImage
-                            src={member.image}
-                            alt={member.name}
-                            className="object-cover"
-                          />
-                          <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
-                            {member.name?.[0] ?? "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <p className="text-[10px] sm:text-xs text-stone-100 mt-1 truncate max-w-[5rem]">
-                          {member.name}
+                        {renameOpen ? "Done" : "Rename"}
+                      </Button>
+                    </div>
+
+                    {renameOpen ? (
+                      <div className="mt-2">
+                        <Input
+                          type="text"
+                          value={allianceKey && allianceNameOverrides?.[allianceKey] ? allianceNameOverrides[allianceKey] : ""}
+                          onChange={(e) => setAllianceOverrideName(alliance, e.target.value)}
+                          placeholder={alliance?.name || "Alliance name"}
+                          className="bg-black/40 border border-white/15 text-stone-100"
+                        />
+                        <p className="mt-1 text-[11px] text-stone-400">
+                          Type to rename. Clear to revert.
                         </p>
                       </div>
-                    ))}
+                    ) : null}
+                    <div className="flex flex-wrap justify-center gap-3 mt-1">
+                      {(alliance.members || []).map((member) =>
+                        renderMemberAvatar(member, "md", {
+                          swapOccurred,
+                          offTribe:
+                            tribeMemberNameSet.size > 0 &&
+                            !tribeMemberNameSet.has(member?.name),
+                        })
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                    );
+                  });
+              })()
             ) : (
               <p className="text-sm text-stone-400 text-center">
                 No alliances found for this tribe.
@@ -1121,117 +1537,93 @@ export default function EpisodeView({
           if (!open) closeRelationshipsModal();
         }}
       >
-        <DialogContent className="bg-stone-950 border-white/10 text-stone-50 max-w-3xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="bg-stone-950 border-white/10 text-stone-50 max-w-3xl lg:max-w-5xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-semibold tracking-[0.12em] uppercase">
               Tribe Relationships
             </DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto max-h-[60vh] pr-1 space-y-4">
-            {selectedTribe?.map((player) => {
-              const filterMode = playerFilters[player.name] || "extreme";
-
-              const sortedRelationships = [...selectedTribe]
-                .filter((other) => other !== player)
-                .map((other) => ({
-                  name: other.name,
-                  score: player.relationships?.[other.name] ?? 0,
-                }))
-                .sort((a, b) => b.score - a.score);
-
-              let displayedRelationships = sortedRelationships;
-
-              if (filterMode === "extreme") {
-                displayedRelationships = sortedRelationships.filter(
-                  ({ score }) => Math.abs(score) >= 3
+          <div className="overflow-auto max-h-[70vh] pr-1">
+            {selectedTribe && selectedTribe.length > 1 ? (
+              (() => {
+                const players = [...selectedTribe].sort((a, b) =>
+                  (a?.name || "").localeCompare(b?.name || "")
                 );
-              } else if (filterMode === "none") {
-                displayedRelationships = [];
-              }
 
-              return (
-                <div
-                  key={player.name}
-                  className="bg-stone-900/80 p-4 rounded-lg shadow-md border border-white/10"
-                >
-                  <div className="flex justify-between items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-semibold text-white">
-                      {player.name}
-                    </h3>
+                // Compact columns so the matrix fits in the modal more often.
+                // Names remain horizontal; they can wrap within the header cell.
+                const gridTemplateColumns = `8.5rem repeat(${players.length}, 3.5rem)`;
 
-                    <Button
-                      type="button"
-                      size="xs"
-                      variant="outline"
-                      className="
-                        text-[10px] tracking-[0.14em] uppercase
-                        rounded-full border-stone-500/70 bg-white/5 hover:bg-white/10
-                      "
-                      onClick={() => toggleFilterMode(player.name)}
-                    >
-                      {filterMode === "none"
-                        ? "Show Important"
-                        : filterMode === "all"
-                        ? "Hide All"
-                        : "Show All"}
-                    </Button>
-                  </div>
-
-                  {displayedRelationships.length > 0 ? (
-                    <div className="mt-3 space-y-1.5">
-                      {displayedRelationships.map(({ name, score }) => {
-                        const bgColor =
-                          score === 5
-                            ? "bg-emerald-400/80"
-                            : score === 4
-                            ? "bg-emerald-500/80"
-                            : score === 3
-                            ? "bg-emerald-700/80"
-                            : score === 2
-                            ? "bg-emerald-800/80"
-                            : score === 1
-                            ? "bg-emerald-900/80"
-                            : score === 0
-                            ? "bg-gray-600/60"
-                            : score === -5
-                            ? "bg-rose-900/80"
-                            : score === -4
-                            ? "bg-rose-800/80"
-                            : score === -3
-                            ? "bg-rose-600/80"
-                            : score === -2
-                            ? "bg-rose-500/80"
-                            : "bg-rose-300/80";
-
-                        return (
+                return (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-white/10 bg-black/30">
+                      <div
+                        className="grid gap-1 p-2"
+                        style={{ gridTemplateColumns }}
+                      >
+                        <div />
+                        {players.map((p) => (
                           <div
-                            key={name}
-                            className={`
-                              flex justify-between items-center
-                              px-3 py-1.5 rounded
-                              text-xs sm:text-sm
-                              ${bgColor}
-                            `}
+                            key={`col-${p.name}`}
+                            className="px-0.5"
                           >
-                            <span className="text-white">{name}</span>
-                            <span className="font-bold text-white">
-                              {score}
+                            <span
+                              className="
+                                block text-center
+                                text-[9px] sm:text-[10px] text-stone-300 font-semibold
+                                leading-[1.1] whitespace-normal break-words
+                              "
+                            >
+                              {p.name}
                             </span>
                           </div>
-                        );
-                      })}
+                        ))}
+
+                        {players.map((row) => (
+                          <React.Fragment key={`row-${row.name}`}>
+                            <div className="text-xs text-stone-100 font-semibold pr-2 flex items-center justify-end whitespace-nowrap">
+                              {row.name}
+                            </div>
+
+                            {players.map((col) => {
+                              const same = row.name === col.name;
+                              const score = same
+                                ? null
+                                : (row.relationships?.[col.name] ?? 0);
+                              const bg = same
+                                ? "bg-white/5 text-white border-white/10"
+                                : getRelationshipBgClass(score);
+
+                              return (
+                                <div
+                                  key={`cell-${row.name}-${col.name}`}
+                                  className={`
+                                    ${bg}
+                                    w-14 h-9
+                                    rounded-md
+                                    border
+                                    text-[11px] font-bold
+                                    flex items-center justify-center
+                                    ${same ? "opacity-60" : ""}
+                                  `}
+                                >
+                                  {same ? "—" : score}
+                                </div>
+                              );
+                            })}
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="mt-2 text-xs text-stone-400">
-                      {filterMode === "none"
-                        ? "Relationships hidden for this player."
-                        : "No notable relationships yet."}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })()
+            ) : (
+              <p className="text-sm text-stone-400 text-center">
+                Not enough players to show relationships.
+              </p>
+            )}
           </div>
 
           <DialogFooter>

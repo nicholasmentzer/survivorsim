@@ -1,6 +1,20 @@
 import { voting, votingWinner, individualImmunity, tribalImmunity, getVoteResults, determineVotedOut } from "./simulator";
 import { finalPlacements } from "../page";
 
+const makeTribeKey = (tribeIndex) => `tribe${tribeIndex + 1}`;
+
+const makeDefaultTribeNames = (n) => {
+  const names = { merge: "Merge Tribe" };
+  for (let i = 0; i < n; i++) names[makeTribeKey(i)] = `Tribe ${i + 1}`;
+  return names;
+};
+
+const makeTribeMap = (n, value) => {
+  const map = { merge: value };
+  for (let i = 0; i < n; i++) map[makeTribeKey(i)] = value;
+  return map;
+};
+
 let tribes = [];
 let merged = false;
 let winner = -1;
@@ -8,8 +22,10 @@ let loser = -1;
 let state = "configure";
 let week = 1;
 let alliances = [];
-let tribeNames = { tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" };
-let tribeIdols = {tribe1: null, tribe2: null, merge: null};
+let allianceIdCounter = 1;
+let numTribes = 2;
+let tribeNames = makeDefaultTribeNames(2);
+let tribeIdols = makeTribeMap(2, null);
 let usableAdvantages = [];
 let randomAllianceNames = [
     "The Titans",
@@ -95,11 +111,15 @@ let customRandomAllianceNames = [];
 let useOnlyCustomEvents = false;
 let tribeSize = 10;
 let mergeAt = 12;
+let swapAt = null;
+let swapped = false;
 let count = 20;
 let numberedAlliances = true;
-let numberedTribe1 = 1;
-let numberedTribe2 = 1;
-let numberedMerge = 1;
+let numberedAllianceCounters = makeTribeMap(2, 1);
+
+// Used only for presentation: if a personal target exists for a given target,
+// prefer that person as the alliance "driver" when they're in the alliance.
+let preferredAllianceDriversByTarget = {};
 
 export const resetSimulation = () => {
   tribes = [];
@@ -109,8 +129,10 @@ export const resetSimulation = () => {
   state = "configure";
   week = 1;
   alliances = [];
-  tribeNames = { tribe1: "Tribe 1", tribe2: "Tribe 2", merge: "Merge Tribe" };
-  tribeIdols = {tribe1: null, tribe2: null, merge: null};
+  allianceIdCounter = 1;
+  numTribes = 2;
+  tribeNames = makeDefaultTribeNames(2);
+  tribeIdols = makeTribeMap(2, null);
   usableAdvantages = [];
   randomAllianceNames = [
     "The Titans",
@@ -196,25 +218,194 @@ export const resetSimulation = () => {
   customRandomAllianceNames = [];
   tribeSize = 10;
   mergeAt = 12;
+  swapAt = null;
+  swapped = false;
   numberedAlliances = true;
-  numberedTribe1 = 1;
-  numberedTribe2 = 1;
-  numberedMerge = 1;
+  numberedAllianceCounters = makeTribeMap(2, 1);
+  preferredAllianceDriversByTarget = {};
+};
+
+const shuffleInPlace = (arr) => {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+const snapshotIdols = (idolsMap) => {
+  const src = idolsMap || {};
+  const out = {};
+  Object.entries(src).forEach(([key, player]) => {
+    if (!player) {
+      out[key] = null;
+      return;
+    }
+    out[key] = {
+      name: player.name,
+      image: player.image,
+      tribeId: player.tribeId,
+      originalTribeId: player.originalTribeId,
+      hasIdol: !!player.hasIdol,
+    };
+  });
+  return out;
+};
+
+const tribeSwap = (updateResults) => {
+  if (numTribes <= 1) return;
+  const allPlayers = tribes.flat().filter(Boolean);
+  if (allPlayers.length <= 1) return;
+
+  // Preserve the "one idol per tribe" invariant by seeding idol holders
+  // into distinct tribes before distributing everyone else.
+  const idolHolders = Object.values(tribeIdols)
+    .filter((p) => !!p)
+    .filter((p) => allPlayers.some((x) => x?.name === p.name));
+
+  const remaining = allPlayers.filter(
+    (p) => !idolHolders.some((h) => h?.name === p.name)
+  );
+
+  shuffleInPlace(idolHolders);
+  shuffleInPlace(remaining);
+
+  const tribeIndices = shuffleInPlace(Array.from({ length: numTribes }, (_, i) => i));
+  const newTribes = Array.from({ length: numTribes }, () => []);
+
+  idolHolders.slice(0, numTribes).forEach((holder, idx) => {
+    const targetTribe = tribeIndices[idx] ?? idx;
+    newTribes[targetTribe].push(holder);
+  });
+
+  // Balance distribution: always fill the currently-smallest tribe.
+  remaining.forEach((player) => {
+    let bestIdx = 0;
+    for (let i = 1; i < newTribes.length; i++) {
+      if (newTribes[i].length < newTribes[bestIdx].length) bestIdx = i;
+    }
+    newTribes[bestIdx].push(player);
+  });
+
+  tribes = newTribes;
+
+  // Rebuild tribeIdols mapping to match the new tribes (still max 1 per tribe).
+  const nextIdols = makeTribeMap(numTribes, null);
+  for (let i = 0; i < numTribes; i++) {
+    const tribeKey = makeTribeKey(i);
+    const holder = (tribes[i] || []).find((p) => p?.hasIdol);
+    if (holder) nextIdols[tribeKey] = holder;
+  }
+  tribeIdols = nextIdols;
+
+  updateResults({
+    type: "event",
+    message: "Tribe swap! Everyone draws new buffs and tribes are shuffled.",
+  });
+};
+
+const getAlliancesForTribe = (tribe) => {
+  // Alliances can transcend swaps, but for a given tribe's camp/council,
+  // only show/use the members currently on that tribe.
+  const tribeByName = new Map((tribe || []).filter(Boolean).map((p) => [p.name, p]));
+  const tribeNameSet = new Set(tribeByName.keys());
+
+  return (alliances || [])
+    .map((alliance) => {
+      // IMPORTANT: use the *current tribe's* player objects so downstream
+      // code that uses object identity (e.g., includes(voter)) still works
+      // after swaps/merges.
+      const memberNames = (alliance?.members || []).map((m) => m?.name).filter(Boolean);
+      const membersInTribe = memberNames
+        .filter((name) => tribeNameSet.has(name))
+        .map((name) => tribeByName.get(name))
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return { ...alliance, members: membersInTribe };
+    })
+    .filter((a) => (a.members || []).length >= 2);
+};
+
+// For display (e.g., "View Alliances" on a tribe), include alliances that have
+// at least one member currently on this tribe, but keep full membership so we
+// can grey out off-tribe members after a swap.
+const getAlliancesTouchingTribe = (tribe) => {
+  const tribeNameSet = new Set((tribe || []).map((p) => p?.name).filter(Boolean));
+
+  // Canonicalize members to the current, in-game player objects by name.
+  // This keeps colors/avatars consistent even if an alliance stored a stale
+  // player reference from before a swap.
+  const playerByName = new Map(
+    (tribes || []).flat().filter(Boolean).map((p) => [p.name, p])
+  );
+
+  return (alliances || [])
+    // Only show alliances that have at least 2 members currently on this tribe.
+    // This prevents "ghost" alliances after swaps where only 1 member remains.
+    .filter((alliance) => {
+      const inTribeCount = (alliance?.members || []).reduce(
+        (sum, m) => sum + (tribeNameSet.has(m?.name) ? 1 : 0),
+        0
+      );
+      return inTribeCount >= 2;
+    })
+    .map((alliance) => ({
+      ...alliance,
+      members: (alliance?.members || [])
+        .map((m) => playerByName.get(m?.name) || m)
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }));
 };
 
 export const removeFromAlliance = (loser) => {
-  alliances = alliances.map(alliance => ({
-    ...alliance,
-    members: alliance.members.filter(member => member !== loser),
-  })).filter(alliance => alliance.members.length > 1);
+  const loserName = loser?.name;
+  if (!loserName) {
+    return { dissolvedAlliances: [], allAlliances: alliances };
+  }
+
+  const dissolvedAlliances = [];
+
+  alliances = (alliances || [])
+    .map((alliance) => {
+      const beforeMembers = alliance?.members || [];
+      const hadLoser = beforeMembers.some((m) => m?.name === loserName);
+      if (!hadLoser) return alliance;
+
+      const nextMembers = beforeMembers.filter((m) => m?.name !== loserName);
+      if (nextMembers.length <= 1) {
+        dissolvedAlliances.push(alliance);
+      }
+
+      return { ...alliance, members: nextMembers };
+    })
+    .filter((alliance) => (alliance?.members || []).length > 1);
+
+  return { dissolvedAlliances, allAlliances: alliances };
 }
 
-const populateTribes = (players, updateResults) => {
-  const tribe1 = players.slice(0, tribeSize);
-  const tribe2 = players.slice(tribeSize);
+const populateTribes = (players) => {
+  const haveTribeIds = (players || []).every((p) => Number.isFinite(p?.tribeId));
+  if (haveTribeIds) {
+    tribes = Array.from({ length: numTribes }, (_, i) =>
+      (players || []).filter((p) => p.tribeId === i + 1)
+    );
+  } else {
+    // Fallback: split by ordering
+    tribes = Array.from({ length: numTribes }, (_, i) =>
+      (players || []).slice(i * tribeSize, (i + 1) * tribeSize)
+    );
+  }
 
-  tribes = [tribe1, tribe2];
-  merged = false;
+  // If there's only one tribe, treat the season as "merged" from the start
+  // (no 'tribes are merged' banner in episode 1, and the merge tribe name is used).
+  if (numTribes <= 1) {
+    tribes = [tribes[0] || [], []];
+    merged = true;
+  } else {
+    merged = false;
+  }
   winner = -1;
   loser = -1;
   state = "immunity";
@@ -245,6 +436,9 @@ const detectDrasticRelationships = (tribe, updateResults) => {
   let drasticEvents = [];
   let seenTargets = new Set();
   let relationshipPairs = [];
+
+  // Reset driver preferences for this cycle.
+  preferredAllianceDriversByTarget = {};
 
   drasticEvents.push({ type: "relationship" });
 
@@ -320,10 +514,16 @@ const detectDrasticRelationships = (tribe, updateResults) => {
     ];
 
     drasticEvents.push({
-      type: "event",
-      message: `<span class="text-red-400">${messages[Math.floor(Math.random() * messages.length)]}</span>`,
-      images: [player1.image, player2.image],
+      type: "target",
+      actor: { name: player1.name, image: player1.image },
+      target: { name: player2.name, image: player2.image },
+      message: messages[Math.floor(Math.random() * messages.length)],
     });
+
+    // If an alliance later targets player2, prefer player1 as the driver.
+    if (player2?.name && player1?.name) {
+      preferredAllianceDriversByTarget[player2.name] = player1.name;
+    }
   });
 
   drasticEvents.forEach(event => updateResults(event));
@@ -335,7 +535,7 @@ const findIdol = (tribe, tribeName, merged) => {
     if (tribeIdols[tribeName]) return;
   }
   else {
-    if (tribeIdols["tribe1"] || tribeIdols["tribe2"] || tribeIdols["merge"]) return null;
+    if (Object.values(tribeIdols).some((v) => v != null)) return null;
   }
 
   if (Math.random() < 0.375) {
@@ -508,13 +708,147 @@ const generateRelationshipEvent = (tribe, customEvents) => {
   };
 };
 
-const manageAlliances = (tribe, tribeType) => {
+const manageAlliances = (tribe, tribeKey) => {
   let newAlliances = [];
   let dissolvedAlliances = [];
   let existingAlliances2 = [...alliances];
 
-  let tribeMembersInAlliances = alliances.some(alliance =>
-    alliance.members.some(member => tribe.includes(member))
+  const getMembersInTribe = (alliance) =>
+    (alliance?.members || []).filter((m) => tribe.includes(m));
+
+  // Late-game: if there are already lots of small alliances, strongly
+  // discourage *new* 2-person alliances from forming (but don't forbid it).
+  const tribeCountForLateGame = (tribe || []).length;
+  const alliancesInThisTribeNow = (alliances || []).filter(
+    (a) => getMembersInTribe(a).length >= 2
+  );
+  const pairAlliancesInThisTribeNow = alliancesInThisTribeNow.filter(
+    (a) => getMembersInTribe(a).length === 2
+  ).length;
+  const lateGameTooManySmallAlliances =
+    tribeCountForLateGame <= 7 &&
+    alliancesInThisTribeNow.length >= Math.max(3, tribeCountForLateGame - 2) &&
+    pairAlliancesInThisTribeNow >= Math.max(2, Math.floor(tribeCountForLateGame / 2));
+
+  const jaccardSimilarity = (aMembers, bMembers) => {
+    const a = new Set((aMembers || []).map((m) => m?.name).filter(Boolean));
+    const b = new Set((bMembers || []).map((m) => m?.name).filter(Boolean));
+    if (a.size === 0 && b.size === 0) return 1;
+    if (a.size === 0 || b.size === 0) return 0;
+    let intersection = 0;
+    for (const name of a) {
+      if (b.has(name)) intersection++;
+    }
+    const union = a.size + b.size - intersection;
+    return union === 0 ? 0 : intersection / union;
+  };
+
+  const computeCohesion01 = (members, allianceStrength) => {
+    const m = (members || []).filter(Boolean);
+    const strength01 = Math.max(0, Math.min(1, (allianceStrength || 0) / 10));
+    if (m.length < 2) return strength01;
+
+    // Average pairwise relationship (rough cohesion), normalized to [0,1].
+    let sum = 0;
+    let pairs = 0;
+    for (let i = 0; i < m.length; i++) {
+      for (let j = i + 1; j < m.length; j++) {
+        const a = m[i];
+        const b = m[j];
+        const ab = (a?.relationships?.[b?.name] ?? 0);
+        const ba = (b?.relationships?.[a?.name] ?? 0);
+        sum += (ab + ba) / 2;
+        pairs++;
+      }
+    }
+    const avgRel = pairs ? sum / pairs : 0;
+    const rel01 = Math.max(0, Math.min(1, (avgRel + 5) / 10));
+
+    // Blend: keep this gentle so we don't swing behavior too hard.
+    return 0.55 * strength01 + 0.45 * rel01;
+  };
+
+  const pruneLateGameAlliances = (currentAlliances) => {
+    const tribeCount = (tribe || []).length;
+    if (tribeCount > 7) return { kept: currentAlliances, pruned: [] };
+
+    const inTribe = [];
+    const outOfTribe = [];
+
+    (currentAlliances || []).forEach((a) => {
+      const membersInTribe = getMembersInTribe(a);
+      if (membersInTribe.length >= 2) inTribe.push(a);
+      else outOfTribe.push(a);
+    });
+
+    // Only kick in when alliances are starting to spam late-game.
+    const tooManyThreshold = Math.max(3, tribeCount - 2);
+    if (inTribe.length <= tooManyThreshold) {
+      return { kept: currentAlliances, pruned: [] };
+    }
+
+    const scored = inTribe
+      .map((a) => {
+        const membersInTribe = getMembersInTribe(a);
+        return {
+          alliance: a,
+          membersInTribe,
+          cohesion01: computeCohesion01(membersInTribe, a?.strength),
+        };
+      })
+      .sort((x, y) => y.cohesion01 - x.cohesion01);
+
+    const keptInTribe = [];
+    const pruned = [];
+
+    // Always keep the top couple so we don't hard-collapse everything.
+    const mustKeep = Math.min(2, scored.length);
+    for (let i = 0; i < mustKeep; i++) keptInTribe.push(scored[i].alliance);
+
+    for (let i = mustKeep; i < scored.length; i++) {
+      const { alliance, membersInTribe, cohesion01 } = scored[i];
+
+      // Don't immediately dissolve alliances formed this round.
+      if (newAlliances.includes(alliance)) {
+        keptInTribe.push(alliance);
+        continue;
+      }
+
+      const broadness = membersInTribe.length / Math.max(1, tribeCount); // 0..1
+      let maxOverlap = 0;
+      for (const kept of keptInTribe) {
+        const keptMembers = getMembersInTribe(kept);
+        maxOverlap = Math.max(maxOverlap, jaccardSimilarity(membersInTribe, keptMembers));
+      }
+
+      // Redundant if it's mostly the same people as a stronger alliance.
+      const redundancy01 = Math.max(0, Math.min(1, (maxOverlap - 0.55) / 0.45));
+      const broad01 = Math.max(0, Math.min(1, (broadness - 0.6) / 0.4));
+
+      // Soft, probabilistic: mostly targets redundant + broad alliances.
+      let dissolveProb = 0.08 + 0.30 * redundancy01 + 0.18 * broad01;
+
+      // Near-full-tribe alliances late-game are often "everyone" shells.
+      if (membersInTribe.length >= tribeCount - 1) dissolveProb += 0.18;
+
+      // Strong/cohesive alliances stick around.
+      dissolveProb *= (1 - 0.75 * cohesion01);
+
+      // Only act if it's actually looking redundant.
+      const looksRedundant = maxOverlap >= 0.7 || membersInTribe.length >= tribeCount - 1;
+      if (looksRedundant && Math.random() < dissolveProb) {
+        pruned.push(alliance);
+      } else {
+        keptInTribe.push(alliance);
+      }
+    }
+
+    const kept = outOfTribe.concat(keptInTribe);
+    return { kept, pruned };
+  };
+
+  let tribeMembersInAlliances = alliances.some((alliance) =>
+    (alliance.members || []).filter((member) => tribe.includes(member)).length >= 2
   );
 
   const baseThreshold = 0.7; // **Base chance of an alliance forming**
@@ -543,8 +877,16 @@ const manageAlliances = (tribe, tribeType) => {
         playerAllianceCounts[member.name] = (playerAllianceCounts[member.name] || 0) + 1;
       });
     });
-    let tribeMembersInNewAlliances = newAlliances.some(alliance =>
-      alliance.members.some(member => tribe.includes(member))
+
+    // If a player is already in a lot of alliances, strongly discourage them
+    // from spawning yet another micro-alliance.
+    const playerAllianceCount = playerAllianceCounts[player.name] || 0;
+    if (playerAllianceCount >= 2 && Math.random() < 0.85) {
+      return;
+    }
+
+    let tribeMembersInNewAlliances = newAlliances.some((alliance) =>
+      (alliance.members || []).filter((member) => tribe.includes(member)).length >= 2
     );
     if(Math.random() > allianceThreshold || (!tribeMembersInNewAlliances && !tribeMembersInAlliances)){
 
@@ -559,6 +901,66 @@ const manageAlliances = (tribe, tribeType) => {
 
     if (potentialMembers.length >= 1) {
       const members = [player, ...potentialMembers];
+
+      // Reduce overlapping small alliances (especially lots of 2-person ones sharing
+      // a common member). We allow occasional overlap, but make it rarer.
+      const membersInTribeNow = members.filter((m) => tribe.includes(m));
+      const isMicroAlliance = membersInTribeNow.length <= 3;
+      const pairAlliancesInTribeNow = alliancesInThisTribeNow.filter(
+        (a) => getMembersInTribe(a).length === 2
+      );
+
+      if (membersInTribeNow.length === 2) {
+        const other = potentialMembers[0];
+        const mutual = Math.min(
+          player?.relationships?.[other?.name] ?? 0,
+          other?.relationships?.[player?.name] ?? 0
+        );
+
+        const eitherAlreadyInPair = pairAlliancesInTribeNow.some((a) =>
+          a?.members?.includes(player) || a?.members?.includes(other)
+        );
+
+        // If either member is already in a pair-alliance on this tribe, only allow
+        // a new pair-alliance when they're extremely close (and even then, rarely).
+        if (eitherAlreadyInPair) {
+          const allow = mutual >= 4 && Math.random() < 0.35;
+          if (!allow) return;
+        }
+
+        // Weak pair alliances are a major source of spam/overlap.
+        if (mutual < 2 && Math.random() < 0.8) {
+          return;
+        }
+      }
+
+      if (isMicroAlliance) {
+        const overlappingMicro = alliancesInThisTribeNow.some((a) => {
+          const inTribe = getMembersInTribe(a);
+          if (inTribe.length < 2 || inTribe.length > 3) return false;
+          const common = inTribe.filter((m) => membersInTribeNow.includes(m)).length;
+          return common >= 1;
+        });
+
+        // Don’t completely forbid overlap, just reduce it.
+        if (overlappingMicro && Math.random() < 0.55) {
+          return;
+        }
+      }
+
+      if (lateGameTooManySmallAlliances && members.length === 2) {
+        const other = potentialMembers[0];
+        const mutual = Math.min(
+          player?.relationships?.[other?.name] ?? 0,
+          other?.relationships?.[player?.name] ?? 0
+        );
+
+        // Very, very unlikely unless they're genuinely close.
+        const chance = 0.02 + (mutual >= 3 ? 0.03 : mutual >= 2 ? 0.01 : 0);
+        if (Math.random() > chance) {
+          return;
+        }
+      }
 
       const isDuplicate = existingAlliances2.some(existingAlliance =>
         existingAlliance.members.length === members.length &&
@@ -592,8 +994,10 @@ const manageAlliances = (tribe, tribeType) => {
         let allianceName;
 
         if(numberedAlliances){
-          let tempNum = tribeType === 0 ? numberedTribe1++ : tribeType === 1 ? numberedTribe2++ : numberedMerge++;
-          let tempName = tribeType === 0 ? tribeNames.tribe1 : tribeType === 1 ? tribeNames.tribe2 : tribeNames.merge;
+          const key = tribeKey || "merge";
+          const tempNum = numberedAllianceCounters[key] || 1;
+          numberedAllianceCounters[key] = tempNum + 1;
+          const tempName = tribeNames?.[key] || (key === "merge" ? "Merge" : key);
           allianceName = `${tempName} - Alliance ${tempNum}`;
         } else if(customRandomAllianceNames.length > 0) {
           const randomIndex = Math.floor(Math.random() * customRandomAllianceNames.length);
@@ -606,6 +1010,7 @@ const manageAlliances = (tribe, tribeType) => {
         }
 
         newAlliances.push({
+          id: `a${allianceIdCounter++}`,
           name: allianceName,
           members: [player, ...potentialMembers].sort((a, b) => a.name.localeCompare(b.name)),
           strength: scaledStrength,
@@ -626,7 +1031,9 @@ const manageAlliances = (tribe, tribeType) => {
       dissolvedAlliances.push(alliance);
       return;
     }
-    if(alliance.members.length === tribe.length && alliance.members.some(member => tribe.includes(member))){
+    // Keep this behavior: if an "alliance" is literally the entire tribe,
+    // it auto-dissolves (it's not a meaningful alliance structure).
+    if(alliance.members.length === tribe.length && alliance.members.every(member => tribe.includes(member))){
       dissolvedAlliances.push(alliance);
       return;
     }
@@ -635,21 +1042,32 @@ const manageAlliances = (tribe, tribeType) => {
     alliance.strength += Math.floor(Math.random() * 3) - 1;
     alliance.strength = Math.max(1, Math.min(10, alliance.strength));
 
-    const isInCurrentTribe = alliance.members.some(member => tribe.includes(member));
+    const isInCurrentTribe = (alliance.members || []).filter(member => tribe.includes(member)).length >= 2;
 
     let isFullyContained = alliances.some(existingAlliance =>
       existingAlliance !== alliance &&
       alliance.members.every(member => existingAlliance.members.includes(member))
     );
     if(alliance.members.length === 2){isFullyContained = false;}
+
+    // Late-game: be more willing to clean up redundant/weak alliances.
+    const lateGamePhase = merged || lateGameTooManySmallAlliances;
   
-    if (isFullyContained && isInCurrentTribe) {
-      dissolvedAlliances.push(alliance);
-    } else if (alliance.strength <= 4 && Math.random() < 0.5 && isInCurrentTribe) {
-      if (newAlliances.includes(alliance)) {
-        existingAlliances.push(alliance);
-      } else {
+    if (isFullyContained && isInCurrentTribe && !newAlliances.includes(alliance)) {
+      // Early game: rare. Late game: common.
+      const dissolveChance = lateGamePhase ? 1.0 : 0.04;
+      if (Math.random() < dissolveChance) {
         dissolvedAlliances.push(alliance);
+      } else {
+        existingAlliances.push(alliance);
+      }
+    } else if ((alliance.strength || 0) <= 3 && isInCurrentTribe && !newAlliances.includes(alliance)) {
+      // Early game: very rare fizzle. Late game: still uncommon but noticeable.
+      const dissolveChance = lateGamePhase ? 0.12 : 0.02;
+      if (Math.random() < dissolveChance) {
+        dissolvedAlliances.push(alliance);
+      } else {
+        existingAlliances.push(alliance);
       }
     } else {
       existingAlliances.push(alliance);
@@ -657,6 +1075,15 @@ const manageAlliances = (tribe, tribeType) => {
   });
 
   alliances = existingAlliances;
+
+  // Late-game: discourage a proliferation of redundant micro-alliances.
+  // This is intentionally *soft* (probabilistic) and mostly removes highly
+  // overlapping / near-full-tribe alliances so voting logic isn't rewritten.
+  const prunedResult = pruneLateGameAlliances(alliances);
+  if (prunedResult?.pruned?.length) {
+    dissolvedAlliances.push(...prunedResult.pruned);
+    alliances = prunedResult.kept;
+  }
 
   return { newAlliances, dissolvedAlliances, allAlliances: alliances };
 };
@@ -804,22 +1231,94 @@ const manageAlliances = (tribe, tribeType) => {
 
 
 
-export const simulate = (players, updateResults, customEvents, useOnlyCustom, tsize, tribes, advantages, customAllianceNames, mergeNum, useNumberedAlliances) => {
+export const simulate = (
+  players,
+  updateResults,
+  customEvents,
+  useOnlyCustom,
+  tsize,
+  tribes,
+  advantages,
+  swapNum,
+  mergeNum,
+  numTribesParam
+) => {
   let episodes = [];
-  count = tsize*2;
-  tribeNames = tribes;
+  allianceIdCounter = 1;
+  const inferredTribes = Math.max(
+    1,
+    Object.keys(tribes || {}).filter((k) => /^tribe\d+$/.test(k)).length || 1
+  );
+  numTribes = Number.isFinite(numTribesParam) ? numTribesParam : inferredTribes;
+  count = tsize * numTribes;
+  tribeNames = tribes || makeDefaultTribeNames(numTribes);
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
-  mergeAt = mergeNum;
-  numberedAlliances = useNumberedAlliances;
-  customRandomAllianceNames = customAllianceNames;
+  const totalPlayers = tribeSize * numTribes;
+
+  // First, clamp swapAt (if requested) to a valid pre-merge window and also ensure
+  // the pre-swap tribes can never hit 2 members.
+  if (numTribes <= 1 || !Number.isFinite(swapNum)) {
+    swapAt = null;
+  } else {
+    const minSwapSafety = Math.min(totalPlayers - 1, tribeSize * (numTribes - 1) + 2);
+    const maxSwapAt = totalPlayers - 1;
+    swapAt = Math.max(minSwapSafety, Math.min(swapNum, maxSwapAt));
+  }
+
+  // Now clamp mergeAt. If swapAt exists, we can allow a later merge (lower mergeAt)
+  // based on the post-swap smallest tribe size.
+  const baseMinMergeAt = numTribes <= 1
+    ? totalPlayers
+    : Math.min(totalPlayers - 1, tribeSize * (numTribes - 1) + 2);
+
+  const minMergeAfterSwap = (Number.isFinite(swapAt) && numTribes > 1)
+    ? (swapAt - Math.floor(swapAt / numTribes) + 2)
+    : null;
+
+  const minSafeMergeAt = numTribes <= 1
+    ? totalPlayers
+    : Math.max(2, Math.min(baseMinMergeAt, Number.isFinite(minMergeAfterSwap) ? minMergeAfterSwap : baseMinMergeAt));
+
+  const baseMaxMergeAt = numTribes <= 1 ? totalPlayers : Math.max(1, totalPlayers - 1);
+  const maxSafeMergeAt = Number.isFinite(swapAt) ? Math.min(baseMaxMergeAt, swapAt - 1) : baseMaxMergeAt;
+
+  const requestedMergeAt = Number.isFinite(mergeNum) ? mergeNum : maxSafeMergeAt;
+  mergeAt = Math.max(minSafeMergeAt, Math.min(requestedMergeAt, maxSafeMergeAt));
+
+  // Finally, re-clamp swapAt against the chosen mergeAt (swap must happen before merge).
+  if (Number.isFinite(swapAt)) {
+    const minSwapAt = Math.max(mergeAt + 1, Math.min(totalPlayers - 1, tribeSize * (numTribes - 1) + 2));
+    const maxSwapAt = totalPlayers - 1;
+    if (minSwapAt > maxSwapAt) {
+      swapAt = null;
+    } else {
+      swapAt = Math.max(minSwapAt, Math.min(swapAt, maxSwapAt));
+    }
+  }
+  swapped = false;
+  // Alliance names are initialized as numbered (tribe-scoped).
+  // Custom naming is handled in the simulation UI.
+  numberedAlliances = true;
+  customRandomAllianceNames = [];
+  tribeIdols = makeTribeMap(numTribes, null);
+  numberedAllianceCounters = makeTribeMap(numTribes, 1);
   Object.entries(advantages).forEach(([key, value]) => {
     if (value) {
       usableAdvantages.push(key);
     }
   });
 
-  populateTribes(players, updateResults);
+  // Ensure we always have a stable "where they started" marker for UI.
+  // If it's missing (older saves / edited casts), fall back to their current tribeId.
+  (players || []).forEach((p) => {
+    if (!p) return;
+    if (!Number.isFinite(p.originalTribeId)) {
+      p.originalTribeId = Number.isFinite(p.tribeId) ? p.tribeId : 1;
+    }
+  });
+
+  populateTribes(players);
 
   while (state != "gameover") {
     let episode = [];
@@ -846,6 +1345,8 @@ const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
   filteredAlliances.forEach(alliance => {
     let bestTarget = null;
     let lowestRelationship = Infinity;
+    let driver = null;
+    let driverScore = Infinity;
 
     alliance.members.forEach(member => {
       tribe.forEach(candidate => {
@@ -866,10 +1367,32 @@ const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
     });
 
     if (bestTarget) {
+      // Prefer the actor from a displayed personal target (if they're in the alliance).
+      const preferredDriverName = preferredAllianceDriversByTarget?.[bestTarget.name];
+      if (preferredDriverName) {
+        const match = (alliance.members || []).find((m) => m?.name === preferredDriverName);
+        if (match) {
+          driver = match;
+        }
+      }
+
+      // Otherwise, pick a simple heuristic: member with the lowest relationship score to the target.
+      if (!driver) {
+        alliance.members.forEach((member) => {
+          const score = member.relationships?.[bestTarget.name] ?? 0;
+          if (score < driverScore) {
+            driverScore = score;
+            driver = member;
+          }
+        });
+      }
+
       updateResults({
         type: "allianceTarget",
         alliance: alliance,
-        message: `<span class="text-blue-400 font-bold">${alliance.name}</span><span class="font-normal"> alliance plans to target </span><span class="text-red-400 font-bold">${bestTarget.name}</span>.`,
+        target: { name: bestTarget.name, image: bestTarget.image },
+        driver: driver ? { name: driver.name, image: driver.image } : null,
+        message: `<span class="text-blue-400 font-bold">${alliance.name}</span><span class="font-normal"> alliance wants to target </span><span class="text-red-400 font-bold">${bestTarget.name}</span>.`,
       });
     }
   });
@@ -880,91 +1403,72 @@ const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
  * @param {Function} updateResults - Callback to update the game status.
  */
 const handlePreMergePhase = (updateResults, customEvents) => {
-  if (tribes[0].length + tribes[1].length === mergeAt) {
+  const totalRemaining = tribes.reduce((sum, t) => sum + (t?.length || 0), 0);
+
+  if (!merged && !swapped && swapAt && totalRemaining === swapAt) {
+    tribeSwap(updateResults);
+    swapped = true;
+  }
+
+  if (totalRemaining === mergeAt) {
     mergeTribes(updateResults);
     handlePostMergePhase(updateResults, customEvents);
   } else {
-      const relevantAlliances1 = alliances.filter(alliance =>
-        alliance.members.some(member => tribes[0].some(tribeMember => tribeMember.name === member.name))
-      );
-      updateResults(
-        { type: "tribe", title: tribeNames.tribe1, alliances: relevantAlliances1, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
-          ...member,
-          relationships: { ...member.relationships },
-        })) }
-      );
+      for (let i = 0; i < tribes.length; i++) {
+        const tribeKey = makeTribeKey(i);
+        const tribe = tribes[i];
+        const displayAlliances = getAlliancesTouchingTribe(tribe);
 
-      const idolEvent1 = findIdol(tribes[0], "tribe1");
-      if (idolEvent1) updateResults(idolEvent1);
+        const snapshotMembers = (members) =>
+          [...(members || [])]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((member) => ({
+              ...member,
+              relationships: { ...(member.relationships || {}) },
+            }));
 
-      for(let i = 0; i < 5; i++){
-        let willEventOccur = Math.random();
-        if(willEventOccur > 0.7){
-          const relationshipEvent1 = generateRelationshipEvent(tribes[0], customEvents);
-          if (relationshipEvent1) updateResults(relationshipEvent1);
+        // Emit the tribe block early (keeps current ordering), but we'll attach
+        // a post-camp snapshot to the same event object later for modals.
+        const tribeEvent = {
+          type: "tribe",
+          title: tribeNames?.[tribeKey] || `Tribe ${i + 1}`,
+          alliances: displayAlliances,
+          currentTribeId: i + 1,
+          swapOccurred: swapped,
+          members: snapshotMembers(tribe),
+        };
+
+        updateResults(tribeEvent);
+
+        const idolEvent = findIdol(tribe, tribeKey);
+        if (idolEvent) updateResults(idolEvent);
+
+        for (let j = 0; j < 5; j++) {
+          if (Math.random() > 0.7) {
+            const relationshipEvent = generateRelationshipEvent(tribe, customEvents);
+            if (relationshipEvent) updateResults(relationshipEvent);
+          }
         }
-      }
-      const alliances1 = manageAlliances(tribes[0], 0);
 
-      if (alliances1.newAlliances != null) {
-        if (alliances1.newAlliances.length > 0) {
+        const alliancesUpdate = manageAlliances(tribe, tribeKey);
+        if (alliancesUpdate?.newAlliances?.length) {
           updateResults({
             type: "alliance",
-            title: `New Alliances Formed (${tribeNames.tribe1})`,
-            alliances: alliances1.newAlliances,
+            title: `New Alliances Formed (${tribeNames?.[tribeKey] || `Tribe ${i + 1}`})`,
+            alliances: alliancesUpdate.newAlliances,
           });
         }
-      }
-
-      if (alliances1.dissolvedAlliances != null) {
-        if (alliances1.dissolvedAlliances.length > 0) {
+        if (alliancesUpdate?.dissolvedAlliances?.length) {
           updateResults({
             type: "alliance",
-            title: `Alliances Dissolved (${tribeNames.tribe1})`,
-            alliances: alliances1.dissolvedAlliances,
+            title: `Alliances Dissolved (${tribeNames?.[tribeKey] || `Tribe ${i + 1}`})`,
+            alliances: alliancesUpdate.dissolvedAlliances,
           });
         }
-      }
 
-      const relevantAlliances2 = alliances.filter(alliance =>
-        alliance.members.some(member => tribes[1].some(tribeMember => tribeMember.name === member.name))
-      );
-
-      updateResults(
-        { type: "tribe", title: tribeNames.tribe2, alliances: relevantAlliances2, members: tribes[1].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
-          ...member,
-          relationships: { ...member.relationships },
-        })) }
-      );
-      const idolEvent2 = findIdol(tribes[1], "tribe2");
-      if (idolEvent2) updateResults(idolEvent2);
-      for(let i = 0; i < 5; i++){
-        let willEventOccur = Math.random();
-        if(willEventOccur < 0.3){
-          const relationshipEvent2 = generateRelationshipEvent(tribes[1], customEvents);
-          if (relationshipEvent2) updateResults(relationshipEvent2);
-        }
-      }
-      const alliances2 = manageAlliances(tribes[1], 1);
-
-      if (alliances2.newAlliances != null) {
-        if (alliances2.newAlliances.length > 0) {
-          updateResults({
-            type: "alliance",
-            title: `New Alliances Formed (${tribeNames.tribe2})`,
-            alliances: alliances2.newAlliances,
-          });
-        }
-      }
-
-      if (alliances2.dissolvedAlliances != null) {
-        if (alliances2.dissolvedAlliances.length > 0) {
-          updateResults({
-            type: "alliance",
-            title: `Alliances Dissolved (${tribeNames.tribe2})`,
-            alliances: alliances2.dissolvedAlliances,
-          });
-        }
+        // Attach "after" snapshots so modals can show post-camp state.
+        tribeEvent.membersAfter = snapshotMembers(tribe);
+        tribeEvent.alliancesAfter = getAlliancesTouchingTribe(tribe);
       }
 
       /*if (alliances2.allAlliances != null) {
@@ -977,21 +1481,55 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }*/
 
-      winner = tribalImmunity(tribes);
-      tribes[winner].forEach((player) => player.teamWins++);
-      loser = winner === 0 ? 1 : 0;
-      updateResults({ type: "immunity", message: `${winner + 1 === 1 ? tribeNames.tribe1 : tribeNames.tribe2} wins immunity! So, ${winner + 1 === 2 ? tribeNames.tribe1 : tribeNames.tribe2} will be going to tribal council`, members: [...tribes[loser]] });
+      const immunityResult = tribalImmunity(tribes);
+      const loserIndex = immunityResult?.loserIndex ?? 0;
+      const winnerIndices = (immunityResult?.winnerIndices?.length
+        ? immunityResult.winnerIndices
+        : tribes.map((_, i) => i).filter((i) => i !== loserIndex)
+      );
+
+      loser = loserIndex;
+      winner = winnerIndices[0] ?? 0;
+
+      const loserKey = makeTribeKey(loser);
+      const winnerNames = winnerIndices
+        .map((idx) => {
+          const key = makeTribeKey(idx);
+          return tribeNames?.[key] || `Tribe ${idx + 1}`;
+        })
+        .join(", ");
+
+      winnerIndices.forEach((idx) => {
+        (tribes[idx] || []).forEach((player) => player.teamWins++);
+      });
+
+      const message = tribes.length <= 1
+        ? `With one tribe, there is no tribe immunity challenge — everyone heads to tribal council.`
+        : `${winnerNames} win${winnerIndices.length === 1 ? "s" : ""} immunity! So, ${tribeNames?.[loserKey] || `Tribe ${loser + 1}`} will be going to tribal council`;
+
+      updateResults({
+        type: "immunity",
+        message,
+        members: [...(tribes[loser] || [])],
+      });
 
       updateResults({
         type: "idols",
-        idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
+        idols: snapshotIdols(tribeIdols),
       });
       
       detectDrasticRelationships(tribes[loser], updateResults);
-      getAllianceTargets(tribes[loser], alliances, updateResults);
+      getAllianceTargets(tribes[loser], getAlliancesForTribe(tribes[loser]), updateResults);
 
       state = "tribal";
-      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribes[loser], alliances, false, -1, usableAdvantages, tribeIdols);
+      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(
+        tribes[loser],
+        getAlliancesForTribe(tribes[loser]),
+        false,
+        -1,
+        usableAdvantages,
+        tribeIdols
+      );
       tribeIdols = idols;
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
@@ -1035,12 +1573,22 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     const relevantAlliances1 = alliances.filter(alliance =>
       alliance.members.some(member => tribes[0].some(tribeMember => tribeMember.name === member.name))
     );
-    updateResults(
-      { type: "tribe", title: tribeNames.merge, alliances: alliances, members: tribes[0].sort((a, b) => a.name.localeCompare(b.name)).map(member => ({
-        ...member,
-        relationships: { ...member.relationships }
-      })) },
-    );
+    const snapshotMembers = (members) =>
+      [...(members || [])]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((member) => ({
+          ...member,
+          relationships: { ...(member.relationships || {}) },
+        }));
+
+    const mergeTribeEvent = {
+      type: "tribe",
+      title: tribeNames.merge,
+      alliances: alliances,
+      members: snapshotMembers(tribes[0]),
+    };
+
+    updateResults(mergeTribeEvent);
     if (tribes[0].length === 3) {
       updateResults(
         { type: "tribe", title: "Jury", members: [...tribes[1]] }
@@ -1048,7 +1596,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     }
 
     if (tribe.length > 3) {
-      const idolEvent1 = findIdol(tribes[0], "merge");
+      const idolEvent1 = findIdol(tribes[0], "merge", true);
       if (idolEvent1) updateResults(idolEvent1);
         for(let i = 0; i < 5; i++){
           let willEventOccur = Math.random();
@@ -1057,13 +1605,13 @@ const handlePostMergePhase = (updateResults, customEvents) => {
             if (relationshipEvent1) updateResults(relationshipEvent1);
           }
         }
-        const alliances1 = manageAlliances(tribes[0], 2);
+        const alliances1 = manageAlliances(tribes[0], "merge");
 
         if (alliances1.newAlliances != null) {
           if (alliances1.newAlliances.length > 0) {
             updateResults({
               type: "alliance",
-              title: "New Alliances Formed",
+              title: `New Alliances Formed (${tribeNames?.merge || "Merge"})`,
               alliances: alliances1.newAlliances,
             });
           }
@@ -1073,11 +1621,15 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           if (alliances1.dissolvedAlliances.length > 0) {
             updateResults({
               type: "alliance",
-              title: "Alliances Dissolved",
+              title: `Alliances Dissolved (${tribeNames?.merge || "Merge"})`,
               alliances: alliances1.dissolvedAlliances,
             });
           }
         }
+
+        // Attach "after" snapshots so the merged tribe modals reflect post-camp state.
+        mergeTribeEvent.membersAfter = snapshotMembers(tribes[0]);
+        mergeTribeEvent.alliancesAfter = getAlliancesTouchingTribe(tribes[0]);
     
         /*if (alliances1.allAlliances != null) {
           if (alliances1.allAlliances.length > 0) {
@@ -1100,7 +1652,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
 
         updateResults({
           type: "idols",
-          idols: {tribe1: tribeIdols.tribe1, tribe2: tribeIdols.tribe2, merge: tribeIdols.merge},
+          idols: snapshotIdols(tribeIdols),
         });
 
         detectDrasticRelationships(tribes[0], updateResults);
@@ -1167,8 +1719,8 @@ const handlePostMergePhase = (updateResults, customEvents) => {
  */
 const mergeTribes = (updateResults) => {
   merged = true;
-  tribes[1].forEach((player) => tribes[0].push(player));
-  tribes[1] = [];
+  const mergedPlayers = tribes.flat();
+  tribes = [mergedPlayers, []];
   updateResults({ type: "event", message: "Tribes are merged!"});
   state = "immunity";
 };
