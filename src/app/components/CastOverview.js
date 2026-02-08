@@ -95,7 +95,7 @@ const CastOverview = ({ players, tribeNames, numTribes = 2 }) => {
                         "
                       >
                         {/* Circular portrait using shadcn Avatar */}
-                        <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border border-white/40 shadow-md">
+                        <Avatar className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 border border-white/40 shadow-md">
                           <AvatarImage
                             src={p.image || '/default-player.png'}
                             alt={p.name}
