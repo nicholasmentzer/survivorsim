@@ -39,7 +39,7 @@ const DEFAULT_S50_TRIBES = {
   tribe2: [
     "Cirie Fields",
     "Ozzy Lusth",
-    "Coach Wade",
+    "Jenna Lewis Daugherty",
     "Rick Devens",
     "Christian Hubicki",
     "Emily Flippen",
@@ -53,7 +53,7 @@ const DEFAULT_S50_TRIBES = {
     "Mike White",
     "Chrissy Hofbeck",
     "Kamilla Karthigesu",
-    "Jenna Lewis",
+    "Coach Wade",
     "Dee Valladares",
   ],
 };
