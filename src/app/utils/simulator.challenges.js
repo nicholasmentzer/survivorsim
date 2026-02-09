@@ -16,12 +16,29 @@ export const tribalImmunity = (tribes) => {
     return { winnerIndex: 0, loserIndex: 0, winnerIndices: [0] };
   }
 
-  const minLen = Math.min(...tribes.map((t) => (t || []).length));
-  const scores = tribes.map((tribe) => {
-    const sorted = [...(tribe || [])].sort((a, b) => (b.premerge ?? 0) - (a.premerge ?? 0));
-    let score = 0;
-    for (let i = 0; i < minLen; i++) score += sorted[i]?.premerge ?? 0;
-    return Math.max(1, score);
+  // More even + size-neutral challenge math:
+  // - Use average premerge strength (so smaller tribes aren't inherently punished)
+  // - Add a small random swing (so outcomes aren't too deterministic)
+  // - Pick a LOSER with softened weights (reduces "disaster tribe" streaks)
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const getPremerge = (p) => clamp(Number(p?.premerge ?? 0), 0, 10);
+
+  const avgStrength = (tribe) => {
+    const members = (tribe || []).filter(Boolean);
+    if (members.length === 0) return 0;
+    const sum = members.reduce((acc, p) => acc + getPremerge(p), 0);
+    return sum / members.length;
+  };
+
+  // Tunables (chosen to be "more even most of the time")
+  const RANDOM_SWING = 0.6; // +/- to average strength
+  const TEMPERATURE = 2.5;  // higher => flatter odds
+  const BASE = 1.25;        // baseline chance so strong tribes can still lose
+
+  const powers = tribes.map((tribe) => {
+    const base = avgStrength(tribe);
+    const swing = (Math.random() * 2 - 1) * RANDOM_SWING;
+    return Math.max(0, base + swing);
   });
 
   const weightedPick = (weights) => {
@@ -35,10 +52,12 @@ export const tribalImmunity = (tribes) => {
     return 0;
   };
 
-  const maxScore = Math.max(...scores);
-
-  // Pick the losing tribe with weights biased toward lower scores.
-  const loserWeights = scores.map((s) => Math.max(1, maxScore + 1 - s));
+  // IMPORTANT: getRandomInt expects an integer max. If totals are < 1 or floats,
+  // Math.floor(Math.random() * max) can become 0 every time.
+  // So we convert weights to integers.
+  const maxPower = Math.max(...powers);
+  const rawLoserWeights = powers.map((p) => BASE + Math.exp((maxPower - p) / TEMPERATURE));
+  const loserWeights = rawLoserWeights.map((w) => Math.max(1, Math.round(w * 1000)));
   const loserIndex = weightedPick(loserWeights);
 
   // Everyone except the loser is a "winner" (typical multi-tribe format).
@@ -48,7 +67,7 @@ export const tribalImmunity = (tribes) => {
 
   // Keep a single winnerIndex for legacy callers (best-scoring non-loser).
   const bestWinnerIndex = winnerIndices.reduce((bestIdx, i) =>
-    scores[i] > scores[bestIdx] ? i : bestIdx,
+    powers[i] > powers[bestIdx] ? i : bestIdx,
     winnerIndices[0] ?? 0
   );
 
