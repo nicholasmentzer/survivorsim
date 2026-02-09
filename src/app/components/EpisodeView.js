@@ -72,11 +72,12 @@ export default function EpisodeView({
     (alliance, nextNameRaw) => {
       const key = getAllianceKey(alliance);
       if (!key) return;
-      const nextName = (nextNameRaw || "").trim();
+      const nextNameValue = nextNameRaw ?? "";
+      const hasNonWhitespace = nextNameValue.trim().length > 0;
       setAllianceNameOverrides((prev) => {
         const next = { ...(prev || {}) };
-        if (!nextName) delete next[key];
-        else next[key] = nextName;
+        if (!hasNonWhitespace) delete next[key];
+        else next[key] = nextNameValue;
         return next;
       });
     },
