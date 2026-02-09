@@ -188,7 +188,6 @@ export default function Home() {
   const [hideSliders, setHideSliders] = useState(false);
   const [showCurrentAlliances, setShowCurrentAlliances] = useState(false);
   const [showCurrentAdvantages, setShowCurrentAdvantages] = useState(false);
-  const [showDetailedVotes, setShowDetailedVotes] = useState(false);
   const [tribeNames, setTribeNames] = useState(() => makeDefaultTribeNames(3));
   const [advantages, setAdvantages] = useState({
     immunityIdol: true,
@@ -466,7 +465,6 @@ export default function Home() {
 
   const nextEpisode = () => {
     setShowCurrentAlliances(false);
-    setShowDetailedVotes(false);
     if (mode === "summary") {
       resetSimulation();
       finalPlacements = [];
@@ -482,7 +480,6 @@ export default function Home() {
 
   const prevEpisode = () => {
     setShowCurrentAlliances(false);
-    setShowDetailedVotes(false);
     if (mode === "summary") {
       setMode("simulate");
     } else if (currentEpisode === 0) {
