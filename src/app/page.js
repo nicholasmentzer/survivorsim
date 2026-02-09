@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 
 import { simulate, resetSimulation } from "./utils/simulation";
@@ -195,9 +195,9 @@ export default function Home() {
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
   const [tribeSize, setTribeSize] = useState(8);
-  const [mergeTime, setMergeTime] = useState(18);
-  const [swapEnabled, setSwapEnabled] = useState(false);
-  const [swapTime, setSwapTime] = useState(null);
+  const [mergeTime, setMergeTime] = useState(14);
+  const [swapEnabled, setSwapEnabled] = useState(true);
+  const [swapTime, setSwapTime] = useState(18);
   const [showWelcome, setShowWelcome] = useState(false);
   const [selectedTribe, setSelectedTribe] = useState(null);
   const [showRelationshipsModal, setShowRelationshipsModal] = useState(false);
@@ -342,7 +342,15 @@ export default function Home() {
   }, [swapEnabled, tribeSize, numTribes, mergeTime]);
 
   // When tribe count changes, reset tribe size + merge defaults to sensible scaled values.
+  const didInitTribeDefaults = useRef(false);
   useEffect(() => {
+    // On initial mount, keep the explicit initial defaults (swap on @ 18, merge @ 14).
+    // Subsequent tribe-count changes should continue using the existing reset behavior.
+    if (!didInitTribeDefaults.current) {
+      didInitTribeDefaults.current = true;
+      return;
+    }
+
     const clampedNumTribes = Math.max(1, Math.min(DEFAULT_MAX_TRIBES, numTribes));
     if (clampedNumTribes !== numTribes) {
       setNumTribes(clampedNumTribes);
