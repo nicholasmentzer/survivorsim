@@ -1170,11 +1170,11 @@ export default function EpisodeView({
                                             ))}
                                           </p>
 
-                                          {allianceNames.length > 0 && (
+                                          {/*allianceNames.length > 0 && (
                                             <p className="text-[11px] text-emerald-300">
                                               {allianceNames.join(", ")}
                                             </p>
-                                          )}
+                                          )*/}
                                         </div>
                                       );
                                     })}
