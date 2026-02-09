@@ -117,9 +117,10 @@ let count = 20;
 let numberedAlliances = true;
 let numberedAllianceCounters = makeTribeMap(2, 1);
 
-// Used only for presentation: if a personal target exists for a given target,
-// prefer that person as the alliance "driver" when they're in the alliance.
-let preferredAllianceDriversByTarget = {};
+// Used only for presentation: when displaying alliance targets, we can prefer
+// a "driver" only if that driver ALSO has the same personal target.
+// Key: actorName -> targetName
+let personalTargetsByActor = {};
 
 export const resetSimulation = () => {
   tribes = [];
@@ -222,7 +223,7 @@ export const resetSimulation = () => {
   swapped = false;
   numberedAlliances = true;
   numberedAllianceCounters = makeTribeMap(2, 1);
-  preferredAllianceDriversByTarget = {};
+  personalTargetsByActor = {};
 };
 
 const shuffleInPlace = (arr) => {
@@ -437,8 +438,8 @@ const detectDrasticRelationships = (tribe, updateResults) => {
   let seenTargets = new Set();
   let relationshipPairs = [];
 
-  // Reset driver preferences for this cycle.
-  preferredAllianceDriversByTarget = {};
+  // Reset personal-target hints for this cycle.
+  personalTargetsByActor = {};
 
   drasticEvents.push({ type: "relationship" });
 
@@ -520,9 +521,10 @@ const detectDrasticRelationships = (tribe, updateResults) => {
       message: messages[Math.floor(Math.random() * messages.length)],
     });
 
-    // If an alliance later targets player2, prefer player1 as the driver.
+    // Track personal targets (used only for picking a display driver).
+    // We only prefer an actor if the alliance target matches this exact target.
     if (player2?.name && player1?.name) {
-      preferredAllianceDriversByTarget[player2.name] = player1.name;
+      personalTargetsByActor[player1.name] = player2.name;
     }
   });
 
@@ -1367,13 +1369,16 @@ const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
     });
 
     if (bestTarget) {
-      // Prefer the actor from a displayed personal target (if they're in the alliance).
-      const preferredDriverName = preferredAllianceDriversByTarget?.[bestTarget.name];
-      if (preferredDriverName) {
-        const match = (alliance.members || []).find((m) => m?.name === preferredDriverName);
-        if (match) {
-          driver = match;
-        }
+      // Prefer a driver only when that driver's personal target is ALSO this alliance target.
+      const preferredCandidates = (alliance.members || []).filter(
+        (m) => m?.name && personalTargetsByActor?.[m.name] === bestTarget.name
+      );
+      if (preferredCandidates.length > 0) {
+        driver = preferredCandidates.reduce((best, m) => {
+          const bestScore = best?.relationships?.[bestTarget.name] ?? 0;
+          const score = m?.relationships?.[bestTarget.name] ?? 0;
+          return score < bestScore ? m : best;
+        }, preferredCandidates[0]);
       }
 
       // Otherwise, pick a simple heuristic: member with the lowest relationship score to the target.
