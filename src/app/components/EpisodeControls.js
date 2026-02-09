@@ -14,6 +14,7 @@ export default function EpisodeControls({
 }) {
   const isConfigure = mode === "configure";
   const showSideButtons = !isConfigure;
+  const showNextButton = showSideButtons && mode !== "summary";
 
   const containerClasses =
     variant === "top"
@@ -31,8 +32,6 @@ export default function EpisodeControls({
   let nextLabel = "Next";
   if (mode === "simulate" && episodesLength > 0 && currentEpisode === episodesLength - 1) {
     nextLabel = "View Summary";
-  } else if (mode === "summary") {
-    nextLabel = "Configure New Season";
   }
 
   const isNextDisabled =
@@ -94,7 +93,7 @@ export default function EpisodeControls({
         </Button>
 
         {/* Next - hidden on configure, same width as Previous on wider screens */}
-        {showSideButtons && (
+        {showNextButton && (
           <Button
             type="button"
             disabled={isNextDisabled}
