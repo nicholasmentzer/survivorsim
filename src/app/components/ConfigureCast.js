@@ -486,17 +486,36 @@ export default function ConfigureCast({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-3">
-                  <Label className="text-[11px] tracking-[0.16em] uppercase text-stone-200">
-                    Randomize all stats
-                  </Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="text-xs tracking-wide"
-                    onClick={randomizeAllStats}
-                  >
-                    Randomize
-                  </Button>
+                  <div className="flex flex-col gap-2 items-end w-full">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="text-xs tracking-wide px-3 py-1 h-7 border border-blue-400 bg-blue-900/60 text-blue-100 hover:bg-blue-800/80"
+                        variant="outline"
+                        onClick={randomizeAllStats}
+                      >
+                        Randomize Stats
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="text-xs tracking-wide px-3 py-1 h-7 border border-pink-400 bg-pink-900/60 text-pink-100 hover:bg-pink-800/80"
+                      variant="outline"
+                      onClick={() => {
+                        // Remove last names from all players
+                        setPlayers((prev) =>
+                          (prev || []).map((player) => ({
+                            ...player,
+                            name: (player.name || '').split(' ')[0],
+                          }))
+                        );
+                      }}
+                    >
+                      Remove Last Names
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
