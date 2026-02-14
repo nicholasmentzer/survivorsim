@@ -423,19 +423,34 @@ export default function EpisodeView({
                 return out;
               };
 
-              const renderMiniAvatar = (image, alt) => (
-                <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border border-white/25 bg-black/30">
-                  <AvatarImage
-                    src={image}
-                    alt={alt}
-                    className="object-cover"
-                    style={{ imageRendering: "high-quality" }}
-                  />
-                  <AvatarFallback className="bg-stone-700 text-[10px] text-stone-100">
-                    ?
-                  </AvatarFallback>
-                </Avatar>
-              );
+              // Add colored border for origin tribe
+              const renderMiniAvatar = (image, alt, member, keyOverride) => {
+                const originId = member?.originalTribeId ?? member?.tribeId;
+                const originRingPalette = [
+                  "ring-amber-200/75",
+                  "ring-violet-300/75",
+                  "ring-teal-300/75",
+                  "ring-sky-300/75",
+                  "ring-rose-300/75",
+                  "ring-stone-200/75",
+                ];
+                const originRingClass = Number.isFinite(originId) && originId > 0
+                  ? originRingPalette[(originId - 1) % originRingPalette.length]
+                  : "";
+                return (
+                  <Avatar key={keyOverride || member?.name || alt || image} className={`w-12 h-12 sm:w-14 sm:h-14 border border-white/25 bg-black/30 ring-1 ${originRingClass}`}>
+                    <AvatarImage
+                      src={image}
+                      alt={alt}
+                      className="object-cover"
+                      style={{ imageRendering: "high-quality" }}
+                    />
+                    <AvatarFallback className="bg-stone-700 text-[10px] text-stone-100">
+                      ?
+                    </AvatarFallback>
+                  </Avatar>
+                );
+              };
 
               return (
                 <Card
@@ -475,9 +490,9 @@ export default function EpisodeView({
                                   className="rounded-lg border border-rose-400/15 bg-stone-900/55 px-3 py-2"
                                 >
                                   <div className="flex items-center justify-center gap-2">
-                                    {actorImage ? renderMiniAvatar(actorImage, actorName || "Player") : null}
+                                    {actorImage ? renderMiniAvatar(actorImage, actorName || "Player", t?.actor, `actor-${actorName || actorImage}`) : null}
                                     <span className="text-stone-500">→</span>
-                                    {targetImage ? renderMiniAvatar(targetImage, targetName || "Target") : null}
+                                    {targetImage ? renderMiniAvatar(targetImage, targetName || "Target", t?.target, `target-${targetName || targetImage}`) : null}
                                   </div>
 
                                   <div className="mt-2">
@@ -535,22 +550,7 @@ export default function EpisodeView({
                                 >
                                   {/* alliance members first (main visual focus) */}
                                   <div className="flex flex-wrap justify-center gap-1.5">
-                                    {members.map((m) => (
-                                      <Avatar
-                                        key={m?.name}
-                                        className="w-12 h-12 sm:w-14 sm:h-14 border border-white/20 bg-black/30"
-                                      >
-                                        <AvatarImage
-                                          src={m?.image}
-                                          alt={m?.name}
-                                          className="object-cover"
-                                          style={{ imageRendering: "high-quality" }}
-                                        />
-                                        <AvatarFallback className="bg-stone-700 text-[10px] text-stone-100">
-                                          {m?.name?.[0] ?? "?"}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                    ))}
+                                    {members.map((m, idx) => renderMiniAvatar(m?.image, m?.name, m, m?.name || idx))}
                                   </div>
 
                                   <div className="h-px bg-white/5 my-2" />
@@ -574,7 +574,7 @@ export default function EpisodeView({
                                             Target
                                           </span>
                                           <div className="mt-1 rounded-full ring-2 ring-rose-400/30">
-                                            {renderMiniAvatar(targetImage, targetName || "Target")}
+                                            {renderMiniAvatar(targetImage, targetName || "Target", a?.target, `alliance-target-${targetName || targetImage}`)}
                                           </div>
                                         </div>
                                       </div>
