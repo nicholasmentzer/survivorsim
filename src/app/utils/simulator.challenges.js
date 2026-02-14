@@ -10,9 +10,13 @@ export const individualImmunity = (tribe) => {
   return choices[getRandomInt(choices.length)];
 };
 
+// Track the last losing tribe index to reduce repeat losses
+let lastLosingTribeIndex = null;
+
 /** Pre-merge tribal immunity between two tribes */
 export const tribalImmunity = (tribes) => {
   if (!tribes || tribes.length < 2) {
+    lastLosingTribeIndex = null;
     return { winnerIndex: 0, loserIndex: 0, winnerIndices: [0] };
   }
 
@@ -34,6 +38,7 @@ export const tribalImmunity = (tribes) => {
   const RANDOM_SWING = 0.6; // +/- to average strength
   const TEMPERATURE = 2.5;  // higher => flatter odds
   const BASE = 1.25;        // baseline chance so strong tribes can still lose
+  const REPEAT_LOSS_PENALTY = 0.45; // Lower = less likely to lose again (0.5 = 50% less likely)
 
   const powers = tribes.map((tribe) => {
     const base = avgStrength(tribe);
@@ -57,8 +62,17 @@ export const tribalImmunity = (tribes) => {
   // So we convert weights to integers.
   const maxPower = Math.max(...powers);
   const rawLoserWeights = powers.map((p) => BASE + Math.exp((maxPower - p) / TEMPERATURE));
-  const loserWeights = rawLoserWeights.map((w) => Math.max(1, Math.round(w * 1000)));
+  let loserWeights = rawLoserWeights.map((w) => Math.max(1, Math.round(w * 1000)));
+
+  // Apply penalty to last losing tribe to reduce repeat losses
+  if (lastLosingTribeIndex !== null && tribes[lastLosingTribeIndex]) {
+    loserWeights[lastLosingTribeIndex] = Math.round(loserWeights[lastLosingTribeIndex] * REPEAT_LOSS_PENALTY);
+    // Ensure minimum weight of 1
+    if (loserWeights[lastLosingTribeIndex] < 1) loserWeights[lastLosingTribeIndex] = 1;
+  }
+
   const loserIndex = weightedPick(loserWeights);
+  lastLosingTribeIndex = loserIndex;
 
   // Everyone except the loser is a "winner" (typical multi-tribe format).
   const winnerIndices = tribes
