@@ -1462,15 +1462,26 @@ const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
 const handlePreMergePhase = (updateResults, customEvents) => {
   const totalRemaining = tribes.reduce((sum, t) => sum + (t?.length || 0), 0);
 
+
+  // Track if any new alliances were created during swap phase
   if (!merged && !swapped && swapAt && totalRemaining === swapAt) {
     tribeSwap(updateResults);
     swapped = true;
+    // Mark that we just swapped
+    handlePreMergePhase._swapAlliancesCreated = false;
   }
 
   if (totalRemaining === mergeAt) {
     mergeTribes(updateResults);
     handlePostMergePhase(updateResults, customEvents);
   } else {
+      // If this is the last round before merge, and swap occurred, and no new alliances were created during swap, force one alliance in a random tribe
+      let forcedAllianceThisRound = false;
+      const isLastSwapRound = (swapped && totalRemaining === mergeAt + 1 && handlePreMergePhase._swapAlliancesCreated === false);
+      let tribeToForce = null;
+      if (isLastSwapRound && tribes.length > 0) {
+        tribeToForce = Math.floor(Math.random() * tribes.length);
+      }
       for (let i = 0; i < tribes.length; i++) {
         const tribeKey = makeTribeKey(i);
         const tribe = tribes[i];
@@ -1507,13 +1518,49 @@ const handlePreMergePhase = (updateResults, customEvents) => {
           }
         }
 
-        const alliancesUpdate = manageAlliances(tribe, tribeKey);
+        let alliancesUpdate = manageAlliances(tribe, tribeKey);
+
+        // If this is the forced round and this is the chosen tribe, and no alliances formed, force one
+        if (isLastSwapRound && i === tribeToForce && (!alliancesUpdate?.newAlliances?.length)) {
+          // Try to create a cross-tribe alliance if possible
+          let crossTribeMembers = [];
+          let originalTribeMap = {};
+          tribe.forEach(p => {
+            if (!originalTribeMap[p.originalTribeId]) originalTribeMap[p.originalTribeId] = [];
+            originalTribeMap[p.originalTribeId].push(p);
+          });
+          const tribeIds = Object.keys(originalTribeMap);
+          if (tribeIds.length > 1) {
+            crossTribeMembers = tribeIds.map(id => originalTribeMap[id][0]).filter(Boolean);
+          }
+          if (crossTribeMembers.length < 2) {
+            crossTribeMembers = tribe.slice(0, 2);
+          }
+          if (crossTribeMembers.length >= 2) {
+            let allianceName = `${tribeNames?.[tribeKey] || `Tribe ${i + 1}`} - Alliance ${numberedAllianceCounters[tribeKey] || 1}`;
+            let newAlliance = {
+              id: `a_forced_${Date.now()}_${i}`,
+              name: allianceName,
+              members: crossTribeMembers.sort((a, b) => a.name.localeCompare(b.name)),
+              strength: 5,
+            };
+            alliances.push(newAlliance);
+            alliancesUpdate.newAlliances = [newAlliance];
+            numberedAllianceCounters[tribeKey] = (numberedAllianceCounters[tribeKey] || 1) + 1;
+            forcedAllianceThisRound = true;
+          }
+        }
+
         if (alliancesUpdate?.newAlliances?.length) {
           updateResults({
             type: "alliance",
             title: `New Alliances Formed (${tribeNames?.[tribeKey] || `Tribe ${i + 1}`})`,
             alliances: alliancesUpdate.newAlliances,
           });
+          // Mark that a new alliance was created after swap
+          if (swapped && typeof handlePreMergePhase._swapAlliancesCreated !== "undefined") {
+            handlePreMergePhase._swapAlliancesCreated = true;
+          }
         }
         if (alliancesUpdate?.dissolvedAlliances?.length) {
           updateResults({
