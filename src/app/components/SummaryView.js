@@ -1,7 +1,8 @@
 // app/components/SummaryView.js
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+// Removed DataTable import
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Avatar,
@@ -11,9 +12,19 @@ import {
 
 export default function SummaryView({ finalPlacements }) {
 
-  const sortedPlacements = [...(finalPlacements || [])].sort(
-    (a, b) => a.placement - b.placement
-  );
+  const sortedPlacements = [...(finalPlacements || [])].sort((a, b) => a.placement - b.placement);
+  // Show all players for votes, order least to most
+  const votesReceivedSorted = [...(finalPlacements || [])]
+    .sort((a, b) => (a.votesReceived ?? 0) - (b.votesReceived ?? 0));
+  // Only players with idols played > 0, order by idols played desc, then votes negated desc
+  const idolsPlayedSorted = [...(finalPlacements || [])]
+    .filter(p => (p.idolsPlayed ?? 0) > 0)
+    .sort((a, b) => {
+      if ((b.idolsPlayed ?? 0) !== (a.idolsPlayed ?? 0)) {
+        return (b.idolsPlayed ?? 0) - (a.idolsPlayed ?? 0);
+      }
+      return (b.votesNegated ?? 0) - (a.votesNegated ?? 0);
+    });
 
   if (!sortedPlacements.length) return null;
 
@@ -115,6 +126,54 @@ export default function SummaryView({ finalPlacements }) {
                 </Card>
               );
             })}
+          </div>
+
+          {/* Stat Lists Side by Side on Large Screens */}
+          <div className="mt-10 flex flex-col lg:flex-row gap-8 justify-center items-start">
+            {/* Votes Received Section */}
+            <div className="flex-1 max-w-xs mx-auto">
+              <h3 className="text-lg font-bold mb-2 text-center text-blue-300 tracking-wide">Votes Received</h3>
+              <ul className="divide-y divide-blue-900/20 bg-blue-950/60 rounded-lg shadow-md">
+                {votesReceivedSorted.length === 0 && (
+                  <li className="py-2 text-center text-stone-300 text-sm">No votes were cast this season.</li>
+                )}
+                {votesReceivedSorted.map((player, idx) => {
+                  const voteCount = player.votesReceived ?? 0;
+                  return (
+                    <li key={player.name} className="flex items-center gap-2 px-3 py-2 text-sm min-h-0">
+                      <span className="font-bold text-blue-200 w-6 text-right">{idx + 1}.</span>
+                      <span className="flex-1 font-medium text-stone-100 truncate">{player.name}</span>
+                      <span className="text-blue-200 font-semibold">{voteCount}</span>
+                      <span className="text-xs text-stone-400 ml-1">{voteCount === 1 ? 'vote' : 'votes'}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Idols Played Section */}
+            <div className="flex-1 max-w-md mx-auto">
+              <h3 className="text-lg font-bold mb-2 text-center text-amber-300 tracking-wide">Idols Played & Votes Negated</h3>
+              <ul className="divide-y divide-amber-900/20 bg-amber-950/60 rounded-lg shadow-md">
+                {idolsPlayedSorted.length === 0 && (
+                  <li className="py-2 text-center text-stone-300 text-sm">No idols were played this season.</li>
+                )}
+                {idolsPlayedSorted.map((player, idx) => {
+                  const idolCount = player.idolsPlayed ?? 0;
+                  const votesNegated = player.votesNegated ?? 0;
+                  return (
+                    <li key={player.name} className="flex items-center gap-2 px-3 py-2 text-sm min-h-0">
+                      <span className="font-bold text-amber-200 w-6 text-right">{idx + 1}.</span>
+                      <span className="flex-1 font-medium text-stone-100 truncate">{player.name}</span>
+                      <span className="text-amber-200 font-semibold">{idolCount}</span>
+                      <span className="text-xs text-stone-400 ml-1">{idolCount === 1 ? 'idol' : 'idols'}</span>
+                      <span className="text-amber-200 font-semibold ml-4">{votesNegated}</span>
+                      <span className="text-xs text-stone-400 ml-1">{votesNegated === 1 ? 'vote negated' : 'votes negated'}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </div>
       </section>

@@ -110,12 +110,9 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         });
       });
     }
+    let targetIndex = null;
     if (target && target !== voter && (voter.relationships[target.name] < 3 || Math.random() < 0.5)) {
-      let targetIndex = tribe.indexOf(target);
-      votes[targetIndex] = (votes[targetIndex] || 0) + 1;
-      let votedWithAlliance = bestAlliance && !bestAlliance.members.includes(target);
-      voteDetails.push(`${voter.name} voted for ${target.name}${votedWithAlliance ? ` with ${bestAlliance.name}` : ""}`);
-      exportVotes.push({target: target.name, voter: voter.name});
+      targetIndex = tribe.indexOf(target);
     } else {
       let perceivedVotes = {};
       Object.keys(votes).forEach(vote => {
@@ -124,8 +121,6 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   
       const sortedVotes = Object.entries(perceivedVotes).sort((a, b) => b[1] - a[1]);
       
-      let targetIndex;
-
       let probability = Math.min(0 + (sortedVotes.length * 0.4), 0.9);
       
       if (sortedVotes.length > 0 && Math.random() < probability) {
@@ -160,10 +155,10 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         }
       }
       else{
-        
+        // fallback handled below
       }
   
-      if (targetIndex === undefined) {
+      if (targetIndex === undefined || targetIndex === null) {
         const choices = [];
         tribe.forEach((other, i) => {
           if (i === voterIndex || i === immuneIndex) return;
@@ -203,17 +198,22 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
           }
         }
       }
-
-      if (targetIndex === undefined || !tribe[targetIndex]) {
-        // If we still failed to pick a target, skip this vote safely.
-        return;
-      }
-
-      votes[targetIndex] = (votes[targetIndex] || 0) + 1;
-      voteDetails.push(`${voter.name} voted for ${tribe[targetIndex].name}`);
-      exportVotes.push({target: tribe[targetIndex].name, voter: voter.name});
-      //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${tribe[targetIndex].name}`);
     }
+
+    if (targetIndex === undefined || targetIndex === null || !tribe[targetIndex]) {
+      // If we still failed to pick a target, skip this vote safely.
+      return;
+    }
+
+    // Track votes received
+    if (tribe[targetIndex]) {
+      tribe[targetIndex].votesReceived = (tribe[targetIndex].votesReceived || 0) + 1;
+    }
+
+    votes[targetIndex] = (votes[targetIndex] || 0) + 1;
+    voteDetails.push(`${voter.name} voted for ${tribe[targetIndex].name}`);
+    exportVotes.push({target: tribe[targetIndex].name, voter: voter.name});
+    //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${tribe[targetIndex].name}`);
   });
 
   let sortedVotes = Object.entries(votes).sort((a, b) => b[1] - a[1]);
@@ -345,6 +345,28 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
       immunePlayer = idolPlayTarget?.name || null;
       immuneIdolIndex = idolPlayTarget ? tribe.indexOf(idolPlayTarget) : null;
+
+      // Track idol play stat
+      if (idolUser) {
+        idolUser.idolsPlayed = (idolUser.idolsPlayed || 0) + 1;
+        // Optionally, increase popularity for successful idol play
+        if (!idolWasMisplayed && idolPlayTarget && idolPlayTarget.name === immunePlayer) {
+          idolUser.popularity = (idolUser.popularity || 0) + 1;
+        }
+      }
+
+      // Track votes negated by idol
+      if (immunePlayer) {
+        // For each vote that was negated, increment votesNegated for the immune player
+        exportVotes.forEach(vote => {
+          if (vote.target === immunePlayer) {
+            const immuneP = tribe.find(p => p.name === immunePlayer);
+            if (immuneP) {
+              immuneP.votesNegated = (immuneP.votesNegated || 0) + 1;
+            }
+          }
+        });
+      }
 
       const playText = idolUser?.name === immunePlayer
         ? `${idolUser.name} plays the Hidden Immunity Idol!`

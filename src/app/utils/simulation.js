@@ -416,6 +416,11 @@ const populateTribes = (players) => {
 
 const initializeRelationships = (players) => {
   players.forEach((player) => {
+    // Initialize stat tracking fields
+    player.votesReceived = 0;
+    player.idolsPlayed = 0;
+    player.votesNegated = 0;
+    player.popularity = player.likeability || 5;
     player.relationships = {};
     players.forEach((other) => {
       if (player !== other) {
