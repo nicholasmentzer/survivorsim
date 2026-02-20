@@ -27,16 +27,6 @@ const getDefaultTribeSize = (n) => {
 
 const DEFAULT_S50_TRIBES = {
   tribe1: [
-    "Colby Donaldson",
-    "Stephenie Lagrossa Kendrick",
-    "Aubry Bracco",
-    "Angelina Keeley",
-    "Q Burdette",
-    "Genevieve Mushaluk",
-    "Kyle Fraser",
-    "Rizo Velovic",
-  ],
-  tribe2: [
     "Cirie Fields",
     "Ozzy Lusth",
     "Jenna Lewis Daugherty",
@@ -45,6 +35,16 @@ const DEFAULT_S50_TRIBES = {
     "Emily Flippen",
     "Joe Hunter",
     "Savannah Louie",
+  ],
+  tribe2: [
+    "Colby Donaldson",
+    "Stephenie Lagrossa Kendrick",
+    "Aubry Bracco",
+    "Angelina Keeley",
+    "Q Burdette",
+    "Genevieve Mushaluk",
+    "Kyle Fraser",
+    "Rizo Velovic",
   ],
   tribe3: [
     "Jonathan Young",
