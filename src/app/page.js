@@ -286,6 +286,22 @@ export default function Home() {
     setEventDescription("");
   };
 
+  const resetCast = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    const pool = [...playersData.men, ...playersData.women];
+    const wantsDefaultS50 = numTribes === 3 && tribeSize === 8;
+    if (wantsDefaultS50) {
+      const defaultCast = buildDefaultSeason50Cast(pool);
+      if (defaultCast) { setPlayers(defaultCast); return; }
+    }
+    const totalPlayers = tribeSize * numTribes;
+    const picked = getRandomPlayersFromPool(pool, totalPlayers).map((p, idx) => {
+      const tribeId = Math.floor(idx / tribeSize) + 1;
+      return { ...p, id: `${Date.now()}-${idx}-${p.name}`, tribeId, originalTribeId: tribeId };
+    });
+    setPlayers(picked);
+  };
+
   const randomizeAllStats = () => {
     setPlayers((prev) =>
       (prev || []).map((player) => ({
@@ -455,6 +471,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!episodes.length) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         episodes, currentEpisode, mode,
@@ -515,6 +532,7 @@ export default function Home() {
     resetSimulation();
     finalPlacements = [];
     setAllianceNameOverrides({});
+    localStorage.removeItem(STORAGE_KEY);
     window.scrollTo({ top: 0 });
     setMode("configure");
     setTribeNames(makeDefaultTribeNames(numTribes));
@@ -695,6 +713,7 @@ export default function Home() {
                 tribeNames={tribeNames}
                 setTribeNames={setTribeNames}
                 randomizeAllStats={randomizeAllStats}
+                resetCast={resetCast}
                 customEvents={customEvents}
                 eventDescription={eventDescription}
                 setEventDescription={setEventDescription}

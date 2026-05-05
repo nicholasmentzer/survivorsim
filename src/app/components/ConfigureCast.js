@@ -50,6 +50,7 @@ export default function ConfigureCast({
   tribeNames = {},
   setTribeNames = () => {},
   randomizeAllStats = () => {},
+  resetCast = () => {},
   customEvents = [],
   eventDescription = "",
   setEventDescription = () => {},
@@ -491,29 +492,37 @@ export default function ConfigureCast({
                       <Button
                         type="button"
                         size="sm"
-                        className="text-xs tracking-wide px-3 py-1 h-7 border border-blue-400 bg-blue-900/60 text-blue-100 hover:bg-blue-800/80"
+                        className="text-xs tracking-wide px-3 py-1 h-7 border border-pink-400 bg-pink-900/60 text-pink-100 hover:bg-pink-800/80"
                         variant="outline"
-                        onClick={randomizeAllStats}
+                        onClick={() => {
+                          setPlayers((prev) =>
+                            (prev || []).map((player) => ({
+                              ...player,
+                              name: (player.name || '').split(' ')[0],
+                            }))
+                          );
+                        }}
                       >
-                        Randomize Stats
+                        Remove Last Names
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="text-xs tracking-wide px-3 py-1 h-7 border border-gray-400 bg-gray-800/60 text-gray-200 hover:bg-gray-700/80"
+                        variant="outline"
+                        onClick={resetCast}
+                      >
+                        Reset Cast
                       </Button>
                     </div>
                     <Button
                       type="button"
                       size="sm"
-                      className="text-xs tracking-wide px-3 py-1 h-7 border border-pink-400 bg-pink-900/60 text-pink-100 hover:bg-pink-800/80"
+                      className="text-xs tracking-wide px-3 py-1 h-7 border border-blue-400 bg-blue-900/60 text-blue-100 hover:bg-blue-800/80"
                       variant="outline"
-                      onClick={() => {
-                        // Remove last names from all players
-                        setPlayers((prev) =>
-                          (prev || []).map((player) => ({
-                            ...player,
-                            name: (player.name || '').split(' ')[0],
-                          }))
-                        );
-                      }}
+                      onClick={randomizeAllStats}
                     >
-                      Remove Last Names
+                      Randomize Stats
                     </Button>
                   </div>
                 </div>
