@@ -342,6 +342,8 @@ export default function Home() {
 
   // When tribe count changes, reset tribe size + merge defaults to sensible scaled values.
   const didInitTribeDefaults = useRef(false);
+  // Prevents config-reset effects from overwriting state restored from localStorage.
+  const restoredFromStorage = useRef(false);
   useEffect(() => {
     // On initial mount, keep the explicit initial defaults (swap on @ 18, merge @ 14).
     // Subsequent tribe-count changes should continue using the existing reset behavior.
@@ -349,6 +351,7 @@ export default function Home() {
       didInitTribeDefaults.current = true;
       return;
     }
+    if (restoredFromStorage.current) return;
 
     const clampedNumTribes = Math.max(1, Math.min(DEFAULT_MAX_TRIBES, numTribes));
     if (clampedNumTribes !== numTribes) {
@@ -386,6 +389,11 @@ export default function Home() {
       return next;
     });
 
+    if (restoredFromStorage.current) {
+      restoredFromStorage.current = false;
+      return;
+    }
+
     const pool = [...playersData.men, ...playersData.women];
     const wantsDefaultS50 = clampedNumTribes === 3 && tribeSize === 8;
     if (wantsDefaultS50) {
@@ -413,6 +421,55 @@ export default function Home() {
   const [episodes, setEpisodes] = useState([]);
   const [currentEpisode, setCurrentEpisode] = useState(0);
   const [useOnlyCustomEvents, setUseOnlyCustomEvents] = useState(false);
+
+  const STORAGE_KEY = 'survivorSimState';
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const s = JSON.parse(saved);
+
+      restoredFromStorage.current = true;
+
+      if (s.players)                           setPlayers(s.players);
+      if (s.numTribes)                         setNumTribes(s.numTribes);
+      if (s.tribeSize)                         setTribeSize(s.tribeSize);
+      if (s.mergeTime)                         setMergeTime(s.mergeTime);
+      if (s.swapTime !== undefined)            setSwapTime(s.swapTime);
+      if (s.swapEnabled !== undefined)         setSwapEnabled(s.swapEnabled);
+      if (s.tribeNames)                        setTribeNames(s.tribeNames);
+      if (s.advantages)                        setAdvantages(s.advantages);
+      if (s.customEvents)                      setCustomEvents(s.customEvents);
+      if (s.useOnlyCustomEvents !== undefined) setUseOnlyCustomEvents(s.useOnlyCustomEvents);
+      if (s.allianceNameOverrides)             setAllianceNameOverrides(s.allianceNameOverrides);
+
+      if (s.episodes?.length > 0) {
+        setEpisodes(s.episodes);
+        setCurrentEpisode(s.currentEpisode ?? 0);
+        if (s.mode === 'simulate' || s.mode === 'summary') setMode(s.mode);
+      }
+    } catch (e) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        episodes, currentEpisode, mode,
+        players, numTribes, tribeSize, mergeTime, swapTime, swapEnabled,
+        tribeNames, advantages, customEvents, useOnlyCustomEvents,
+        allianceNameOverrides,
+      }));
+    } catch (e) {
+      // Storage full or unavailable — fail silently
+    }
+  }, [
+    episodes, currentEpisode, mode, players, numTribes, tribeSize,
+    mergeTime, swapTime, swapEnabled, tribeNames, advantages,
+    customEvents, useOnlyCustomEvents, allianceNameOverrides,
+  ]);
 
   const startSimulation = () => {
     resetSimulation();
