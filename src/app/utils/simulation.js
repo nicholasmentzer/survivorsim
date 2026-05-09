@@ -122,6 +122,7 @@ let mergeAt = 12;
 let swapAt = null;
 let swapped = false;
 let count = 20;
+let eliminationNumber = 0;
 let numberedAlliances = true;
 let numberedAllianceCounters = makeTribeMap(2, 1);
 
@@ -150,6 +151,7 @@ export const resetSimulation = () => {
   journeyFired = 0;
   grabQuota = 0;
   grabFired = 0;
+  eliminationNumber = 0;
   usableAdvantages = [];
   randomAllianceNames = [
     "The Titans",
@@ -1659,6 +1661,7 @@ export const simulate = (
   );
   numTribes = Number.isFinite(numTribesParam) ? numTribesParam : inferredTribes;
   count = tsize * numTribes;
+  eliminationNumber = 0;
   tribeNames = tribes || makeDefaultTribeNames(numTribes);
   useOnlyCustomEvents = useOnlyCustom;
   tribeSize = tsize;
@@ -1995,6 +1998,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       getAllianceTargets(tribes[loser], getAlliancesForTribe(tribes[loser]), updateResults);
 
       state = "tribal";
+      const tribalAttendees = [...tribes[loser]];
       const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(
         tribes[loser],
         getAlliancesForTribe(tribes[loser]),
@@ -2003,12 +2007,14 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         usableAdvantages,
         tribeIdols,
         tribeExtraVotes,
-        tribeStealVotes
+        tribeStealVotes,
+        eliminationNumber + 1
       );
       tribeIdols = idols.idols ?? idols;
       tribeExtraVotes = idols.extraVotes ?? tribeExtraVotes;
       tribeStealVotes = idols.stealVotes ?? tribeStealVotes;
       if (out !== undefined) {
+          eliminationNumber++;
           const votedout = tribes[loser].splice(out, 1)[0];
           votedout.placement = count;
           count--;
@@ -2018,6 +2024,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
           updateResults({
             type: "voting-summary",
             message: voteSummary,
+            attendees: tribalAttendees,
           });
           updateResults({
             type: "event",
@@ -2144,11 +2151,13 @@ const handlePostMergePhase = (updateResults, customEvents) => {
 
         state = "tribal";
         const tribecopy = [...tribe];
-        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols, tribeExtraVotes, tribeStealVotes);
+        const tribalAttendees = [...tribe];
+        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols, tribeExtraVotes, tribeStealVotes, eliminationNumber + 1);
         tribeIdols = idols.idols ?? idols;
         tribeExtraVotes = idols.extraVotes ?? tribeExtraVotes;
         tribeStealVotes = idols.stealVotes ?? tribeStealVotes;
         if (out !== undefined) {
+            eliminationNumber++;
             const votedout = tribecopy.splice(out, 1)[0];
             votedout.placement = count;
             count--;
@@ -2159,6 +2168,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
             updateResults({
               type: "voting-summary",
               message: voteSummary,
+              attendees: tribalAttendees,
             });
             updateResults({
               type: "event",

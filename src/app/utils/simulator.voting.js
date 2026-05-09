@@ -11,7 +11,7 @@ import {
  * Returns:
  *  { voteIndex, sortedVotes, voteDetails, voteSummary, idols }
  */
-export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages, idols, extraVotes = null, stealVotes = null) => {
+export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages, idols, extraVotes = null, stealVotes = null, eliminationOrdinal = 1) => {
   // Helper to bundle all advantage maps into the return value
   const packAdvantages = (updatedIdols) => ({
     idols: updatedIdols,
@@ -499,7 +499,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       voteSummary.push(`<span class="font-bold text-md md:text-lg">${playText}</span>`);
     }
 
-    voteSummary.push(...generateVotingSummaryWithIdol([...exportVotes], immunePlayer, tribe));
+    voteSummary.push(...generateVotingSummaryWithIdol([...exportVotes], immunePlayer, tribe, eliminationOrdinal));
     
     let newSortedVotes;
 
@@ -555,7 +555,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       }
     }
   } else {
-    voteSummary.push(...generateVotingSummary([...exportVotes], tribe));
+    voteSummary.push(...generateVotingSummary([...exportVotes], tribe, { eliminationOrdinal }));
   }
 
   if (tiedPlayers.length > 1) {
@@ -608,7 +608,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     });
     voteDetails.push(...revoteDetails);
     voteSummary.push(...revoteSummary);
-    voteSummary.push(...generateVotingSummary([...revoteExportVotes], tribe));
+    voteSummary.push(...generateVotingSummary([...revoteExportVotes], tribe, { roundRobin: true }));
 
     let revoteSorted = Object.entries(revoteVotes).sort((a, b) => b[1] - a[1]);
 

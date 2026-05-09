@@ -1088,6 +1088,28 @@ export default function EpisodeView({
                       </div>
                     ) : null}
 
+                    {/* Tribe roster at tribal council */}
+                    {event.type === "voting-summary" && event.attendees?.length > 0 && (
+                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                        <CardContent className="pt-3 pb-3">
+                          <p className="text-[10px] uppercase tracking-[0.16em] text-stone-500 text-center mb-3">
+                            Attending Tribal Council
+                          </p>
+                          <div className="flex flex-wrap justify-center gap-3">
+                            {event.attendees.map((player, i) => (
+                              <div key={i} className="flex flex-col items-center gap-1">
+                                <Avatar className="w-12 h-12 sm:w-16 sm:h-16 border border-white/20 shadow-md">
+                                  <AvatarImage src={player.image} alt={player.name} className="object-cover" />
+                                  <AvatarFallback className="bg-stone-700 text-xs text-stone-100">{player.name?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-[10px] text-stone-300 text-center max-w-[56px] leading-tight">{player.name?.split(" ")[0]}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
                     {/* Voting summary (big reveal card) */}
                     {event.type === "voting-summary" ? (
                       <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-1/2">

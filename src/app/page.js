@@ -292,18 +292,33 @@ export default function Home() {
 
   const resetCast = () => {
     localStorage.removeItem(STORAGE_KEY);
-    const pool = [...playersData.men, ...playersData.women];
-    const wantsDefaultS50 = numTribes === 3 && tribeSize === 8;
-    if (wantsDefaultS50) {
-      const defaultCast = buildDefaultSeason50Cast(pool);
-      if (defaultCast) { setPlayers(defaultCast); return; }
-    }
-    const totalPlayers = tribeSize * numTribes;
-    const picked = getRandomPlayersFromPool(pool, totalPlayers).map((p, idx) => {
-      const tribeId = Math.floor(idx / tribeSize) + 1;
-      return { ...p, id: `${Date.now()}-${idx}-${p.name}`, tribeId, originalTribeId: tribeId };
+    // Restore every setting to Season 50 defaults
+    setNumTribes(3);
+    setTribeSize(8);
+    setMergeTime(14);
+    setSwapEnabled(true);
+    setSwapTime(18);
+    setTribeNames(makeDefaultTribeNames(3));
+    setAdvantages({
+      immunityIdol: true,
+      extraVote: false,
+      stealVote: false,
+      journeyFrequency: 3,
+      challengeGrabFrequency: 3,
     });
-    setPlayers(picked);
+
+    const pool = [...playersData.men, ...playersData.women];
+    const defaultCast = buildDefaultSeason50Cast(pool);
+    if (defaultCast) {
+      setPlayers(defaultCast);
+    } else {
+      // Fallback: random 24-player cast across 3 tribes of 8
+      const picked = getRandomPlayersFromPool(pool, 24).map((p, idx) => {
+        const tribeId = Math.floor(idx / 8) + 1;
+        return { ...p, id: `${Date.now()}-${idx}-${p.name}`, tribeId, originalTribeId: tribeId };
+      });
+      setPlayers(picked);
+    }
   };
 
   const randomizeAllStats = () => {
