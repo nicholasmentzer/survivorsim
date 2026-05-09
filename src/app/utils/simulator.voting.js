@@ -11,7 +11,14 @@ import {
  * Returns:
  *  { voteIndex, sortedVotes, voteDetails, voteSummary, idols }
  */
-export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages, idols) => {
+export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages, idols, extraVotes = null, stealVotes = null) => {
+  // Helper to bundle all advantage maps into the return value
+  const packAdvantages = (updatedIdols) => ({
+    idols: updatedIdols,
+    extraVotes: extraVotes || {},
+    stealVotes: stealVotes || {},
+  });
+
   const eligibleIndices = (tribe || [])
     .map((player, index) => ({ player, index }))
     .filter(({ player, index }) => !!player && index !== immuneIndex);
@@ -23,14 +30,62 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       sortedVotes: [],
       voteDetails: [],
       voteSummary: ["<span class=\"font-bold text-lg\">It's time to vote!</span>", "No eligible players to vote."],
-      idols,
+      idols: packAdvantages(idols),
     };
+  }
+
+  // --- Vote Steal ---
+  // Decide before voting begins; stolen player is removed from the voter pool.
+  let stolenPlayerIndex = null;
+  let stealerName = null;
+  if (usableAdvantages.includes("stealVote") && stealVotes) {
+    const stealHolder = tribe.find(p =>
+      p && Object.values(stealVotes).some(s => s?.name === p.name)
+    );
+
+    if (stealHolder && tribe.indexOf(stealHolder) !== immuneIndex) {
+      const holderAlliance = (alliances2 || []).find(a => a.members.some(m => m.name === stealHolder.name));
+      const allianceSize = (holderAlliance?.members || []).filter(m => tribe.some(p => p?.name === m.name)).length;
+      const totalVoters = tribe.filter((p, i) => p && i !== immuneIndex).length;
+      const margin = allianceSize - (totalVoters - allianceSize);
+
+      let playChance;
+      if (margin > 2) playChance = 0.25;
+      else if (margin >= 0) playChance = 0.50;
+      else playChance = 0.65;
+
+      if (Math.random() < playChance) {
+        const preferred = tribe
+          .filter((p, i) =>
+            p && i !== immuneIndex && p.name !== stealHolder.name &&
+            !holderAlliance?.members.some(m => m.name === p.name)
+          )
+          .sort((a, b) =>
+            (stealHolder.relationships?.[a.name] ?? 0) - (stealHolder.relationships?.[b.name] ?? 0)
+          );
+
+        const stealTarget = preferred[0] ?? tribe.find(
+          (p, i) => p && i !== immuneIndex && p.name !== stealHolder.name
+        );
+
+        if (stealTarget) {
+          stolenPlayerIndex = tribe.indexOf(stealTarget);
+          stealerName = stealHolder.name;
+          stealHolder.hasStealVote = false;
+          stealHolder.votesStolen = (stealHolder.votesStolen || 0) + 1;
+          Object.keys(stealVotes).forEach(k => {
+            if (stealVotes[k]?.name === stealHolder.name) stealVotes[k] = null;
+          });
+        }
+      }
+    }
   }
 
   const votes = {};
   const exportVotes = [];
   const voteDetails = [];
   const voteSummary = [];
+  let extraVotePlayedByIndex = -1; // tracks who played the extra vote this tribal (for revote rules)
   voteDetails.push(`<span class="font-bold text-lg">Vote Summary</span>`);
   voteSummary.push(`<span class="font-bold text-lg">It's time to vote!</span>`);
 
@@ -48,10 +103,21 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     });
   };
 
+  // Announce vote steal if it was played (single line, no voteDetails duplication)
+  if (stolenPlayerIndex !== null && stolenPlayerIndex >= 0 && stealerName) {
+    const stolenPlayer = tribe[stolenPlayerIndex];
+    if (stolenPlayer) {
+      voteSummary.push(`<span class="font-bold text-md md:text-lg">${stealerName} plays the Vote Steal on ${stolenPlayer.name}!</span>`);
+      voteDetails.push(`${stealerName} used the Vote Steal on ${stolenPlayer.name}.`);
+    }
+  }
+
   //voteDetails.push(...getAllianceTargets(tribe, alliances2));
 
   tribe.forEach((voter, voterIndex) => {
     if (!voter) return;
+    // Stolen player cannot vote
+    if (stolenPlayerIndex !== null && voterIndex === stolenPlayerIndex) return;
 
     let bestAlliance = null;
     let allianceOptions = [];
@@ -216,6 +282,21 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     //voteSummary.push(`${voterIndex + 1}${getOrdinalSuffix(voterIndex + 1)} vote: ${tribe[targetIndex].name}`);
   });
 
+  // Stealer casts the stolen vote toward their preferred target (lowest-relationship non-ally)
+  if (stolenPlayerIndex !== null && stealerName) {
+    // Cast stolen vote for the same target the stealer voted for normally
+    const stealerOriginalVote = exportVotes.find(v => v.voter === stealerName);
+    const bonusTargetName = stealerOriginalVote?.target;
+    const bonusTargetPlayer = bonusTargetName ? tribe.find(p => p?.name === bonusTargetName) : null;
+    const bonusTargetIdx = bonusTargetPlayer ? tribe.indexOf(bonusTargetPlayer) : -1;
+    if (bonusTargetIdx >= 0) {
+      votes[bonusTargetIdx] = (votes[bonusTargetIdx] || 0) + 1;
+      bonusTargetPlayer.votesReceived = (bonusTargetPlayer.votesReceived || 0) + 1;
+      voteDetails.push(`${stealerName} voted for ${bonusTargetPlayer.name}`);
+      exportVotes.push({ target: bonusTargetPlayer.name, voter: stealerName });
+    }
+  }
+
   let sortedVotes = Object.entries(votes).sort((a, b) => b[1] - a[1]);
 
   // If voting failed to produce any votes (edge cases), force a valid outcome.
@@ -227,13 +308,56 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         sortedVotes: [],
         voteDetails,
         voteSummary: [...voteSummary, "No votes could be cast."],
-        idols,
+        idols: packAdvantages(idols),
       };
     }
 
     sortedVotes = [[String(fallbackIndex), 1]];
     voteDetails.push("No valid votes were generated; a default elimination was chosen.");
     exportVotes.push({ target: tribe[fallbackIndex]?.name, voter: "(default)" });
+  }
+
+  // --- Extra Vote ---
+  // Played after the initial tally; holder casts a second vote for their original target.
+  if (usableAdvantages.includes("extraVote") && extraVotes) {
+    const evHolder = tribe.find(p =>
+      p && Object.values(extraVotes).some(e => e?.name === p.name)
+    );
+    if (evHolder) {
+      const originalVote = exportVotes.find(v => v.voter === evHolder.name);
+      const originalTargetIdx = originalVote
+        ? tribe.findIndex(p => p?.name === originalVote.target)
+        : -1;
+
+      // Determine if the extra vote would matter
+      const targetVotes = originalTargetIdx >= 0 ? (votes[originalTargetIdx] || 0) : 0;
+      const leaderVotes = sortedVotes[0]?.[1] ?? 0;
+      const isLeader = originalTargetIdx >= 0 && String(originalTargetIdx) === sortedVotes[0]?.[0];
+      const gap = targetVotes - (isLeader ? (sortedVotes[1]?.[1] ?? 0) : leaderVotes);
+
+      let playChance;
+      if (targetVotes === 0) playChance = 0.10;
+      else if (isLeader && gap >= 2) playChance = 0.15;
+      else if (isLeader && gap === 1) playChance = 0.30;
+      else if (gap === 0) playChance = 0.55;
+      else if (gap === -1) playChance = 0.45;
+      else playChance = 0.20;
+
+      if (Math.random() < playChance && originalTargetIdx >= 0) {
+        evHolder.hasExtraVote = false;
+        evHolder.extraVotesPlayed = (evHolder.extraVotesPlayed || 0) + 1;
+        extraVotePlayedByIndex = tribe.indexOf(evHolder);
+        Object.keys(extraVotes).forEach(k => {
+          if (extraVotes[k]?.name === evHolder.name) extraVotes[k] = null;
+        });
+        votes[originalTargetIdx] = (votes[originalTargetIdx] || 0) + 1;
+        tribe[originalTargetIdx].votesReceived = (tribe[originalTargetIdx].votesReceived || 0) + 1;
+        exportVotes.push({ target: originalVote.target, voter: `${evHolder.name} (extra vote)` });
+        voteDetails.push(`${evHolder.name} used the Extra Vote.`);
+        voteDetails.push(`${evHolder.name} voted for ${originalVote.target}`);
+        sortedVotes = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+      }
+    }
   }
 
   let idolUsed = false;
@@ -397,7 +521,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       });
 
       newSortedVotes = Object.entries(newVotesCount).map(([key, value]) => [parseInt(key), value])
-            .sort((a, b) => b[1] - a[1]); 
+            .sort((a, b) => b[1] - a[1]);
 
       if (newSortedVotes.length > 1 && newSortedVotes[0][1] === newSortedVotes[1][1]) {
         highestVoteCount = newSortedVotes[0][1];
@@ -412,10 +536,22 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
               idols[key] = null;
           }
         });
-        return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary, idols };
+        Object.keys(extraVotes || {}).forEach(key => {
+          if (extraVotes[key] && extraVotes[key].name === tribe[loserIndex].name) {
+            tribe[loserIndex].hasExtraVote = false;
+            extraVotes[key] = null;
+          }
+        });
+        Object.keys(stealVotes || {}).forEach(key => {
+          if (stealVotes[key] && stealVotes[key].name === tribe[loserIndex].name) {
+            tribe[loserIndex].hasStealVote = false;
+            stealVotes[key] = null;
+          }
+        });
+        return { voteIndex: parseInt(loserIndex), sortedVotes: generateFormattedVotes(newSortedVotes), voteDetails, voteSummary, idols: packAdvantages(idols) };
       } else {
         voteSummary.push(`<span class="font-bold text-md md:text-lg">All votes were nullified. Revote required!</span>`);
-        return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols };
+        return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols: packAdvantages(idols) };
       }
     }
   } else {
@@ -431,16 +567,40 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     let revoteSummary = [];
     let tiedIndexes = tiedPlayers.map(([index]) => parseInt(index));
 
-    tribe.forEach((voter, index) => {
-      const originalVote = exportVotes.find(v => v.voter === voter.name)?.target;
-      if (!tiedIndexes.includes(tribe.indexOf(voter))) {
-        let revoteTargetIndex;
-        if (tiedIndexes.includes(tribe.findIndex(p => p.name === originalVote)) && Math.random() < 0.9) {
-          revoteTargetIndex = tribe.findIndex(p => p.name === originalVote);
-        } else {
-          revoteTargetIndex = tiedIndexes[Math.floor(Math.random() * tiedIndexes.length)];
-        }
+    // Both extra vote and steal-a-vote carry their double-vote into the revote.
+    // If either advantage holder is among the tied players, ALL tied players may vote.
+    const stealerIndex = stealerName ? tribe.findIndex(p => p?.name === stealerName) : -1;
+    const anyDoubleVoteHolderIsTied =
+      (extraVotePlayedByIndex >= 0 && tiedIndexes.includes(extraVotePlayedByIndex)) ||
+      (stealerIndex >= 0 && tiedIndexes.includes(stealerIndex));
 
+    tribe.forEach((voter, index) => {
+      if (!voter) return;
+      const isTied = tiedIndexes.includes(index);
+
+      // Tied players can only vote if an advantage holder is among them
+      if (isTied && !anyDoubleVoteHolderIsTied) return;
+
+      const originalVote = exportVotes.find(v => v.voter === voter.name)?.target;
+
+      // Tied voters can only target other tied players (not themselves)
+      const validTargets = isTied
+        ? tiedIndexes.filter(ti => ti !== index)
+        : tiedIndexes;
+      if (!validTargets.length) return;
+
+      const originalTiedVoteIdx = tribe.findIndex(p => p?.name === originalVote);
+      const revoteTargetIndex = validTargets.includes(originalTiedVoteIdx) && Math.random() < 0.9
+        ? originalTiedVoteIdx
+        : validTargets[Math.floor(Math.random() * validTargets.length)];
+
+      revoteVotes[revoteTargetIndex] = (revoteVotes[revoteTargetIndex] || 0) + 1;
+      revoteDetails.push(`${voter.name} revoted for ${tribe[revoteTargetIndex].name}`);
+      revoteExportVotes.push({ target: tribe[revoteTargetIndex].name, voter: voter.name });
+
+      // Extra vote holder or stealer casts their extra vote again for the same target
+      const hasDoubleVote = index === extraVotePlayedByIndex || index === stealerIndex;
+      if (hasDoubleVote) {
         revoteVotes[revoteTargetIndex] = (revoteVotes[revoteTargetIndex] || 0) + 1;
         revoteDetails.push(`${voter.name} revoted for ${tribe[revoteTargetIndex].name}`);
         revoteExportVotes.push({ target: tribe[revoteTargetIndex].name, voter: voter.name });
@@ -456,14 +616,14 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       // Edge case: no revotes could be cast; force an outcome among tied players.
       const fallbackIndex = tiedIndexes[0];
       if (fallbackIndex === undefined) {
-        return { voteIndex: undefined, sortedVotes: [], voteDetails, voteSummary, idols };
+        return { voteIndex: undefined, sortedVotes: [], voteDetails, voteSummary, idols: packAdvantages(idols) };
       }
       return {
         voteIndex: parseInt(fallbackIndex),
         sortedVotes: generateFormattedVotes([[parseInt(fallbackIndex), 1]]),
         voteDetails,
         voteSummary: [...voteSummary, "No revote ballots were cast; a default elimination was chosen."],
-        idols,
+        idols: packAdvantages(idols),
       };
     }
 
@@ -485,7 +645,25 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         voteSummary.push(`${tribe[eliminatedByFire].name} eliminated in fire.`);
         const allianceRemoval = removeFromAlliance(tribe[eliminatedIndex]);
         reportAllianceDissolutions(allianceRemoval?.dissolvedAlliances);
-        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
+        Object.keys(idols).forEach(key => {
+          if (idols[key] && idols[key].name === tribe[eliminatedIndex].name) {
+            tribe[eliminatedIndex].hasIdol = false;
+            idols[key] = null;
+          }
+        });
+        Object.keys(extraVotes || {}).forEach(key => {
+          if (extraVotes[key] && extraVotes[key].name === tribe[eliminatedIndex].name) {
+            tribe[eliminatedIndex].hasExtraVote = false;
+            extraVotes[key] = null;
+          }
+        });
+        Object.keys(stealVotes || {}).forEach(key => {
+          if (stealVotes[key] && stealVotes[key].name === tribe[eliminatedIndex].name) {
+            tribe[eliminatedIndex].hasStealVote = false;
+            stealVotes[key] = null;
+          }
+        });
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols) };
       }
     } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
       let eligibleForRocks = tribe.filter(
@@ -510,14 +688,26 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
               idols[key] = null;
           }
         });
-        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
+        Object.keys(extraVotes || {}).forEach(key => {
+          if (extraVotes[key] && extraVotes[key].name === tribe[eliminatedIndex].name) {
+            tribe[eliminatedIndex].hasExtraVote = false;
+            extraVotes[key] = null;
+          }
+        });
+        Object.keys(stealVotes || {}).forEach(key => {
+          if (stealVotes[key] && stealVotes[key].name === tribe[eliminatedIndex].name) {
+            tribe[eliminatedIndex].hasStealVote = false;
+            stealVotes[key] = null;
+          }
+        });
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols) };
       }
     }
 
     if (revoteSorted.length === 0) {
       voteDetails.push(`<span class="font-bold text-md md:text-lg">Error: No valid revote occurred.</span>`);
       voteSummary.push(`<span class="font-bold text-md md:text-lg">Error: No valid revote occurred.</span>`);
-      return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols };
+      return { voteIndex: null, sortedVotes: null, voteDetails, voteSummary, idols: packAdvantages(idols) };
     }
 
     let revoteLoser = parseInt(revoteSorted[0][0]);
@@ -529,7 +719,19 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
           idols[key] = null;
       }
     });
-    return { voteIndex: revoteLoser, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols };
+    Object.keys(extraVotes || {}).forEach(key => {
+      if (extraVotes[key] && extraVotes[key].name === tribe[revoteLoser].name) {
+        tribe[revoteLoser].hasExtraVote = false;
+        extraVotes[key] = null;
+      }
+    });
+    Object.keys(stealVotes || {}).forEach(key => {
+      if (stealVotes[key] && stealVotes[key].name === tribe[revoteLoser].name) {
+        tribe[revoteLoser].hasStealVote = false;
+        stealVotes[key] = null;
+      }
+    });
+    return { voteIndex: revoteLoser, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols) };
   }
 
   const [loser] = sortedVotes[0];
@@ -540,5 +742,17 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         idols[key] = null;
     }
   });
-  return { voteIndex: parseInt(loser), sortedVotes: generateFormattedVotes(sortedVotes), voteDetails, voteSummary, idols };
+  Object.keys(extraVotes || {}).forEach(key => {
+    if (extraVotes[key] && extraVotes[key].name === tribe[loser].name) {
+      tribe[loser].hasExtraVote = false;
+      extraVotes[key] = null;
+    }
+  });
+  Object.keys(stealVotes || {}).forEach(key => {
+    if (stealVotes[key] && stealVotes[key].name === tribe[loser].name) {
+      tribe[loser].hasStealVote = false;
+      stealVotes[key] = null;
+    }
+  });
+  return { voteIndex: parseInt(loser), sortedVotes: generateFormattedVotes(sortedVotes), voteDetails, voteSummary, idols: packAdvantages(idols) };
 };

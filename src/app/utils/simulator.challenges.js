@@ -1,12 +1,17 @@
 // simulator.challenges.js
 import { getRandomInt } from "./simulator.utils";
 
-/** Individual immunity (post-merge) */
-export const individualImmunity = (tribe) => {
+/** Individual immunity (post-merge). excludedIndex opts a player out (challenge grab). */
+export const individualImmunity = (tribe, excludedIndex = -1) => {
   const choices = [];
   tribe.forEach((player, i) => {
+    if (i === excludedIndex) return;
     for (let j = 0; j < player.postmerge * 4; j++) choices.push(i);
   });
+  if (!choices.length) {
+    // Fallback if everyone was excluded somehow
+    return tribe.findIndex((_, i) => i !== excludedIndex) ?? 0;
+  }
   return choices[getRandomInt(choices.length)];
 };
 

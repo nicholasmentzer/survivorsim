@@ -191,6 +191,10 @@ export default function Home() {
   const [tribeNames, setTribeNames] = useState(() => makeDefaultTribeNames(3));
   const [advantages, setAdvantages] = useState({
     immunityIdol: true,
+    extraVote: false,
+    stealVote: false,
+    journeyFrequency: 3,
+    challengeGrabFrequency: 3,
   });
   const [showAdvantages, setShowAdvantages] = useState(false);
   const [tribeSize, setTribeSize] = useState(8);

@@ -428,6 +428,8 @@ export default function ConfigureCast({
               <h3 className="text-[11px] tracking-[0.18em] uppercase text-stone-100">
                 Advantages
               </h3>
+
+              {/* Immunity Idol */}
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="immunityIdol"
@@ -439,13 +441,105 @@ export default function ConfigureCast({
                     }))
                   }
                 />
-                <Label
-                  htmlFor="immunityIdol"
-                  className="text-xs text-stone-100"
-                >
-                  Immunity Idol (one per tribe)
+                <Label htmlFor="immunityIdol" className="text-xs text-stone-100">
+                  Immunity Idol (one hidden per tribe)
                 </Label>
               </div>
+
+              {/* Extra Vote */}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="extraVote"
+                  checked={!!advantages.extraVote}
+                  onCheckedChange={() =>
+                    setAdvantages((prev) => ({ ...prev, extraVote: !prev.extraVote }))
+                  }
+                />
+                <Label htmlFor="extraVote" className="text-xs text-stone-100">
+                  Extra Vote
+                </Label>
+              </div>
+
+              {/* Vote Steal */}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="stealVote"
+                  checked={!!advantages.stealVote}
+                  onCheckedChange={() =>
+                    setAdvantages((prev) => ({ ...prev, stealVote: !prev.stealVote }))
+                  }
+                />
+                <Label htmlFor="stealVote" className="text-xs text-stone-100">
+                  Vote Steal
+                </Label>
+              </div>
+
+              {/* Journey & grab frequency, shown whenever extra vote or vote steal is on */}
+              {(advantages.extraVote || advantages.stealVote) && (
+                <div className="ml-6 space-y-4 pt-1 border-l border-white/10 pl-3">
+                  <p className="text-[10px] text-stone-500 leading-relaxed">
+                    Journeys and challenge grabs are how extra votes and vote steals are found. Idols may rarely appear too!
+                  </p>
+
+                  {/* Journey Frequency */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] tracking-[0.14em] uppercase text-stone-300">
+                        Journey frequency
+                      </Label>
+                      <span className="text-[11px] text-stone-400">
+                        {["None", "Rarely", "Uncommon", "Standard", "Common", "Frequent"][advantages.journeyFrequency ?? 3]}
+                      </span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={5}
+                      step={1}
+                      value={[advantages.journeyFrequency ?? 3]}
+                      onValueChange={(values) => {
+                        const newVal = values[0];
+                        setAdvantages((prev) => ({
+                          ...prev,
+                          journeyFrequency: newVal,
+                          challengeGrabFrequency:
+                            newVal === 0 && (prev.challengeGrabFrequency ?? 3) === 0
+                              ? 1
+                              : (prev.challengeGrabFrequency ?? 3),
+                        }));
+                      }}
+                    />
+                  </div>
+
+                  {/* Challenge Grab Frequency */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] tracking-[0.14em] uppercase text-stone-300">
+                        Challenge grab frequency
+                      </Label>
+                      <span className="text-[11px] text-stone-400">
+                        {["None", "Rarely", "Uncommon", "Standard", "Common", "Frequent"][advantages.challengeGrabFrequency ?? 3]}
+                      </span>
+                    </div>
+                    <Slider
+                      min={0}
+                      max={5}
+                      step={1}
+                      value={[advantages.challengeGrabFrequency ?? 3]}
+                      onValueChange={(values) => {
+                        const newVal = values[0];
+                        setAdvantages((prev) => ({
+                          ...prev,
+                          challengeGrabFrequency: newVal,
+                          journeyFrequency:
+                            newVal === 0 && (prev.journeyFrequency ?? 3) === 0
+                              ? 1
+                              : (prev.journeyFrequency ?? 3),
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

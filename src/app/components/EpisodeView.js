@@ -169,8 +169,70 @@ export default function EpisodeView({
 
   const renderCurrentAdvantagesCard = (evt, { compact = false } = {}) => {
     const idols = evt?.idols || {};
-    const activeIdols = Object.entries(idols).filter(([, player]) => !!player);
-    const hasIdols = activeIdols.length > 0;
+    const extraVotes = evt?.extraVotes || {};
+    const stealVotes = evt?.stealVotes || {};
+
+    // Collect all tribe keys in consistent order: tribe1, tribe2, ..., merge
+    const allKeys = Array.from(new Set([
+      ...Object.keys(idols),
+      ...Object.keys(extraVotes),
+      ...Object.keys(stealVotes),
+    ])).sort((a, b) => {
+      if (a === "merge") return 1;
+      if (b === "merge") return -1;
+      return a.localeCompare(b);
+    });
+
+    const tribeLabel = (key) => {
+      if (key === "merge") return "Merge";
+      const n = key.replace("tribe", "");
+      return `Tribe ${n}`;
+    };
+
+    const ADVANTAGE_TYPES = [
+      { map: idols,      label: "Hidden Immunity Idol", badgeClass: "bg-amber-500/15 text-amber-200 border-amber-400/40" },
+      { map: extraVotes, label: "Extra Vote",            badgeClass: "bg-sky-500/15 text-sky-200 border-sky-400/40" },
+      { map: stealVotes, label: "Vote Steal",          badgeClass: "bg-rose-500/15 text-rose-200 border-rose-400/40" },
+    ];
+
+    // Build per-tribe groups
+    const tribeGroups = allKeys.map((tribeKey) => {
+      const entries = ADVANTAGE_TYPES.flatMap(({ map, label, badgeClass }) => {
+        const player = map[tribeKey];
+        return player ? [{ player, label, badgeClass, key: `${label}-${tribeKey}` }] : [];
+      });
+      return { tribeKey, entries };
+    }).filter(({ entries }) => entries.length > 0);
+
+    const totalCount = tribeGroups.reduce((s, g) => s + g.entries.length, 0);
+    const hasAdvantages = totalCount > 0;
+
+    const renderEntry = ({ key, player, label, badgeClass }) => (
+      <div
+        key={key}
+        className={
+          compact
+            ? "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-2.5 py-2 shadow"
+            : "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-3 py-3 shadow-md"
+        }
+      >
+        <div className="flex items-center gap-3">
+          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-white/30 shadow">
+            <AvatarImage src={player.image} alt={player.name} className="object-cover" style={{ imageRendering: "high-quality" }} />
+            <AvatarFallback className="bg-stone-700 text-xs text-stone-100">{player.name?.[0] ?? "?"}</AvatarFallback>
+          </Avatar>
+          <p className={compact ? "text-xs font-semibold text-stone-50" : "text-xs sm:text-sm font-semibold text-stone-50"}>
+            {player.name}
+          </p>
+        </div>
+        <span className={compact
+          ? `inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold border uppercase tracking-[0.14em] ${badgeClass}`
+          : `inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold border uppercase tracking-[0.14em] ${badgeClass}`
+        }>
+          {label}
+        </span>
+      </div>
+    );
 
     return (
       <Card
@@ -195,57 +257,22 @@ export default function EpisodeView({
               >
                 Current Advantages
               </CardTitle>
-              <p className="text-[10px] text-stone-400 mt-0.5">
-                {hasIdols
-                  ? `${activeIdols.length} advantage${
-                      activeIdols.length > 1 ? "s" : ""
-                    } in play`
-                  : "No advantages in play this episode"}
-              </p>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className={compact ? "pt-0 pb-3" : "pt-1 pb-4"}>
-          {hasIdols ? (
-            <div className={compact ? "mt-2 grid gap-2 sm:grid-cols-2" : "mt-3 grid gap-3 sm:grid-cols-2"}>
-              {activeIdols.map(([tribeKey, player]) => (
-                <div
-                  key={tribeKey}
-                  className={
-                    compact
-                      ? "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-2.5 py-2 shadow"
-                      : "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-3 py-3 shadow-md"
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Do not change icon/image sizing */}
-                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-white/30 shadow">
-                      <AvatarImage
-                        src={player.image}
-                        alt={player.name}
-                        className="object-cover"
-                        style={{ imageRendering: "high-quality" }}
-                      />
-                      <AvatarFallback className="bg-stone-700 text-xs text-stone-100">
-                        {player.name?.[0] ?? "?"}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <p className={compact ? "text-xs font-semibold text-stone-50" : "text-xs sm:text-sm font-semibold text-stone-50"}>
-                      {player.name}
-                    </p>
+          {hasAdvantages ? (
+            <div className={compact ? "mt-2 space-y-3" : "mt-3 space-y-4"}>
+              {tribeGroups.map(({ tribeKey, entries }, groupIdx) => (
+                <div key={tribeKey}>
+                  {groupIdx > 0 && <Separator className="bg-white/10 mb-3" />}
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500 mb-2">
+                    {tribeLabel(tribeKey)}
+                  </p>
+                  <div className={compact ? "grid gap-2 sm:grid-cols-2" : "grid gap-3 sm:grid-cols-2"}>
+                    {entries.map(renderEntry)}
                   </div>
-
-                  <span
-                    className={
-                      compact
-                        ? "inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/40 uppercase tracking-[0.14em]"
-                        : "inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/40 uppercase tracking-[0.14em]"
-                    }
-                  >
-                    Hidden Immunity Idol
-                  </span>
                 </div>
               ))}
             </div>
@@ -851,6 +878,73 @@ export default function EpisodeView({
               );
             }
 
+            // --- Journey ---
+            if (event.type === "journey") {
+              return (
+                <div key={index} className="space-y-3">
+                  <div className="text-center mt-4">
+                    <p className="text-[11px] tracking-[0.18em] uppercase text-stone-400">
+                      Advantage
+                    </p>
+                    <h3
+                      className="text-xl sm:text-2xl text-stone-50 tracking-[0.16em] uppercase"
+                      style={{ fontFamily: "Bebas Neue, system-ui, sans-serif" }}
+                    >
+                      Journey
+                    </h3>
+                  </div>
+                  <Card className="bg-black/60 border-white/10 backdrop-blur-md max-w-2xl mx-auto">
+                    <CardContent className="pt-4 pb-4">
+                      <div className="bg-stone-900/80 text-white px-4 sm:px-6 py-4 rounded-lg shadow-md text-sm sm:text-base font-semibold text-center">
+                        <div dangerouslySetInnerHTML={{ __html: event.message }} />
+                      </div>
+                      {event.images?.length > 0 && (
+                        <div className="mt-4 p-3 sm:p-4 bg-stone-900/60 rounded-lg border border-white/10">
+                          <div className="flex flex-wrap justify-center gap-3">
+                            {event.images.map((img, i) => (
+                              <Avatar key={i} className="w-12 h-12 sm:w-16 sm:h-16 border border-white/30 shadow">
+                                <AvatarImage src={img} className="object-cover" style={{ imageRendering: "high-quality" }} />
+                                <AvatarFallback className="bg-stone-700 text-xs text-stone-100">?</AvatarFallback>
+                              </Avatar>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {event.relationships?.length > 0 && (
+                        <div className="mt-3 space-y-1.5">
+                          {event.relationships.map((rel, i) => {
+                            const positive = rel.chipNet > 0;
+                            const chipClasses = positive
+                              ? "bg-emerald-900/40 border-emerald-400/60 text-emerald-200"
+                              : "bg-rose-900/40 border-rose-400/60 text-rose-200";
+                            const sign = positive ? "+" : "";
+                            return (
+                              <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-900/60 border border-white/10">
+                                {rel.images?.length >= 2 && (
+                                  <div className="flex -space-x-2 shrink-0">
+                                    {rel.images.slice(0, 2).map((img, j) => (
+                                      <Avatar key={j} className="w-7 h-7 border border-white/30">
+                                        <AvatarImage src={img} className="object-cover" style={{ imageRendering: "high-quality" }} />
+                                        <AvatarFallback className="bg-stone-700 text-[10px]">?</AvatarFallback>
+                                      </Avatar>
+                                    ))}
+                                  </div>
+                                )}
+                                <p className="flex-1 text-xs text-stone-300 leading-tight">{rel.headline}</p>
+                                <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${chipClasses}`}>
+                                  {sign}{rel.chipNet}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            }
+
             // --- Immunity challenge ---
             if (event.type === "immunity") {
               const isIndividual = event.members?.length === 1;
@@ -878,6 +972,23 @@ export default function EpisodeView({
                     `}
                   >
                     <CardContent className="pt-4 pb-4">
+                      {event.grab && (
+                        <div className="mb-4 bg-stone-900/60 rounded-lg border border-white/10 px-4 py-3 text-center space-y-2">
+                          <p className="text-[10px] uppercase tracking-[0.16em] text-stone-400">Challenge Grab</p>
+                          <p className="text-sm text-stone-200" dangerouslySetInnerHTML={{ __html: event.grab.message }} />
+                          {event.grab.images?.length > 0 && (
+                            <div className="flex justify-center gap-3 pt-1">
+                              {event.grab.images.map((img, i) => (
+                                <Avatar key={i} className="w-12 h-12 sm:w-16 sm:h-16 border border-white/30 shadow">
+                                  <AvatarImage src={img} className="object-cover" style={{ imageRendering: "high-quality" }} />
+                                  <AvatarFallback className="bg-stone-700 text-xs text-stone-100">?</AvatarFallback>
+                                </Avatar>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div
                         className="
                           bg-stone-900/80 text-white
@@ -1136,8 +1247,17 @@ export default function EpisodeView({
                                     <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400 mb-1">
                                       Votes by target
                                     </p>
-                                    {targetEntries.map(([target, { voters, alliances }]) => {
-                                      const allianceNames = Array.from(alliances);
+                                    {targetEntries.map(([target, { voters }]) => {
+                                      // Deduplicate by voter+action so that:
+                                      // - extra vote (same voter, "voted for" twice) → "Name x2"
+                                      // - round-1 vote + revote (same voter, different actions) → two separate entries
+                                      const voterMap = {};
+                                      voters.forEach(({ voter, action }) => {
+                                        const key = `${voter}|${action}`;
+                                        if (!voterMap[key]) voterMap[key] = { voter, action, count: 0 };
+                                        voterMap[key].count++;
+                                      });
+                                      const dedupedVoters = Object.values(voterMap);
 
                                       return (
                                         <div
@@ -1155,7 +1275,7 @@ export default function EpisodeView({
 
                                           <p className="text-xs text-stone-200">
                                             <span className="text-stone-400">Voters:</span>{" "}
-                                            {voters.map(({ voter, action }, idx) => (
+                                            {dedupedVoters.map(({ voter, action, count }, idx) => (
                                               <span
                                                 key={voter + "-" + idx}
                                                 className={
@@ -1165,16 +1285,10 @@ export default function EpisodeView({
                                                 }
                                               >
                                                 {idx > 0 && ", "}
-                                                {voter}
+                                                {voter}{count > 1 ? ` x${count}` : ""}
                                               </span>
                                             ))}
                                           </p>
-
-                                          {/*allianceNames.length > 0 && (
-                                            <p className="text-[11px] text-emerald-300">
-                                              {allianceNames.join(", ")}
-                                            </p>
-                                          )*/}
                                         </div>
                                       );
                                     })}

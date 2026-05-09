@@ -26,6 +26,14 @@ let allianceIdCounter = 1;
 let numTribes = 2;
 let tribeNames = makeDefaultTribeNames(2);
 let tribeIdols = makeTribeMap(2, null);
+let tribeExtraVotes = makeTribeMap(2, null);
+let tribeStealVotes = makeTribeMap(2, null);
+let journeyFrequency = 3;
+let challengeGrabFrequency = 3;
+let journeyQuota = 0;
+let journeyFired = 0;
+let grabQuota = 0;
+let grabFired = 0;
 let usableAdvantages = [];
 let randomAllianceNames = [
     "The Titans",
@@ -134,6 +142,14 @@ export const resetSimulation = () => {
   numTribes = 2;
   tribeNames = makeDefaultTribeNames(2);
   tribeIdols = makeTribeMap(2, null);
+  tribeExtraVotes = makeTribeMap(2, null);
+  tribeStealVotes = makeTribeMap(2, null);
+  journeyFrequency = 3;
+  challengeGrabFrequency = 3;
+  journeyQuota = 0;
+  journeyFired = 0;
+  grabQuota = 0;
+  grabFired = 0;
   usableAdvantages = [];
   randomAllianceNames = [
     "The Titans",
@@ -253,6 +269,29 @@ const snapshotIdols = (idolsMap) => {
   return out;
 };
 
+const snapshotAdvantage = (map) => {
+  const src = map || {};
+  const out = {};
+  Object.entries(src).forEach(([key, player]) => {
+    if (!player) { out[key] = null; return; }
+    out[key] = {
+      name: player.name,
+      image: player.image,
+      tribeId: player.tribeId,
+      originalTribeId: player.originalTribeId,
+    };
+  });
+  return out;
+};
+
+// Maps 1-5 frequency to [min, max] fires per season for journeys/grabs
+const FREQ_QUOTAS = [[1,1],[1,2],[2,3],[3,5],[5,7]];
+const pickQuota = (freq) => {
+  if (freq === 0) return 0;
+  const [min, max] = FREQ_QUOTAS[Math.max(0, Math.min(4, Math.round(freq) - 1))];
+  return min + Math.floor(Math.random() * (max - min + 1));
+};
+
 const tribeSwap = (updateResults) => {
   if (numTribes <= 1) return;
   const allPlayers = tribes.flat().filter(Boolean);
@@ -292,12 +331,20 @@ const tribeSwap = (updateResults) => {
 
   // Rebuild tribeIdols mapping to match the new tribes (still max 1 per tribe).
   const nextIdols = makeTribeMap(numTribes, null);
+  const nextExtraVotes = makeTribeMap(numTribes, null);
+  const nextStealVotes = makeTribeMap(numTribes, null);
   for (let i = 0; i < numTribes; i++) {
     const tribeKey = makeTribeKey(i);
     const holder = (tribes[i] || []).find((p) => p?.hasIdol);
     if (holder) nextIdols[tribeKey] = holder;
+    const evHolder = (tribes[i] || []).find((p) => p?.hasExtraVote);
+    if (evHolder) nextExtraVotes[tribeKey] = evHolder;
+    const svHolder = (tribes[i] || []).find((p) => p?.hasStealVote);
+    if (svHolder) nextStealVotes[tribeKey] = svHolder;
   }
   tribeIdols = nextIdols;
+  tribeExtraVotes = nextExtraVotes;
+  tribeStealVotes = nextStealVotes;
 
   updateResults({
     type: "event",
@@ -420,6 +467,10 @@ const initializeRelationships = (players) => {
     player.votesReceived = 0;
     player.idolsPlayed = 0;
     player.votesNegated = 0;
+    player.extraVotesPlayed = 0;
+    player.votesStolen = 0;
+    player.hasExtraVote = false;
+    player.hasStealVote = false;
     player.popularity = player.likeability || 5;
     player.relationships = {};
     players.forEach((other) => {
@@ -559,6 +610,304 @@ const findIdol = (tribe, tribeName, merged) => {
     }
   }
   return null;
+};
+
+
+// Returns { events: [...], grabbedPlayerIndex: number|null } or null if no grab occurred.
+// grabbedPlayerIndex is the index within `tribe` of the player who stepped out (post-merge only).
+const challengeGrab = (tribe, tribeName, isPostMerge = false) => {
+  const hasExtra = usableAdvantages.includes("extraVote");
+  const hasSteal = usableAdvantages.includes("stealVote");
+  if (!hasExtra && !hasSteal) return null;
+  if (grabFired >= grabQuota) return null;
+
+  // episodes remaining ≈ total active players - 1
+  const activePlayers = (tribe || []).filter(Boolean).length;
+  const episodesLeft = Math.max(1, activePlayers - 1);
+  const p = Math.min(0.9, (grabQuota - grabFired) / episodesLeft);
+  if (Math.random() >= p) return null;
+
+  const SCENARIOS = [
+    // Public offer
+    (player, postMerge) => [
+      postMerge
+        ? `The host reveals a special offer: step out of the challenge and race to an advantage. ${player.name} doesn't hesitate to step out and gets to the advantage first`
+        : `The host announces that there is an advantage hidden in the middle of the challenge. ${player.name} decides to search, costing the tribe time, but is the first to get the advantage`,
+    ],
+    // Hidden on bench
+    (player, postMerge) => [
+      postMerge
+        ? `After being eliminated, ${player.name} spots an advantage under the bench and quietly snatches it`
+        : `${player.name} spots something hidden under the sitout bench during the challenge and grabs it without anyone noticing`,
+    ],
+  ];
+
+  // Sitout bench (idx 1) only valid pre-merge when tribes are uneven
+  const tribeSizes = !isPostMerge ? tribes.map(t => (t || []).filter(Boolean).length).filter(s => s > 0) : [];
+  const minTribeSize = tribeSizes.length ? Math.min(...tribeSizes) : 0;
+  const hasImbalance = tribeSizes.some(s => s > minTribeSize);
+  const eligibleScenarios = SCENARIOS.map((_, i) => i).filter(i => {
+    if (i === 1 && !isPostMerge && !hasImbalance) return false;
+    return true;
+  });
+  const scenarioIdx = eligibleScenarios[Math.floor(Math.random() * eligibleScenarios.length)];
+  // Sitout bench pre-merge: player is already sitting out — no sacrifice needed.
+  // Sitout bench post-merge: player was eliminated from the challenge — counts as sacrifice.
+  // All other scenarios require a sacrifice.
+  const needsSacrifice = !(scenarioIdx === 1 && !isPostMerge);
+
+  // Pick the grabber: weighted toward weaker challenge players
+  // For the sitout bench scenario pre-merge, restrict to players on the larger tribe(s) only
+  let candidates = (tribe || []).map((p, i) => ({ p, i })).filter(({ p }) => p && !p.hasExtraVote && !p.hasStealVote);
+  if (!isPostMerge && scenarioIdx === 1 && hasImbalance) {
+    const largerTribeNames = new Set(
+      tribes.filter(t => (t || []).filter(Boolean).length > minTribeSize).flat().filter(Boolean).map(p => p.name)
+    );
+    const restricted = candidates.filter(({ p }) => largerTribeNames.has(p.name));
+    if (restricted.length) candidates = restricted;
+  }
+  if (!candidates.length) return null;
+
+  const stat = isPostMerge ? (p) => p.postmerge : (p) => p.premerge;
+  const maxStat = Math.max(...candidates.map(({ p }) => stat(p)));
+  const weights = candidates.map(({ p }) => Math.max(1, maxStat - stat(p) + 1));
+  const totalWeight = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * totalWeight;
+  let grabberEntry = candidates[0];
+  for (let i = 0; i < candidates.length; i++) {
+    r -= weights[i];
+    if (r <= 0) { grabberEntry = candidates[i]; break; }
+  }
+  const { p: grabber, i: grabbedPlayerIndex } = grabberEntry;
+
+  // For sacrifice scenarios, 40% chance they actually go for it
+  if (needsSacrifice && Math.random() >= 0.40) return null;
+
+  // Award random available advantage type (idol rarely)
+  const hasIdol = usableAdvantages.includes("immunityIdol");
+  const types = [];
+  if (hasExtra && !grabber.hasExtraVote) types.push("extraVote");
+  if (hasSteal && !grabber.hasStealVote) types.push("stealVote");
+  if (!types.length) return null;
+
+  const messages = SCENARIOS[scenarioIdx](grabber, isPostMerge);
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+
+  let awardType;
+  if (hasIdol && !grabber.hasIdol && !tribeIdols[tribeName] && Math.random() < 0.15) {
+    awardType = "idol";
+  } else {
+    awardType = types[Math.floor(Math.random() * types.length)];
+  }
+
+  let findName;
+  if (awardType === "idol") {
+    grabber.hasIdol = true;
+    tribeIdols[tribeName] = grabber;
+    findName = "a Hidden Immunity Idol";
+  } else if (awardType === "extraVote") {
+    grabber.hasExtraVote = true;
+    tribeExtraVotes[tribeName] = grabber;
+    findName = "an Extra Vote";
+  } else {
+    grabber.hasStealVote = true;
+    tribeStealVotes[tribeName] = grabber;
+    findName = "a Vote Steal";
+  }
+
+  // Combine scenario flavor + find into a single line (gold HTML for find name)
+  const findHtml = `<span class="text-amber-400 font-bold">${findName}</span>`;
+  const combinedMsg = msg.replace(/\.$/, "") + `, finding ${findHtml}!`;
+
+  grabFired++;
+  return {
+    message: combinedMsg,
+    images: [grabber.image],
+    grabbedPlayerIndex: needsSacrifice ? grabbedPlayerIndex : null,
+  };
+};
+
+const summitJourney = (updateResults) => {
+  if (!usableAdvantages.includes("extraVote") && !usableAdvantages.includes("stealVote")) return;
+  if (tribes.length < 2) return;
+  if (journeyFired >= journeyQuota) return;
+  // pre-merge episodes remaining ≈ total players - mergeAt
+  const totalPlayers = tribes.flat().filter(Boolean).length;
+  const preMergeLeft = Math.max(1, totalPlayers - mergeAt);
+  const p = Math.min(0.9, (journeyQuota - journeyFired) / preMergeLeft);
+  if (Math.random() >= p) return;
+
+  // One player per tribe
+  const activeTribeIndices = Array.from({ length: tribes.length }, (_, i) => i)
+    .filter(i => (tribes[i] || []).filter(Boolean).length > 0);
+  if (activeTribeIndices.length < 2) return;
+
+  const participants = activeTribeIndices
+    .map(i => {
+      const tribeArr = (tribes[i] || []).filter(Boolean);
+      return { player: tribeArr[Math.floor(Math.random() * tribeArr.length)], tribeIdx: i };
+    })
+    .filter(e => e.player);
+  if (participants.length < 2) return;
+
+  // Mini-challenge scores — sort descending so scored[0] = winner
+  const scored = participants.map(({ player, tribeIdx }) => ({
+    player,
+    tribeIdx,
+    score: (player.premerge || 5) * Math.random(),
+  }));
+  scored.sort((a, b) => b.score - a.score);
+  const winnerEntry = scored[0];
+  const winner = winnerEntry.player;
+
+  // Build intro with all participant names
+  const names = participants.map(p => p.player.name);
+  const nameStr = names.length === 2
+    ? `${names[0]} and ${names[1]}`
+    : `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+  const INTROS = [
+    `${nameStr} volunteered to go on a journey and take part in a special challenge`,
+    `${nameStr} were selected by rock draw to go on a journey and take part in a special challenge`,
+  ];
+  const intro = INTROS[Math.floor(Math.random() * INTROS.length)];
+
+  // Advantage
+  const hasExtra = usableAdvantages.includes("extraVote");
+  const hasSteal = usableAdvantages.includes("stealVote");
+  const hasIdol = usableAdvantages.includes("immunityIdol");
+  const winnerTribeKey = makeTribeKey(winnerEntry.tribeIdx);
+  const types = [];
+  if (hasExtra && !winner.hasExtraVote) types.push("extraVote");
+  if (hasSteal && !winner.hasStealVote) types.push("stealVote");
+
+  let awardType = null;
+  if (types.length) {
+    if (hasIdol && !winner.hasIdol && !tribeIdols[winnerTribeKey] && Math.random() < 0.15) {
+      awardType = "idol";
+    } else {
+      awardType = types[Math.floor(Math.random() * types.length)];
+    }
+  }
+
+  let msg;
+  if (awardType) {
+    const displayName = awardType === "idol" ? "a Hidden Immunity Idol" : awardType === "extraVote" ? "an Extra Vote" : "a Vote Steal";
+    const findHtml = `<span class="text-amber-400 font-bold">${displayName}</span>`;
+    msg = `${intro}, where ${winner.name} won ${findHtml}!`;
+  } else {
+    msg = `${intro}.`;
+  }
+
+  // Build relationship entries to embed inside the journey card — exactly one per pair.
+  // For pairs involving the winner, the advantage reaction (if any) has a 50% chance to
+  // replace the normal match result so only one event fires per pair.
+  const relationships = [];
+
+  for (let i = 0; i < scored.length; i++) {
+    for (let j = i + 1; j < scored.length; j++) {
+      const pHigh = scored[i].player; // higher scorer
+      const pLow = scored[j].player;
+      const involvesWinner = i === 0 || j === 0;
+      const pOther = involvesWinner ? (i === 0 ? pLow : pHigh) : null;
+      const delta = Math.ceil(Math.random() * 2);
+
+      // Advantage reaction replaces match result ~50% of the time for winner pairs
+      if (awardType && involvesWinner && Math.random() < 0.5) {
+        const isPositive = Math.random() < 0.5;
+        pOther.relationships[winner.name] = (pOther.relationships[winner.name] || 0) + (isPositive ? delta : -delta);
+        relationships.push({
+          headline: isPositive
+            ? `Due to ${winner.name}'s win, ${pOther.name} wants to work with them`
+            : `Due to ${winner.name}'s win, ${pOther.name} now sees them as a target`,
+          chipNet: isPositive ? delta : -delta,
+          images: [pOther.image, winner.image].filter(Boolean),
+        });
+      } else {
+        // Normal match result
+        const margin = Math.abs(scored[i].score - scored[j].score) / Math.max(scored[i].score, scored[j].score, 1);
+        const isClose = margin < 0.25;
+        if (isClose) {
+          pHigh.relationships[pLow.name] = (pHigh.relationships[pLow.name] || 0) + delta;
+          pLow.relationships[pHigh.name] = (pLow.relationships[pHigh.name] || 0) + delta;
+          relationships.push({
+            headline: `${pHigh.name} and ${pLow.name} bonded during the journey`,
+            chipNet: delta,
+            images: [pHigh.image, pLow.image].filter(Boolean),
+          });
+        } else {
+          pHigh.relationships[pLow.name] = (pHigh.relationships[pLow.name] || 0) - delta;
+          pLow.relationships[pHigh.name] = (pLow.relationships[pHigh.name] || 0) - delta;
+          relationships.push({
+            headline: `${pHigh.name} and ${pLow.name} just didn't click`,
+            chipNet: -delta,
+            images: [pHigh.image, pLow.image].filter(Boolean),
+          });
+        }
+      }
+    }
+  }
+
+  updateResults({ type: "journey", message: msg, images: scored.map(s => s.player.image).filter(Boolean), relationships });
+
+  if (awardType === "idol") {
+    winner.hasIdol = true;
+    tribeIdols[winnerTribeKey] = winner;
+  } else if (awardType === "extraVote") {
+    winner.hasExtraVote = true;
+    tribeExtraVotes[winnerTribeKey] = winner;
+  } else if (awardType === "stealVote") {
+    winner.hasStealVote = true;
+    tribeStealVotes[winnerTribeKey] = winner;
+  }
+  journeyFired++;
+};
+
+const soloJourney = (updateResults) => {
+  if (!usableAdvantages.includes("extraVote") && !usableAdvantages.includes("stealVote")) return;
+  if (!merged || !tribes[0]?.length) return;
+  if (journeyFired >= journeyQuota) return;
+  // post-merge episodes remaining ≈ merged tribe size - 1
+  const postMergeLeft = Math.max(1, (tribes[0].filter(Boolean).length - 1));
+  const p = Math.min(0.75, (journeyQuota - journeyFired) / postMergeLeft);
+  if (Math.random() >= p) return;
+
+  const tribe = tribes[0];
+  const traveler = tribe[Math.floor(Math.random() * tribe.length)];
+
+  const hasExtra = usableAdvantages.includes("extraVote");
+  const hasSteal = usableAdvantages.includes("stealVote");
+  const hasIdol = usableAdvantages.includes("immunityIdol");
+  const types = [];
+  if (hasExtra && !traveler.hasExtraVote) types.push("extraVote");
+  if (hasSteal && !traveler.hasStealVote) types.push("stealVote");
+
+  if (!types.length || Math.random() >= 0.70) {
+    updateResults({ type: "journey", message: `${traveler.name} was selected to go on a solo journey, but was unable to complete the challenge to win an advantage.`, images: [traveler.image] });
+    return;
+  }
+
+  let awardType;
+  if (hasIdol && !traveler.hasIdol && !tribeIdols["merge"] && Math.random() < 0.15) {
+    awardType = "idol";
+  } else {
+    awardType = types[Math.floor(Math.random() * types.length)];
+  }
+
+  const findName = awardType === "idol" ? "a Hidden Immunity Idol" : awardType === "extraVote" ? "an Extra Vote" : "a Vote Steal";
+  const findHtml = `<span class="text-amber-400 font-bold">${findName}</span>`;
+  updateResults({ type: "journey", message: `${traveler.name} was selected to go on a solo journey, and completed the challenge to win ${findHtml}!`, images: [traveler.image] });
+
+  if (awardType === "idol") {
+    traveler.hasIdol = true;
+    tribeIdols["merge"] = traveler;
+  } else if (awardType === "extraVote") {
+    traveler.hasExtraVote = true;
+    tribeExtraVotes["merge"] = traveler;
+  } else {
+    traveler.hasStealVote = true;
+    tribeStealVotes["merge"] = traveler;
+  }
+  journeyFired++;
 };
 
 const generateRelationshipEvent = (tribe, customEvents) => {
@@ -1361,12 +1710,20 @@ export const simulate = (
   numberedAlliances = true;
   customRandomAllianceNames = [];
   tribeIdols = makeTribeMap(numTribes, null);
+  tribeExtraVotes = makeTribeMap(numTribes, null);
+  tribeStealVotes = makeTribeMap(numTribes, null);
+  journeyFrequency = Number.isFinite(advantages?.journeyFrequency) ? advantages.journeyFrequency : 3;
+  challengeGrabFrequency = Number.isFinite(advantages?.challengeGrabFrequency) ? advantages.challengeGrabFrequency : 3;
   numberedAllianceCounters = makeTribeMap(numTribes, 1);
-  Object.entries(advantages).forEach(([key, value]) => {
-    if (value) {
-      usableAdvantages.push(key);
-    }
+  Object.entries(advantages || {}).forEach(([key, value]) => {
+    if (value === true) usableAdvantages.push(key);
   });
+
+  const hasJourneyAdvantages = usableAdvantages.includes("extraVote") || usableAdvantages.includes("stealVote");
+  journeyQuota = hasJourneyAdvantages ? pickQuota(journeyFrequency) : 0;
+  grabQuota = hasJourneyAdvantages ? pickQuota(challengeGrabFrequency) : 0;
+  journeyFired = 0;
+  grabFired = 0;
 
   // Ensure we always have a stable "where they started" marker for UI.
   // If it's missing (older saves / edited casts), fall back to their current tribeId.
@@ -1590,6 +1947,10 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         }
       }*/
 
+      summitJourney(updateResults);
+
+      const grabResult = challengeGrab(tribes.flat().filter(Boolean), makeTribeKey(0), false);
+
       const immunityResult = tribalImmunity(tribes);
       const loserIndex = immunityResult?.loserIndex ?? 0;
       const winnerIndices = (immunityResult?.winnerIndices?.length
@@ -1620,13 +1981,16 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         type: "immunity",
         message,
         members: [...(tribes[loser] || [])],
+        grab: grabResult ? { message: grabResult.message, images: grabResult.images } : null,
       });
 
       updateResults({
         type: "idols",
         idols: snapshotIdols(tribeIdols),
+        extraVotes: snapshotAdvantage(tribeExtraVotes),
+        stealVotes: snapshotAdvantage(tribeStealVotes),
       });
-      
+
       detectDrasticRelationships(tribes[loser], updateResults);
       getAllianceTargets(tribes[loser], getAlliancesForTribe(tribes[loser]), updateResults);
 
@@ -1637,9 +2001,13 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         false,
         -1,
         usableAdvantages,
-        tribeIdols
+        tribeIdols,
+        tribeExtraVotes,
+        tribeStealVotes
       );
-      tribeIdols = idols;
+      tribeIdols = idols.idols ?? idols;
+      tribeExtraVotes = idols.extraVotes ?? tribeExtraVotes;
+      tribeStealVotes = idols.stealVotes ?? tribeStealVotes;
       if (out !== undefined) {
           const votedout = tribes[loser].splice(out, 1)[0];
           votedout.placement = count;
@@ -1707,6 +2075,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     if (tribe.length > 3) {
       const idolEvent1 = findIdol(tribes[0], "merge", true);
       if (idolEvent1) updateResults(idolEvent1);
+      soloJourney(updateResults);
         for(let i = 0; i < 5; i++){
           let willEventOccur = Math.random();
           if(willEventOccur > 0.5){
@@ -1750,18 +2119,24 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           }
         }*/
 
-        winner = individualImmunity(tribe);
+        const postGrab = challengeGrab(tribe, "merge", true);
+
+        const excludedIdx = postGrab?.grabbedPlayerIndex ?? -1;
+        winner = individualImmunity(tribe, excludedIdx);
         const immune = tribe[winner];
         immune.immunities++;
         updateResults({
           type: "immunity",
           message: `${immune.name} wins individual immunity!`,
-          members: [immune] 
+          members: [immune],
+          grab: postGrab ? { message: postGrab.message, images: postGrab.images } : null,
         });
 
         updateResults({
           type: "idols",
           idols: snapshotIdols(tribeIdols),
+          extraVotes: snapshotAdvantage(tribeExtraVotes),
+          stealVotes: snapshotAdvantage(tribeStealVotes),
         });
 
         detectDrasticRelationships(tribes[0], updateResults);
@@ -1769,8 +2144,10 @@ const handlePostMergePhase = (updateResults, customEvents) => {
 
         state = "tribal";
         const tribecopy = [...tribe];
-        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols);
-        tribeIdols = idols;
+        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols, tribeExtraVotes, tribeStealVotes);
+        tribeIdols = idols.idols ?? idols;
+        tribeExtraVotes = idols.extraVotes ?? tribeExtraVotes;
+        tribeStealVotes = idols.stealVotes ?? tribeStealVotes;
         if (out !== undefined) {
             const votedout = tribecopy.splice(out, 1)[0];
             votedout.placement = count;
