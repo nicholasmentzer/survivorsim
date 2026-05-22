@@ -49,7 +49,7 @@ const CastOverview = ({ players, tribeNames, numTribes = 2 }) => {
     // Overall container that keeps the section centered on the page
     <section className="mt-8 max-w-5xl mx-auto px-4">
       {/* Glassy card background for the entire overview */}
-      <Card className="bg-black/50 border-white/10 backdrop-blur-sm shadow-xl">
+      <Card className="bg-stone-900/85 border-stone-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-center text-2xl text-stone-50">
             Cast Overview

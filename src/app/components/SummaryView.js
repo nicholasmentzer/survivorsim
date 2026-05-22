@@ -67,7 +67,7 @@ export default function SummaryView({ finalPlacements }) {
                   key={player.name}
                   className={`
                     relative overflow-hidden
-                    bg-black/70 border-white/10 backdrop-blur-md
+                    bg-stone-900/85 border-stone-800
                     flex items-center cursor-pointer
                     transition-transform duration-150 hover:-translate-y-1
                     hover:border-blue-400/60

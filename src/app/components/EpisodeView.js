@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export default function EpisodeView({
   episodes,
@@ -190,16 +191,16 @@ export default function EpisodeView({
     };
 
     const ADVANTAGE_TYPES = [
-      { map: idols,      label: "Hidden Immunity Idol", badgeClass: "bg-amber-500/15 text-amber-200 border-amber-400/40" },
-      { map: extraVotes, label: "Extra Vote",            badgeClass: "bg-sky-500/15 text-sky-200 border-sky-400/40" },
-      { map: stealVotes, label: "Vote Steal",          badgeClass: "bg-rose-500/15 text-rose-200 border-rose-400/40" },
+      { map: idols,      label: "Hidden Immunity Idol", variant: "idol" },
+      { map: extraVotes, label: "Extra Vote",            variant: "extraVote" },
+      { map: stealVotes, label: "Vote Steal",            variant: "stealVote" },
     ];
 
     // Build per-tribe groups
     const tribeGroups = allKeys.map((tribeKey) => {
-      const entries = ADVANTAGE_TYPES.flatMap(({ map, label, badgeClass }) => {
+      const entries = ADVANTAGE_TYPES.flatMap(({ map, label, variant }) => {
         const player = map[tribeKey];
-        return player ? [{ player, label, badgeClass, key: `${label}-${tribeKey}` }] : [];
+        return player ? [{ player, label, variant, key: `${label}-${tribeKey}` }] : [];
       });
       return { tribeKey, entries };
     }).filter(({ entries }) => entries.length > 0);
@@ -207,17 +208,17 @@ export default function EpisodeView({
     const totalCount = tribeGroups.reduce((s, g) => s + g.entries.length, 0);
     const hasAdvantages = totalCount > 0;
 
-    const renderEntry = ({ key, player, label, badgeClass }) => (
+    const renderEntry = ({ key, player, label, variant }) => (
       <div
         key={key}
         className={
           compact
-            ? "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-2.5 py-2 shadow"
-            : "flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-stone-900/70 px-3 py-3 shadow-md"
+            ? "flex items-center justify-between gap-3 rounded-md border border-stone-800 bg-stone-900/80 px-2.5 py-2"
+            : "flex items-center justify-between gap-3 rounded-md border border-stone-800 bg-stone-900/80 px-3 py-3"
         }
       >
         <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-white/30 shadow">
+          <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-stone-700">
             <AvatarImage src={player.image} alt={player.name} className="object-cover" style={{ imageRendering: "high-quality" }} />
             <AvatarFallback className="bg-stone-700 text-xs text-stone-100">{player.name?.[0] ?? "?"}</AvatarFallback>
           </Avatar>
@@ -225,12 +226,7 @@ export default function EpisodeView({
             {player.name}
           </p>
         </div>
-        <span className={compact
-          ? `inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold border uppercase tracking-[0.14em] ${badgeClass}`
-          : `inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold border uppercase tracking-[0.14em] ${badgeClass}`
-        }>
-          {label}
-        </span>
+        <Badge variant={variant}>{label}</Badge>
       </div>
     );
 
@@ -238,8 +234,8 @@ export default function EpisodeView({
       <Card
         className={
           compact
-            ? "bg-black/60 border-white/10 backdrop-blur-md max-w-3xl mx-auto"
-            : "bg-black/60 border-white/10 backdrop-blur-md"
+            ? "bg-stone-900/85 border-stone-800 max-w-3xl mx-auto"
+            : "bg-stone-900/85 border-stone-800"
         }
       >
         <CardHeader className={compact ? "py-2" : "pb-2"}>
@@ -482,7 +478,7 @@ export default function EpisodeView({
               return (
                 <Card
                   key={index}
-                  className="bg-black/60 border-white/10 backdrop-blur-md max-w-5xl mx-auto"
+                  className="bg-stone-900/85 border-stone-800 max-w-5xl mx-auto"
                 >
                   <CardContent className="py-3 px-3 sm:px-4">
                     <div className="text-center mb-2">
@@ -632,7 +628,7 @@ export default function EpisodeView({
               return (
                 <Card
                   key={index}
-                  className="bg-black/60 border-white/10 backdrop-blur-md"
+                  className="bg-stone-900/85 border-stone-800"
                 >
                   <CardHeader className="pb-3">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -708,7 +704,7 @@ export default function EpisodeView({
               return (
                 <Card
                   key={index}
-                  className={`bg-black/60 border-white/10 backdrop-blur-md${
+                  className={`bg-stone-900/85 border-stone-800${
                     shouldNarrow ? " max-w-4xl mx-auto" : ""
                   }`}
                 >
@@ -786,7 +782,7 @@ export default function EpisodeView({
                           key={i}
                           className="
                             mt-1 p-3 sm:p-4
-                            bg-stone-900/70 border border-white/10
+                            bg-stone-900/70 border border-stone-800
                             rounded-lg shadow-md
                           "
                         >
@@ -833,7 +829,7 @@ export default function EpisodeView({
               return (
                 <Card
                   key={index}
-                  className="bg-black/60 border-white/10 backdrop-blur-md max-w-5xl mx-auto"
+                  className="bg-stone-900/85 border-stone-800 max-w-5xl mx-auto"
                 >
                   <CardContent className="py-3 px-3 sm:px-4">
                     <div className="flex items-center justify-between gap-3">
@@ -893,13 +889,13 @@ export default function EpisodeView({
                       Journey
                     </h3>
                   </div>
-                  <Card className="bg-black/60 border-white/10 backdrop-blur-md max-w-2xl mx-auto">
+                  <Card className="bg-stone-900/85 border-stone-800 max-w-2xl mx-auto">
                     <CardContent className="pt-4 pb-4">
                       <div className="bg-stone-900/80 text-white px-4 sm:px-6 py-4 rounded-lg shadow-md text-sm sm:text-base font-semibold text-center">
                         <div dangerouslySetInnerHTML={{ __html: event.message }} />
                       </div>
                       {event.images?.length > 0 && (
-                        <div className="mt-4 p-3 sm:p-4 bg-stone-900/60 rounded-lg border border-white/10">
+                        <div className="mt-4 p-3 sm:p-4 bg-stone-900/60 rounded-md border border-stone-800">
                           <div className="flex flex-wrap justify-center gap-3">
                             {event.images.map((img, i) => (
                               <Avatar key={i} className="w-12 h-12 sm:w-16 sm:h-16 border border-white/30 shadow">
@@ -914,12 +910,9 @@ export default function EpisodeView({
                         <div className="mt-3 space-y-1.5">
                           {event.relationships.map((rel, i) => {
                             const positive = rel.chipNet > 0;
-                            const chipClasses = positive
-                              ? "bg-emerald-900/40 border-emerald-400/60 text-emerald-200"
-                              : "bg-rose-900/40 border-rose-400/60 text-rose-200";
                             const sign = positive ? "+" : "";
                             return (
-                              <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-900/60 border border-white/10">
+                              <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-900/80 border border-stone-800">
                                 {rel.images?.length >= 2 && (
                                   <div className="flex -space-x-2 shrink-0">
                                     {rel.images.slice(0, 2).map((img, j) => (
@@ -931,9 +924,9 @@ export default function EpisodeView({
                                   </div>
                                 )}
                                 <p className="flex-1 text-xs text-stone-300 leading-tight">{rel.headline}</p>
-                                <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${chipClasses}`}>
+                                <Badge variant={positive ? "success" : "danger"} className="shrink-0">
                                   {sign}{rel.chipNet}
-                                </span>
+                                </Badge>
                               </div>
                             );
                           })}
@@ -967,13 +960,13 @@ export default function EpisodeView({
 
                   <Card
                     className={`
-                      bg-black/60 border-white/10 backdrop-blur-md
+                      bg-stone-900/85 border-stone-800
                       ${isIndividual ? "max-w-md mx-auto" : "max-w-4xl mx-auto"}
                     `}
                   >
                     <CardContent className="pt-4 pb-4">
                       {event.grab && (
-                        <div className="mb-4 bg-stone-900/60 rounded-lg border border-white/10 px-4 py-3 text-center space-y-2">
+                        <div className="mb-4 bg-stone-900/60 rounded-md border border-stone-800 px-4 py-3 text-center space-y-2">
                           <p className="text-[10px] uppercase tracking-[0.16em] text-stone-400">Challenge Grab</p>
                           <p className="text-sm text-stone-200" dangerouslySetInnerHTML={{ __html: event.grab.message }} />
                           {event.grab.images?.length > 0 && (
@@ -1002,7 +995,7 @@ export default function EpisodeView({
                         />
                       </div>
 
-                      <div className="mt-4 p-3 sm:p-4 bg-stone-900/60 rounded-lg border border-white/10">
+                      <div className="mt-4 p-3 sm:p-4 bg-stone-900/60 rounded-md border border-stone-800">
                         <div className="flex flex-wrap justify-center gap-3">
                           {event.members?.map((member) =>
                             renderMemberAvatar(member, "lg")
@@ -1090,11 +1083,8 @@ export default function EpisodeView({
 
                     {/* Tribe roster at tribal council */}
                     {event.type === "voting-summary" && event.attendees?.length > 0 && (
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                      <Card className="bg-stone-900/85 border-stone-800 w-full sm:w-4/5 md:w-2/3">
                         <CardContent className="pt-3 pb-3">
-                          <p className="text-[10px] uppercase tracking-[0.16em] text-stone-500 text-center mb-3">
-                            Attending Tribal Council
-                          </p>
                           <div className="flex flex-wrap justify-center gap-3">
                             {event.attendees.map((player, i) => (
                               <div key={i} className="flex flex-col items-center gap-1">
@@ -1112,7 +1102,7 @@ export default function EpisodeView({
 
                     {/* Voting summary (big reveal card) */}
                     {event.type === "voting-summary" ? (
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-1/2">
+                      <Card className="bg-stone-900/85 border-stone-800 w-full sm:w-4/5 md:w-1/2">
                         <CardContent className="pt-3 pb-2">
                           {event.message.map((vote, i) => (
                             <div
@@ -1125,7 +1115,7 @@ export default function EpisodeView({
                       </Card>
                     ) : event.type === "voting" ? (
                       // Detailed voting breakdown (who voted for whom)
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                      <Card className="bg-stone-900/85 border-stone-800 w-full sm:w-4/5 md:w-2/3">
                         <CardContent className="pt-3 pb-3">
                           {(() => {
                             const stripTags = (html) =>
@@ -1284,7 +1274,7 @@ export default function EpisodeView({
                                       return (
                                         <div
                                           key={target}
-                                          className="rounded-lg bg-stone-900/75 border border-white/10 px-3 py-2 space-y-1"
+                                          className="rounded-lg bg-stone-900/75 border border-stone-800 px-3 py-2 space-y-1"
                                         >
                                           <div className="flex justify-between gap-2">
                                             <span className="text-sm font-semibold text-rose-100">
@@ -1324,7 +1314,7 @@ export default function EpisodeView({
                       </Card>
                     ) : event.type === "event" && event.numPlayers === 2 ? (
                       // Relationship events with effect text
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                      <Card className="bg-stone-900/85 border-stone-800 w-full sm:w-4/5 md:w-2/3">
                         <CardContent className="py-3 px-4">
                           {(() => {
                             const msgs = Array.isArray(event.message)
@@ -1354,10 +1344,7 @@ export default function EpisodeView({
                               }
                             }
 
-                            const chipColorClasses =
-                              chipNet > 0
-                                ? "bg-emerald-900/40 border-emerald-400/60 text-emerald-200"
-                                : "bg-rose-900/40 border-rose-400/60 text-rose-200";
+                            const chipVariant = chipNet > 0 ? "success" : "danger";
 
                             return (
                               <div className="flex flex-col gap-2">
@@ -1398,33 +1385,19 @@ export default function EpisodeView({
 
                                   {/* chip on the right for larger screens */}
                                   {chipValue && (
-                                    <span
-                                      className={`
-                                        hidden sm:inline-flex items-center justify-center
-                                        rounded-full px-3 py-1
-                                        text-[11px] font-semibold tracking-[0.16em]
-                                        whitespace-nowrap
-                                        ${chipColorClasses}
-                                      `}
+                                    <Badge
+                                      variant={chipVariant}
+                                      className="hidden sm:inline-flex whitespace-nowrap"
                                     >
                                       {chipValue}
-                                    </span>
+                                    </Badge>
                                   )}
                                 </div>
 
                                 {/* chip below on mobile */}
                                 {chipValue && (
                                   <div className="sm:hidden flex justify-center">
-                                    <span
-                                      className={`
-                                        inline-flex items-center justify-center
-                                        rounded-full px-3 py-1
-                                        text-[11px] font-semibold tracking-[0.16em]
-                                        ${chipColorClasses}
-                                      `}
-                                    >
-                                      {chipValue}
-                                    </span>
+                                    <Badge variant={chipVariant}>{chipValue}</Badge>
                                   </div>
                                 )}
                               </div>
@@ -1434,7 +1407,7 @@ export default function EpisodeView({
                       </Card>
                     ) : isIdolFindEvent(event) ? (
                       // Idol find event (match Advantages styling)
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5 md:w-2/3">
+                      <Card className="bg-stone-900/85 border-stone-800 w-full sm:w-4/5 md:w-2/3">
                         <CardContent className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             {event.images?.[0] ? (
@@ -1462,7 +1435,7 @@ export default function EpisodeView({
                       </Card>
                     ) : (
                       // Generic text event
-                      <Card className="bg-black/70 border-white/10 backdrop-blur-md w-full sm:w-4/5">
+                      <Card className="bg-stone-900/85 border-stone-800 w-full sm:w-4/5">
                         <CardContent className="pt-3 pb-3">
                           <div
                             className="text-xs sm:text-sm font-semibold text-center"
@@ -1488,7 +1461,7 @@ export default function EpisodeView({
           if (!open) closeAlliancesModal();
         }}
       >
-        <DialogContent className="bg-stone-950 border-white/10 text-stone-50 max-w-2xl sm:max-w-3xl lg:max-w-4xl max-h-[85vh] overflow-hidden">
+        <DialogContent className="bg-stone-950 border-stone-800 text-stone-50 max-w-2xl sm:max-w-3xl lg:max-w-4xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-semibold tracking-[0.12em] uppercase">
               Current Alliances
@@ -1512,7 +1485,7 @@ export default function EpisodeView({
                     return (
                   <div
                     key={index}
-                    className="p-4 bg-stone-900/80 rounded-lg border border-white/10"
+                    className="p-4 bg-stone-900/80 rounded-md border border-stone-800"
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
@@ -1594,7 +1567,7 @@ export default function EpisodeView({
           if (!open) closeRelationshipsModal();
         }}
       >
-        <DialogContent className="bg-stone-950 border-white/10 text-stone-50 max-w-3xl lg:max-w-5xl max-h-[85vh] overflow-hidden">
+        <DialogContent className="bg-stone-950 border-stone-800 text-stone-50 max-w-3xl lg:max-w-5xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-semibold tracking-[0.12em] uppercase">
               Tribe Relationships
@@ -1614,7 +1587,7 @@ export default function EpisodeView({
 
                 return (
                   <div className="space-y-3">
-                    <div className="rounded-lg border border-white/10 bg-black/30">
+                    <div className="rounded-md border border-stone-800 bg-stone-900/60">
                       <div
                         className="grid gap-1 p-2"
                         style={{ gridTemplateColumns }}

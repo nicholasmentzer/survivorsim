@@ -202,7 +202,7 @@ export default function ConfigureCast({
 
       <div className="mt-6 space-y-8">
         {/* SEASON SETTINGS */}
-        <Card className="bg-black/70 border-white/10">
+        <Card className="bg-stone-900/85 border-stone-800">
           <CardHeader className="pb-3 space-y-4">
             <CardTitle
               className="
@@ -254,7 +254,7 @@ export default function ConfigureCast({
                           setTribeNames({ ...tribeNames, [tribeKey]: e.target.value })
                         }
                         className="
-                          bg-black/40 border border-white/20 text-stone-100
+                          bg-stone-900/60 border border-stone-700 text-stone-100
                           rounded-md text-center text-xs md:text-sm
                           py-2
                           font-semibold tracking-[0.08em]
@@ -272,7 +272,7 @@ export default function ConfigureCast({
                     setTribeNames({ ...tribeNames, merge: e.target.value })
                   }
                   className="
-                    bg-black/40 border border-purple-500/70 text-purple-200
+                    bg-stone-900/60 border border-purple-500/60 text-purple-200
                     rounded-md text-center text-xs md:text-sm
                     py-2
                     font-semibold tracking-[0.08em]
@@ -546,10 +546,10 @@ export default function ConfigureCast({
 
         {/* PLAYER CONFIG TABS */}
         <Tabs defaultValue="tribe1" className="w-full">
-          <Card className="bg-black/60 border-white/10">
+          <Card className="bg-stone-900/85 border-stone-800">
             <CardHeader className="pb-0">
               <TabsList
-                className="grid bg-black/40 border border-white/10"
+                className="grid bg-stone-900/60 border border-stone-800"
                 style={{ gridTemplateColumns: `repeat(${numTribes}, minmax(0, 1fr))` }}
               >
                 {tribeKeys.map((tribeKey, idx) => (
@@ -643,7 +643,7 @@ export default function ConfigureCast({
         </Tabs>
 
         {/* CUSTOM EVENTS */}
-        <Card className="bg-black/70 border-white/10">
+        <Card className="bg-stone-900/85 border-stone-800">
           <CardHeader className="pb-3 space-y-2">
             <CardTitle className="text-sm tracking-[0.22em] uppercase text-stone-100">
               Custom Events

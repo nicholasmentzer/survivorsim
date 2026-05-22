@@ -203,7 +203,7 @@ const PlayerConfig = ({
         {playerData.map((player, index) => (
           <Card
             key={player.id}
-            className="bg-black/60 border-white/10 text-slate-50 flex flex-col min-w-[260px]"
+            className="bg-stone-900/85 border-stone-800 text-slate-50 flex flex-col min-w-[260px]"
           >
             <CardHeader className="pb-3">
               {/* Presets on top */}
