@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import {
   Avatar,
   AvatarImage,
@@ -130,53 +131,35 @@ const PlayerConfig = ({
 
   const renderSlider = (player, playerIndex, label, num) => {
     const labels = [
-      "challenge skill (pre-merge)",
-      "challenge skill (post-merge)",
-      "general likeability",
-      "perceived threat level",
-      "strategy ability",
+      "Challenge (Pre-Merge)",
+      "Challenge (Post-Merge)",
+      "Likeability",
+      "Threat",
+      "Strategy",
     ];
 
     return (
-      <div
-        className="flex items-center gap-3"
-        key={`${label}-${num}-${playerIndex}`}
-      >
-        <Label
-          className="
-            w-40
-            text-[9px] sm:text-[10px]
-            leading-tight
-            uppercase tracking-[0.16em]
-            text-stone-300
-          "
-        >
-          {labels[num]}
-        </Label>
-        <div className="flex-1 flex items-center gap-2">
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={player[label]}
-            onChange={(e) =>
-              updatePlayerProperty(playerIndex, label, Number(e.target.value))
-            }
-            className={`
-              w-full h-2 bg-stone-600 rounded-lg appearance-none cursor-pointer
-              [&::-webkit-slider-thumb]:appearance-none
-              [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4
-              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
-              [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4
-              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white
-              [&::-ms-thumb]:h-4 [&::-ms-thumb]:w-4
-              [&::-ms-thumb]:rounded-full [&::-ms-thumb]:bg-white
-            `}
-          />
-          <span className="w-6 text-[11px] text-stone-200 text-center">
+      <div className="space-y-1.5" key={`${label}-${num}-${playerIndex}`}>
+        <div className="flex items-baseline justify-between gap-2">
+          <Label className="text-xs sm:text-[13px] text-stone-300 font-medium">
+            {labels[num]}
+          </Label>
+          <span className="text-sm font-semibold text-stone-100 tabular-nums">
             {player[label]}
           </span>
         </div>
+        <Slider
+          min={1}
+          max={10}
+          step={1}
+          value={[player[label]]}
+          onValueChange={(values) =>
+            updatePlayerProperty(playerIndex, label, values[0])
+          }
+          trackClassName="h-1.5 bg-stone-700"
+          rangeClassName="bg-stone-400"
+          thumbClassName="h-4 w-4 bg-stone-200 border-stone-500"
+        />
       </div>
     );
   };
@@ -206,31 +189,11 @@ const PlayerConfig = ({
             className="bg-stone-900/85 border-stone-800 text-slate-50 flex flex-col min-w-[260px]"
           >
             <CardHeader className="pb-3">
-              {/* Presets on top */}
-              <div className="flex justify-end mb-1">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="
-                    h-5 px-2
-                    text-[9px] tracking-[0.16em] uppercase
-                    border-white/20 bg-white/5 hover:bg-white/10
-                  "
-                  type="button"
-                  onClick={() => {
-                    setSelectedPlayerIndex(index);
-                    setPresetModalOpen(true);
-                  }}
-                >
-                  Presets
-                </Button>
-              </div>
-
-              {/* Avatar + name row */}
+              {/* Avatar + (Presets above name input) */}
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  className="relative"
+                  className="relative shrink-0"
                   onClick={() => openImageModal(index)}
                 >
                   <Avatar className="w-20 h-20 md:w-24 md:h-24 border border-white/30 shadow-md">
@@ -261,24 +224,44 @@ const PlayerConfig = ({
                   </div>
                 </button>
 
-                <Input
-                  value={player.name}
-                  onChange={(e) =>
-                    updatePlayerProperty(index, "name", e.target.value)
-                  }
-                  className="
-                    bg-transparent border-0 border-b border-white/30 rounded-none px-0
-                    text-sm sm:text-base text-white
-                    font-semibold tracking-[0.06em]
-                    focus-visible:ring-0 focus-visible:ring-offset-0
-                    focus-visible:border-white
-                  "
-                />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      className="
+                        h-5 px-2
+                        text-[9px] tracking-[0.16em] uppercase
+                        border-white/20 bg-white/5 hover:bg-white/10
+                      "
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlayerIndex(index);
+                        setPresetModalOpen(true);
+                      }}
+                    >
+                      Presets
+                    </Button>
+                  </div>
+                  <Input
+                    value={player.name}
+                    onChange={(e) =>
+                      updatePlayerProperty(index, "name", e.target.value)
+                    }
+                    className="
+                      bg-transparent border-0 border-b border-white/30 rounded-none px-0
+                      text-sm sm:text-base text-white
+                      font-semibold tracking-[0.06em]
+                      focus-visible:ring-0 focus-visible:ring-offset-0
+                      focus-visible:border-white
+                    "
+                  />
+                </div>
               </div>
             </CardHeader>
 
             {!hideSliders && (
-              <CardContent className="space-y-3 pt-0 pb-4">
+              <CardContent className="space-y-4 pt-0 pb-5">
                 {renderSlider(player, index, "premerge", 0)}
                 {renderSlider(player, index, "postmerge", 1)}
                 {renderSlider(player, index, "likeability", 2)}
