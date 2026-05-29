@@ -430,26 +430,54 @@ export default function Home() {
     }
 
     const pool = [...playersData.men, ...playersData.women];
-    const wantsDefaultS50 = clampedNumTribes === 3 && tribeSize === 8;
-    if (wantsDefaultS50) {
-      const defaultCast = buildDefaultSeason50Cast(pool);
-      if (defaultCast) {
-        setPlayers(defaultCast);
-        return;
-      }
-    }
 
-    const totalPlayers = tribeSize * clampedNumTribes;
-    const picked = getRandomPlayersFromPool(pool, totalPlayers).map((p, idx) => {
-      const tribeId = Math.floor(idx / tribeSize) + 1;
-      return {
-        ...p,
-        id: `${Date.now()}-${idx}-${p.name}`,
-        tribeId,
-        originalTribeId: tribeId,
-      };
+    setPlayers((prevPlayers) => {
+      // First-time / empty roster: load the Season 50 default if applicable, else fill randomly.
+      if (!prevPlayers || prevPlayers.length === 0) {
+        const wantsDefaultS50 = clampedNumTribes === 3 && tribeSize === 8;
+        if (wantsDefaultS50) {
+          const defaultCast = buildDefaultSeason50Cast(pool);
+          if (defaultCast) return defaultCast;
+        }
+        const totalPlayers = tribeSize * clampedNumTribes;
+        return getRandomPlayersFromPool(pool, totalPlayers).map((p, idx) => {
+          const tribeId = Math.floor(idx / tribeSize) + 1;
+          return {
+            ...p,
+            id: `${Date.now()}-${idx}-${p.name}`,
+            tribeId,
+            originalTribeId: tribeId,
+          };
+        });
+      }
+
+      // Subsequent changes: keep existing players, trim or grow each tribe in place.
+      const usedNames = new Set(prevPlayers.map((p) => p.name));
+      const result = [];
+
+      for (let tribeId = 1; tribeId <= clampedNumTribes; tribeId++) {
+        const existing = prevPlayers
+          .filter((p) => p.tribeId === tribeId)
+          .slice(0, tribeSize);
+        const needed = tribeSize - existing.length;
+
+        if (needed > 0) {
+          const available = pool.filter((p) => !usedNames.has(p.name));
+          const picked = getRandomPlayersFromPool(available, needed).map((p, idx) => ({
+            ...p,
+            id: `${Date.now()}-${tribeId}-${existing.length + idx}-${p.name}`,
+            tribeId,
+            originalTribeId: tribeId,
+          }));
+          picked.forEach((p) => usedNames.add(p.name));
+          result.push(...existing, ...picked);
+        } else {
+          result.push(...existing);
+        }
+      }
+
+      return result;
     });
-    setPlayers(picked);
   }, [tribeSize, numTribes]);
 
   const [results, setResults] = useState([]);
