@@ -96,7 +96,7 @@ export const votingWinner = (finalThree, jury) => {
     const n = revealIndex + 1;
     voteSummary.push(`
       <div class="flex flex-col items-center gap-2">
-        <img src="${finalist.image}" alt="${finalist.name}" class="mb-1 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+        <img data-pimg="${encodeURIComponent(finalist.name)}" alt="${finalist.name}" class="mb-1 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
         <p>${n}${getOrdinalSuffix(n)} vote: ${finalist.name}</p>
       </div>
     `);

@@ -113,19 +113,58 @@ const PlayerConfig = ({
     }
   };
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.size > 2000000) {
-        alert("File is too large! Please upload an image under 2MB.");
-        return;
-      }
+  // Downscale + compress an uploaded image to a small data URL.
+  // Avatars render at ~96px, so we cap the longest edge well above that for
+  // retina headroom — turning multi-MB photos into tiny strings. This keeps
+  // decode (per episode navigation) and storage tiny.
+  // Format per source: PNG uploads stay PNG (preserves transparency); everything
+  // else exports JPEG (far smaller for photographs).
+  const MAX_IMAGE_DIM = 256;
+  const resizeImageFile = (file) =>
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
+      reader.onerror = reject;
       reader.onloadend = () => {
-        setImageUrl(reader.result);
-        setImageValid(true);
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          try {
+            const out = file.type === "image/png"
+              ? canvas.toDataURL("image/png")
+              : canvas.toDataURL("image/jpeg", 0.85);
+            resolve(out);
+          } catch {
+            // Tainted canvas or unsupported type — fall back to the original.
+            resolve(reader.result);
+          }
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
+    });
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 10000000) {
+        alert("File is too large! Please upload an image under 10MB.");
+        return;
+      }
+      try {
+        const resized = await resizeImageFile(file);
+        setImageUrl(resized);
+        setImageValid(true);
+      } catch {
+        alert("Could not process that image. Please try a different file.");
+      }
     }
   };
 

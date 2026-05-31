@@ -252,6 +252,15 @@ const shuffleInPlace = (arr) => {
   return arr;
 };
 
+// Shallow-clone player objects for storage in episode data, dropping the
+// (potentially huge base64) image — images resolve from `players` at render.
+const stripMemberImages = (members) =>
+  (members || []).filter(Boolean).map((m) => ({ ...m, image: undefined }));
+
+// Same, for alliance objects whose `members` carry full player objects.
+const stripAllianceImages = (alliances) =>
+  (alliances || []).map((a) => ({ ...a, members: stripMemberImages(a?.members) }));
+
 const snapshotIdols = (idolsMap) => {
   const src = idolsMap || {};
   const out = {};
@@ -262,7 +271,6 @@ const snapshotIdols = (idolsMap) => {
     }
     out[key] = {
       name: player.name,
-      image: player.image,
       tribeId: player.tribeId,
       originalTribeId: player.originalTribeId,
       hasIdol: !!player.hasIdol,
@@ -278,7 +286,6 @@ const snapshotAdvantage = (map) => {
     if (!player) { out[key] = null; return; }
     out[key] = {
       name: player.name,
-      image: player.image,
       tribeId: player.tribeId,
       originalTribeId: player.originalTribeId,
     };
@@ -574,8 +581,8 @@ const detectDrasticRelationships = (tribe, updateResults) => {
 
     drasticEvents.push({
       type: "target",
-      actor: { name: player1.name, image: player1.image },
-      target: { name: player2.name, image: player2.image },
+      actor: { name: player1.name },
+      target: { name: player2.name },
       message: messages[Math.floor(Math.random() * messages.length)],
     });
 
@@ -607,7 +614,7 @@ const findIdol = (tribe, tribeName, merged) => {
       return {
         type: "event",
         message: `${finder.name} found a Hidden Immunity Idol!`,
-        images: [finder.image]
+        images: [finder.name]
       };
     }
   }
@@ -724,7 +731,7 @@ const challengeGrab = (tribe, tribeName, isPostMerge = false) => {
   grabFired++;
   return {
     message: combinedMsg,
-    images: [grabber.image],
+    images: [grabber.name],
     grabbedPlayerIndex: needsSacrifice ? grabbedPlayerIndex : null,
   };
 };
@@ -822,7 +829,7 @@ const summitJourney = (updateResults) => {
             ? `Due to ${winner.name}'s win, ${pOther.name} wants to work with them`
             : `Due to ${winner.name}'s win, ${pOther.name} now sees them as a target`,
           chipNet: isPositive ? delta : -delta,
-          images: [pOther.image, winner.image].filter(Boolean),
+          images: [pOther.name, winner.name].filter(Boolean),
         });
       } else {
         // Normal match result
@@ -834,7 +841,7 @@ const summitJourney = (updateResults) => {
           relationships.push({
             headline: `${pHigh.name} and ${pLow.name} bonded during the journey`,
             chipNet: delta,
-            images: [pHigh.image, pLow.image].filter(Boolean),
+            images: [pHigh.name, pLow.name].filter(Boolean),
           });
         } else {
           pHigh.relationships[pLow.name] = (pHigh.relationships[pLow.name] || 0) - delta;
@@ -842,14 +849,14 @@ const summitJourney = (updateResults) => {
           relationships.push({
             headline: `${pHigh.name} and ${pLow.name} just didn't click`,
             chipNet: -delta,
-            images: [pHigh.image, pLow.image].filter(Boolean),
+            images: [pHigh.name, pLow.name].filter(Boolean),
           });
         }
       }
     }
   }
 
-  updateResults({ type: "journey", message: msg, images: scored.map(s => s.player.image).filter(Boolean), relationships });
+  updateResults({ type: "journey", message: msg, images: scored.map(s => s.player.name).filter(Boolean), relationships });
 
   if (awardType === "idol") {
     winner.hasIdol = true;
@@ -884,7 +891,7 @@ const soloJourney = (updateResults) => {
   if (hasSteal && !traveler.hasStealVote) types.push("stealVote");
 
   if (!types.length || Math.random() >= 0.70) {
-    updateResults({ type: "journey", message: `${traveler.name} was selected to go on a solo journey, but was unable to complete the challenge to win an advantage.`, images: [traveler.image] });
+    updateResults({ type: "journey", message: `${traveler.name} was selected to go on a solo journey, but was unable to complete the challenge to win an advantage.`, images: [traveler.name] });
     return;
   }
 
@@ -897,7 +904,7 @@ const soloJourney = (updateResults) => {
 
   const findName = awardType === "idol" ? "a Hidden Immunity Idol" : awardType === "extraVote" ? "an Extra Vote" : "a Vote Steal";
   const findHtml = `<span class="text-amber-400 font-bold">${findName}</span>`;
-  updateResults({ type: "journey", message: `${traveler.name} was selected to go on a solo journey, and completed the challenge to win ${findHtml}!`, images: [traveler.image] });
+  updateResults({ type: "journey", message: `${traveler.name} was selected to go on a solo journey, and completed the challenge to win ${findHtml}!`, images: [traveler.name] });
 
   if (awardType === "idol") {
     traveler.hasIdol = true;
@@ -1104,10 +1111,10 @@ const generateRelationshipEvent = (tribe, customEvents) => {
 
   const images = [];
   if (numPlayers === 1 && player1.image) {
-    images.push(player1.image);
+    images.push(player1.name);
   } else if (numPlayers === 2) {
-    if (player1.image) images.push(player1.image);
-    if (player2.image) images.push(player2.image);
+    if (player1.image) images.push(player1.name);
+    if (player2.image) images.push(player2.name);
   }
 
   return {
@@ -1811,9 +1818,9 @@ const getAllianceTargets = (tribe, alliances, updateResults, immune) => {
 
       updateResults({
         type: "allianceTarget",
-        alliance: alliance,
-        target: { name: bestTarget.name, image: bestTarget.image },
-        driver: driver ? { name: driver.name, image: driver.image } : null,
+        alliance: { ...alliance, members: stripMemberImages(alliance.members) },
+        target: { name: bestTarget.name },
+        driver: driver ? { name: driver.name } : null,
         message: `<span class="text-blue-400 font-bold">${alliance.name}</span><span class="font-normal"> alliance wants to target </span><span class="text-red-400 font-bold">${bestTarget.name}</span>.`,
       });
     }
@@ -1857,6 +1864,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((member) => ({
               ...member,
+              image: undefined, // images resolve from `players` at render time
               relationships: { ...(member.relationships || {}) },
             }));
 
@@ -1865,7 +1873,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
         const tribeEvent = {
           type: "tribe",
           title: tribeNames?.[tribeKey] || `Tribe ${i + 1}`,
-          alliances: displayAlliances,
+          alliances: stripAllianceImages(displayAlliances),
           currentTribeId: i + 1,
           swapOccurred: swapped,
           members: snapshotMembers(tribe),
@@ -1983,7 +1991,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       updateResults({
         type: "immunity",
         message,
-        members: [...(tribes[loser] || [])],
+        members: stripMemberImages(tribes[loser]),
         grab: grabResult ? { message: grabResult.message, images: grabResult.images } : null,
       });
 
@@ -1998,7 +2006,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
       getAllianceTargets(tribes[loser], getAlliancesForTribe(tribes[loser]), updateResults);
 
       state = "tribal";
-      const tribalAttendees = [...tribes[loser]];
+      const tribalAttendees = stripMemberImages(tribes[loser]);
       const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(
         tribes[loser],
         getAlliancesForTribe(tribes[loser]),
@@ -2031,7 +2039,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
             message: wasEliminatedByRocks 
               ? `${votedout.name} is eliminated by rocks!` 
               : wasEliminatedByFire ? `${votedout.name} is eliminated in fire!` : `${votedout.name} voted out by a vote of ${sortedVotes}`,
-            images: [votedout.image]
+            images: [votedout.name]
           });
           updateResults({
             type: "voting",
@@ -2062,20 +2070,21 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((member) => ({
           ...member,
+          image: undefined, // images resolve from `players` at render time
           relationships: { ...(member.relationships || {}) },
         }));
 
     const mergeTribeEvent = {
       type: "tribe",
       title: tribeNames.merge,
-      alliances: alliances,
+      alliances: stripAllianceImages(alliances),
       members: snapshotMembers(tribes[0]),
     };
 
     updateResults(mergeTribeEvent);
     if (tribes[0].length === 3) {
       updateResults(
-        { type: "tribe", title: "Jury", members: [...tribes[1]] }
+        { type: "tribe", title: "Jury", members: stripMemberImages(tribes[1]) }
       );
     }
 
@@ -2135,7 +2144,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         updateResults({
           type: "immunity",
           message: `${immune.name} wins individual immunity!`,
-          members: [immune],
+          members: stripMemberImages([immune]),
           grab: postGrab ? { message: postGrab.message, images: postGrab.images } : null,
         });
 
@@ -2151,7 +2160,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
 
         state = "tribal";
         const tribecopy = [...tribe];
-        const tribalAttendees = [...tribe];
+        const tribalAttendees = stripMemberImages(tribe);
         const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols, tribeExtraVotes, tribeStealVotes, eliminationNumber + 1);
         tribeIdols = idols.idols ?? idols;
         tribeExtraVotes = idols.extraVotes ?? tribeExtraVotes;
@@ -2175,7 +2184,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
               message: wasEliminatedByRocks 
                 ? `${votedout.name} is eliminated by rocks!` 
                 : wasEliminatedByFire ? `${votedout.name} is eliminated in fire!` : `${votedout.name} voted out by a vote of ${sortedVotes}`,
-              images: [votedout.image]
+              images: [votedout.name]
             });
             updateResults({
               type: "voting",
@@ -2199,7 +2208,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           type: "voting-summary", message: voteSummary
         });
         updateResults({
-          type: "event", message: `${winner.name} is the Sole Survivor!`, images: [winner.image]
+          type: "event", message: `${winner.name} is the Sole Survivor!`, images: [winner.name]
         });
         updateResults({
           type: "voting", message: voteDetails

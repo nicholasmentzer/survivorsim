@@ -519,16 +519,22 @@ export default function Home() {
 
   useEffect(() => {
     if (!episodes.length) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        episodes, currentEpisode, mode,
-        players, numTribes, tribeSize, mergeTime, swapTime, swapEnabled,
-        tribeNames, advantages, customEvents, useOnlyCustomEvents,
-        allianceNameOverrides,
-      }));
-    } catch (e) {
-      // Storage full or unavailable — fail silently
-    }
+    // Debounce the localStorage save: with custom (base64) player images embedded
+    // throughout episodes, JSON.stringify can take 1–2s. Without debouncing,
+    // every Next/Back click would block on serializing megabytes of data.
+    const timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          episodes, currentEpisode, mode,
+          players, numTribes, tribeSize, mergeTime, swapTime, swapEnabled,
+          tribeNames, advantages, customEvents, useOnlyCustomEvents,
+          allianceNameOverrides,
+        }));
+      } catch (e) {
+        // Storage full or unavailable — fail silently
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
   }, [
     episodes, currentEpisode, mode, players, numTribes, tribeSize,
     mergeTime, swapTime, swapEnabled, tribeNames, advantages,
@@ -705,6 +711,7 @@ export default function Home() {
                   ) : mode === "simulate" ? (
                     <EpisodeView
                       episodes={episodes}
+                      players={players}
                       currentEpisode={currentEpisode}
                       prevEpisode={prevEpisode}
                       nextEpisode={nextEpisode}

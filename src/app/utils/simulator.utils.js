@@ -171,10 +171,12 @@ const buildRoundRobinOrder = (votes) => {
 // Shared HTML builders
 // ---------------------------------------------------------------------------
 
-/** Renders a single vote entry (image + ordinal label + subtle tally) */
+/** Renders a single vote entry (image + ordinal label + subtle tally).
+ *  Images are stored as a name token (data-pimg) — never baked-in data URLs —
+ *  and hydrated to a real <img src> at render time in EpisodeView. */
 const voteHtml = (player, ordinal, suffix, tallyLabel = "") => `
   <div class="flex flex-col items-center space-x-3">
-    <img src="${player.image}" alt="${player.name}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+    <img data-pimg="${encodeURIComponent(player.name)}" alt="${player.name}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
     <p>${ordinal}${suffix} vote: ${player.name}${tallyLabel ? `<span class="text-stone-500 font-normal text-[10px] ml-1">${tallyLabel}</span>` : ""}</p>
   </div>
 `;
@@ -225,7 +227,7 @@ const renderWithDoomStop = (voteOrder, totalCounts, tribe, ordinalOffset = 0, el
         `<p class="font-bold text-amber-300 text-sm tracking-widest uppercase mb-2">` +
         `The ${eliminationOrdinal}${thisOrdinalSuffix} person voted out:` +
         `</p>` +
-        `<img src="${player.image}" alt="${target}" ` +
+        `<img data-pimg="${encodeURIComponent(target)}" alt="${target}" ` +
         `class="mx-auto mb-1 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-amber-400/50">` +
         `<p class="font-semibold text-white">${target}</p>` +
         (remainingForTarget > 0
@@ -288,11 +290,10 @@ export const generateVotingSummaryWithIdol = (votes, immunePlayer, tribe, elimin
 
   // Immune votes first (read out then voided)
   immuneVotes.forEach((vote, idx) => {
-    const player = tribe.find((p) => p.name === vote.target);
     const n = idx + 1;
     html.push(`
       <div class="flex flex-col items-center space-x-3">
-        <img src="${player.image}" alt="${vote.target}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
+        <img data-pimg="${encodeURIComponent(vote.target)}" alt="${vote.target}" class="mb-2 w-10 h-10 sm:w-16 sm:h-16 object-cover rounded-full border-2 border-gray-600">
         <p>${n}${getOrdinalSuffix(n)} vote: ${vote.target} <span class="text-red-500">DOES NOT COUNT</span></p>
       </div>
     `);

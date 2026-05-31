@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function EpisodeView({
   episodes,
+  players = [],
   currentEpisode,
   prevEpisode,
   nextEpisode,
@@ -48,6 +49,37 @@ export default function EpisodeView({
   selectedTribe,
 }) {
   const currentEvents = episodes[currentEpisode] || [];
+
+  // --- Image resolution --------------------------------------------------
+  // Episodes store player NAMES, not image data. Images live once in `players`
+  // and resolve here at render time. resolveImg also passes through raw
+  // URLs/data-URLs so older saved games (with baked-in images) still render.
+  const nameToImage = React.useMemo(
+    () => Object.fromEntries((players || []).map((p) => [p.name, p.image])),
+    [players]
+  );
+  const resolveImg = React.useCallback(
+    (ref) => {
+      if (!ref) return "/default-player.png";
+      if (nameToImage[ref]) return nameToImage[ref];
+      if (/^(data:|https?:|\/)/.test(ref)) return ref; // already an image URL (back-compat)
+      return "/default-player.png";
+    },
+    [nameToImage]
+  );
+  // Swap name tokens baked into stored vote-reveal HTML for real <img src>.
+  // Runs before the string hits the DOM, so there's no empty-src flash.
+  // Old saved HTML (no data-pimg, real src baked in) is left untouched.
+  const hydrateImgs = React.useCallback(
+    (html) =>
+      typeof html === "string"
+        ? html.replace(
+            /data-pimg="([^"]*)"/g,
+            (_, n) => `src="${resolveImg(decodeURIComponent(n))}"`
+          )
+        : html,
+    [resolveImg]
+  );
 
   const [renameEditorsOpen, setRenameEditorsOpen] = React.useState({});
 
@@ -219,7 +251,7 @@ export default function EpisodeView({
       >
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border border-stone-700">
-            <AvatarImage src={player.image} alt={player.name} className="object-cover" style={{ imageRendering: "high-quality" }} />
+            <AvatarImage src={resolveImg(player.image || player.name)} alt={player.name} className="object-cover" style={{ imageRendering: "high-quality" }} />
             <AvatarFallback className="bg-stone-700 text-xs text-stone-100">{player.name?.[0] ?? "?"}</AvatarFallback>
           </Avatar>
           <p className={compact ? "text-xs font-semibold text-stone-50" : "text-xs sm:text-sm font-semibold text-stone-50"}>
@@ -339,7 +371,7 @@ export default function EpisodeView({
           className={`${sizeClasses} border border-white/25 shadow-md ring-1 ${originRingClass} ${offTribeAvatarClass} transition-transform`}
         >
           <AvatarImage
-            src={member.image}
+            src={resolveImg(member.image || member.name)}
             alt={member.name}
             className="object-cover"
             style={{ imageRendering: "high-quality" }}
@@ -463,7 +495,7 @@ export default function EpisodeView({
                 return (
                   <Avatar key={keyOverride || member?.name || alt || image} className={`w-12 h-12 sm:w-14 sm:h-14 border border-white/25 bg-black/30 ring-1 ${originRingClass}`}>
                     <AvatarImage
-                      src={image}
+                      src={resolveImg(image || member?.name || alt)}
                       alt={alt}
                       className="object-cover"
                       style={{ imageRendering: "high-quality" }}
@@ -504,8 +536,8 @@ export default function EpisodeView({
                             {personalTargets.map((t, tIdx) => {
                               const actorName = t?.actor?.name;
                               const targetName = t?.target?.name;
-                              const actorImage = t?.actor?.image ?? (Array.isArray(t?.images) ? t.images[0] : null);
-                              const targetImage = t?.target?.image ?? (Array.isArray(t?.images) ? t.images[1] : null);
+                              const actorImage = t?.actor?.image ?? (Array.isArray(t?.images) ? t.images[0] : null) ?? actorName;
+                              const targetImage = t?.target?.image ?? (Array.isArray(t?.images) ? t.images[1] : null) ?? targetName;
 
                               return (
                                 <div
@@ -559,7 +591,7 @@ export default function EpisodeView({
                               const members = a?.alliance?.members || [];
                               const allianceName = getAllianceDisplayName(a?.alliance);
                               const targetName = a?.target?.name;
-                              const targetImage = a?.target?.image;
+                              const targetImage = a?.target?.image ?? targetName;
                               const driverName = a?.driver?.name;
 
                               const attributionText = driverName
@@ -841,7 +873,7 @@ export default function EpisodeView({
                               className="w-10 h-10 sm:w-11 sm:h-11 border border-white/25 bg-black/30"
                             >
                               <AvatarImage
-                                src={m?.image}
+                                src={resolveImg(m?.image || m?.name)}
                                 alt={m?.name}
                                 className="object-cover"
                                 style={{ imageRendering: "high-quality" }}
@@ -899,7 +931,7 @@ export default function EpisodeView({
                           <div className="flex flex-wrap justify-center gap-3">
                             {event.images.map((img, i) => (
                               <Avatar key={i} className="w-12 h-12 sm:w-16 sm:h-16 border border-white/30 shadow">
-                                <AvatarImage src={img} className="object-cover" style={{ imageRendering: "high-quality" }} />
+                                <AvatarImage src={resolveImg(img)} className="object-cover" style={{ imageRendering: "high-quality" }} />
                                 <AvatarFallback className="bg-stone-700 text-xs text-stone-100">?</AvatarFallback>
                               </Avatar>
                             ))}
@@ -917,7 +949,7 @@ export default function EpisodeView({
                                   <div className="flex -space-x-2 shrink-0">
                                     {rel.images.slice(0, 2).map((img, j) => (
                                       <Avatar key={j} className="w-7 h-7 border border-white/30">
-                                        <AvatarImage src={img} className="object-cover" style={{ imageRendering: "high-quality" }} />
+                                        <AvatarImage src={resolveImg(img)} className="object-cover" style={{ imageRendering: "high-quality" }} />
                                         <AvatarFallback className="bg-stone-700 text-[10px]">?</AvatarFallback>
                                       </Avatar>
                                     ))}
@@ -973,7 +1005,7 @@ export default function EpisodeView({
                             <div className="flex justify-center gap-3 pt-1">
                               {event.grab.images.map((img, i) => (
                                 <Avatar key={i} className="w-12 h-12 sm:w-16 sm:h-16 border border-white/30 shadow">
-                                  <AvatarImage src={img} className="object-cover" style={{ imageRendering: "high-quality" }} />
+                                  <AvatarImage src={resolveImg(img)} className="object-cover" style={{ imageRendering: "high-quality" }} />
                                   <AvatarFallback className="bg-stone-700 text-xs text-stone-100">?</AvatarFallback>
                                 </Avatar>
                               ))}
@@ -1068,7 +1100,7 @@ export default function EpisodeView({
                             className="w-14 h-14 sm:w-20 sm:h-20 border border-white/30 shadow-md"
                           >
                             <AvatarImage
-                              src={image}
+                              src={resolveImg(image)}
                               alt="Event"
                               className="object-cover"
                               style={{ imageRendering: "high-quality" }}
@@ -1089,7 +1121,7 @@ export default function EpisodeView({
                             {event.attendees.map((player, i) => (
                               <div key={i} className="flex flex-col items-center gap-1">
                                 <Avatar className="w-12 h-12 sm:w-16 sm:h-16 border border-white/20 shadow-md">
-                                  <AvatarImage src={player.image} alt={player.name} className="object-cover" />
+                                  <AvatarImage src={resolveImg(player.image || player.name)} alt={player.name} className="object-cover" />
                                   <AvatarFallback className="bg-stone-700 text-xs text-stone-100">{player.name?.[0]}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-[10px] text-stone-300 text-center max-w-[56px] leading-tight">{player.name?.split(" ")[0]}</span>
@@ -1108,7 +1140,7 @@ export default function EpisodeView({
                             <div
                               key={i}
                               className="text-xs sm:text-sm font-semibold py-3 border-b border-white/5 last:border-b-0"
-                              dangerouslySetInnerHTML={{ __html: vote }}
+                              dangerouslySetInnerHTML={{ __html: hydrateImgs(vote) }}
                             />
                           ))}
                         </CardContent>
@@ -1359,7 +1391,7 @@ export default function EpisodeView({
                                           className="w-12 h-12 sm:w-14 sm:h-14 border border-white/40 shadow-md bg-black/40"
                                         >
                                           <AvatarImage
-                                            src={image}
+                                            src={resolveImg(image)}
                                             alt="Relationship event"
                                             className="object-cover"
                                             style={{ imageRendering: "high-quality" }}
@@ -1413,7 +1445,7 @@ export default function EpisodeView({
                             {event.images?.[0] ? (
                               <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border border-white/30 shadow-md shrink-0 bg-black/40 ring-2 ring-amber-400/20">
                                 <AvatarImage
-                                  src={event.images[0]}
+                                  src={resolveImg(event.images[0])}
                                   alt="Advantage finder"
                                   className="object-cover"
                                   style={{ imageRendering: "high-quality" }}
