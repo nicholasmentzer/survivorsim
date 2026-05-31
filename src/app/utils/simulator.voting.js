@@ -38,7 +38,8 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   // Decide before voting begins; stolen player is removed from the voter pool.
   let stolenPlayerIndex = null;
   let stealerName = null;
-  if (usableAdvantages.includes("stealVote") && stealVotes) {
+  // Post-merge, advantages can only be played through final 5 (not final 4).
+  if (usableAdvantages.includes("stealVote") && stealVotes && (tribe.length >= 5 || !merged)) {
     const stealHolder = tribe.find(p =>
       p && Object.values(stealVotes).some(s => s?.name === p.name)
     );
@@ -86,6 +87,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
   const voteDetails = [];
   const voteSummary = [];
   let extraVotePlayedByIndex = -1; // tracks who played the extra vote this tribal (for revote rules)
+  let eliminationMethod = "vote"; // "vote" | "fire" | "rocks" — how the boot was decided
   voteDetails.push(`<span class="font-bold text-lg">Vote Summary</span>`);
   voteSummary.push(`<span class="font-bold text-lg">It's time to vote!</span>`);
 
@@ -319,7 +321,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
 
   // --- Extra Vote ---
   // Played after the initial tally; holder casts a second vote for their original target.
-  if (usableAdvantages.includes("extraVote") && extraVotes) {
+  if (usableAdvantages.includes("extraVote") && extraVotes && (tribe.length >= 5 || !merged)) {
     const evHolder = tribe.find(p =>
       p && Object.values(extraVotes).some(e => e?.name === p.name)
     );
@@ -479,17 +481,11 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
         }
       }
 
-      // Track votes negated by idol
-      if (immunePlayer) {
-        // For each vote that was negated, increment votesNegated for the immune player
-        exportVotes.forEach(vote => {
-          if (vote.target === immunePlayer) {
-            const immuneP = tribe.find(p => p.name === immunePlayer);
-            if (immuneP) {
-              immuneP.votesNegated = (immuneP.votesNegated || 0) + 1;
-            }
-          }
-        });
+      // Track votes negated by the idol — credited to the player who PLAYED it
+      // (not the player it was played on, which differ when idoling someone else).
+      if (immunePlayer && idolUser) {
+        const negated = exportVotes.filter(vote => vote.target === immunePlayer).length;
+        idolUser.votesNegated = (idolUser.votesNegated || 0) + negated;
       }
 
       const playText = idolUser?.name === immunePlayer
@@ -608,7 +604,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
     });
     voteDetails.push(...revoteDetails);
     voteSummary.push(...revoteSummary);
-    voteSummary.push(...generateVotingSummary([...revoteExportVotes], tribe, { roundRobin: true }));
+    voteSummary.push(...generateVotingSummary([...revoteExportVotes], tribe, { roundRobin: true, eliminationOrdinal }));
 
     let revoteSorted = Object.entries(revoteVotes).sort((a, b) => b[1] - a[1]);
 
@@ -636,6 +632,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       if (safePlayers.length > 0) {
         let eliminatedByFire = safePlayers[Math.floor(Math.random() * safePlayers.length)];
         let eliminatedIndex = eliminatedByFire;
+        eliminationMethod = "fire";
         voteDetails.push(``);
         voteDetails.push( `<span class="font-bold text-md md:text-lg">Firemaking competition</span>`);
         voteSummary.push(``);
@@ -663,7 +660,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
             stealVotes[key] = null;
           }
         });
-        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols) };
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols), eliminationMethod };
       }
     } else if (revoteSorted.length > 1 && revoteSorted[0][1] === revoteSorted[1][1]) {
       let eligibleForRocks = tribe.filter(
@@ -673,6 +670,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
       if (eligibleForRocks.length > 0) {
         let eliminatedByRock = eligibleForRocks[Math.floor(Math.random() * eligibleForRocks.length)];
         let eliminatedIndex = tribe.indexOf(eliminatedByRock);
+        eliminationMethod = "rocks";
         voteDetails.push(``);
         voteDetails.push( `<span class="font-bold text-md md:text-lg">Rock Draw</span>`);
         voteSummary.push(``);
@@ -700,7 +698,7 @@ export const voting = (tribe, alliances2, merged, immuneIndex, usableAdvantages,
             stealVotes[key] = null;
           }
         });
-        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols) };
+        return { voteIndex: eliminatedIndex, sortedVotes: generateFormattedVotes(revoteSorted), voteDetails, voteSummary, idols: packAdvantages(idols), eliminationMethod };
       }
     }
 

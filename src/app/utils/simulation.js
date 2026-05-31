@@ -2007,7 +2007,7 @@ const handlePreMergePhase = (updateResults, customEvents) => {
 
       state = "tribal";
       const tribalAttendees = stripMemberImages(tribes[loser]);
-      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(
+      const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols, eliminationMethod } = voting(
         tribes[loser],
         getAlliancesForTribe(tribes[loser]),
         false,
@@ -2027,8 +2027,8 @@ const handlePreMergePhase = (updateResults, customEvents) => {
           votedout.placement = count;
           count--;
           finalPlacements.push(votedout);
-          const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
-          const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
+          const wasEliminatedByRocks = eliminationMethod === "rocks";
+          const wasEliminatedByFire = eliminationMethod === "fire";
           updateResults({
             type: "voting-summary",
             message: voteSummary,
@@ -2089,9 +2089,13 @@ const handlePostMergePhase = (updateResults, customEvents) => {
     }
 
     if (tribe.length > 3) {
-      const idolEvent1 = findIdol(tribes[0], "merge", true);
-      if (idolEvent1) updateResults(idolEvent1);
-      soloJourney(updateResults);
+      // No idol/advantage finds at final 4 — final 5 is the last round an
+      // advantage can matter, so nothing new should enter the game after it.
+      if (tribe.length > 4) {
+        const idolEvent1 = findIdol(tribes[0], "merge", true);
+        if (idolEvent1) updateResults(idolEvent1);
+        soloJourney(updateResults);
+      }
         for(let i = 0; i < 5; i++){
           let willEventOccur = Math.random();
           if(willEventOccur > 0.5){
@@ -2135,7 +2139,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
           }
         }*/
 
-        const postGrab = challengeGrab(tribe, "merge", true);
+        const postGrab = tribe.length > 4 ? challengeGrab(tribe, "merge", true) : null;
 
         const excludedIdx = postGrab?.grabbedPlayerIndex ?? -1;
         winner = individualImmunity(tribe, excludedIdx);
@@ -2161,7 +2165,7 @@ const handlePostMergePhase = (updateResults, customEvents) => {
         state = "tribal";
         const tribecopy = [...tribe];
         const tribalAttendees = stripMemberImages(tribe);
-        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols, tribeExtraVotes, tribeStealVotes, eliminationNumber + 1);
+        const { voteIndex: out, sortedVotes: sortedVotes, voteDetails, voteSummary, idols, eliminationMethod } = voting(tribecopy, alliances, true, winner, usableAdvantages, tribeIdols, tribeExtraVotes, tribeStealVotes, eliminationNumber + 1);
         tribeIdols = idols.idols ?? idols;
         tribeExtraVotes = idols.extraVotes ?? tribeExtraVotes;
         tribeStealVotes = idols.stealVotes ?? tribeStealVotes;
@@ -2172,8 +2176,8 @@ const handlePostMergePhase = (updateResults, customEvents) => {
             count--;
             finalPlacements.push(votedout);
             tribes[0] = tribecopy;
-            const wasEliminatedByRocks = voteSummary.some(msg => msg.toLowerCase().includes("rocks"));
-            const wasEliminatedByFire = voteSummary.some(msg => msg.toLowerCase().includes("firemaking"));
+            const wasEliminatedByRocks = eliminationMethod === "rocks";
+            const wasEliminatedByFire = eliminationMethod === "fire";
             updateResults({
               type: "voting-summary",
               message: voteSummary,
